@@ -19,7 +19,7 @@ cInfraredView::~cInfraredView()
 
 bool cInfraredView::Init(graphic::cRenderer &renderer)
 {
-	m_infraredTexture.Create(renderer, cInfraredWidth, cInfraredHeight, DXGI_FORMAT_R32_FLOAT);
+	m_infraredTexture.Create(renderer, g_kinectInfraredWidth, g_kinectInfraredHeight, DXGI_FORMAT_R32_FLOAT);
 	return true;
 }
 
@@ -87,12 +87,12 @@ void cInfraredView::ProcessInfrared(INT64 nTime, const UINT16* pBuffer, int nWid
 	D3D11_MAPPED_SUBRESOURCE map;
 	if (BYTE *dst = (BYTE*)m_infraredTexture.Lock(renderer, map))
 	{
-		for (int i = 0; i < cInfraredHeight; ++i)
+		for (int i = 0; i < g_kinectInfraredHeight; ++i)
 		{
-			for (int k = 0; k < cInfraredWidth; ++k)
+			for (int k = 0; k < g_kinectInfraredWidth; ++k)
 			{
 				float *p = (float*)(dst + (i * map.RowPitch) + k * sizeof(float));
-				*p = (float)(pBuffer[i * cInfraredWidth + k]) / USHRT_MAX;
+				*p = (float)(pBuffer[i * g_kinectInfraredWidth + k]) / USHRT_MAX;
 			}
 		}
 

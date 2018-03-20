@@ -1,10 +1,9 @@
-
 #include "stdafx.h"
 #include "plyreader.h"
 
+using namespace graphic;
 
 cPlyReader::cPlyReader()
-	: m_data(NULL)
 {
 }
 
@@ -18,9 +17,10 @@ cPlyReader::~cPlyReader()
 bool cPlyReader::Read(const string &fileName)
 {
 	using namespace std;
-	int dataPtrSize = 0;
 
 	Clear();
+
+	const int fileSize = (int)common::FileSize(fileName);
 
 	// find data pointer
 	ifstream ifs(fileName, ios::binary);
@@ -42,7 +42,7 @@ bool cPlyReader::Read(const string &fileName)
 		{
 			if ('\n' == line[idx])
 			{
-				line[idx-1] = NULL; // '\r'
+				line[idx - 1] = NULL; // '\r'
 				line[idx] = NULL;  // '\n'
 				break;
 			}
@@ -56,42 +56,30 @@ bool cPlyReader::Read(const string &fileName)
 		}
 	}
 
-	const int fileSize = (int)common::FileSize(fileName);
-	const int totalDataSize = fileSize - ifs.get();
-	m_data = new BYTE[totalDataSize];
-	ifs.read((char*)m_data, totalDataSize);
+	if (!isHeaderRead)
+		return false;
 
-	for (int i = 0; i < 10; ++i)
+
+#pragma pack(push, 1)
+	struct sVtx
 	{
-		float f1 = *(float*)&m_data[0];
-		float f2 = *(float*)&m_data[4];
-		float f3 = *(float*)&m_data[8];
+		float x, y, z;
+		unsigned char r, g, b;
+	};
+#pragma pack(pop)
 
-		BYTE b1 = m_data[12];
-		BYTE b2 = m_data[13];
-		BYTE b3 = m_data[14];
+	m_vertices.reserve(219104);
+	m_colors.reserve(219104);
 
-		float f4 = *(float*)&m_data[15];
-		float f5 = *(float*)&m_data[19];
-		float f6 = *(float*)&m_data[23];
+	for (int i = 0; i < 219104; ++i)
+	{
+		sVtx vtx;
+		ifs.read((char*)&vtx, sizeof(vtx));
+		m_vertices.push_back(Vector3(vtx.x, vtx.y, vtx.z));
+
+		const cColor color(vtx.r, vtx.g, vtx.b);
+		m_colors.push_back(color);
 	}
-
-
-	// data memory copy
-	//{
-	//	const int fileSize = (int)common::FileSize(fileName);
-
-	//	ifstream ifs(fileName, ios::binary);
-	//	if (!ifs.is_open())
-	//		return false;
-
-	//	ifs.seekg(dataPtrSize);
-
-	//	const int totalDataSize = fileSize - dataPtrSize;
-	//	m_data = new BYTE[totalDataSize];
-
-	//	ifs.read((char*)m_data, totalDataSize);
-	//}
 
 	return true;
 }
@@ -99,5 +87,4 @@ bool cPlyReader::Read(const string &fileName)
 
 void cPlyReader::Clear()
 {
-	SAFE_DELETEA(m_data);
 }

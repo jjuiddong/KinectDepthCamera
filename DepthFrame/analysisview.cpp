@@ -22,7 +22,7 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 	ImGui::DragInt2("Height Error Upper, Lower", g_root.m_heightErr, 1, 0, 20);
 	if (ImGui::Button("Volume Measure"))
 	{
-		((cViewer*)g_application)->m_3dView->MeasureVolume();
+		//((cViewer*)g_application)->m_3dView->MeasureVolume();
 	}
 
 	ImGui::Spacing();

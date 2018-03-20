@@ -196,7 +196,7 @@ void cViewer::OnUpdate(const float deltaSeconds)
 	__super::OnUpdate(deltaSeconds);
 	cAutoCam cam(&m_camera);
 	GetMainCamera().Update(deltaSeconds);
-	g_root.Update(deltaSeconds);
+	g_root.Update(m_renderer, deltaSeconds);
 }
 
 

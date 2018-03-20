@@ -9,7 +9,7 @@ cRoot::cRoot()
 	, m_pColorFrameReader(NULL)
 	, m_pInfraredFrameReader(NULL)
 	, m_isUpdate(false)
-	, m_pDepthBuff(NULL)
+	//, m_pDepthBuff(NULL)
 	, m_distribCount(0)
 	, m_areaCount(0)
 	, m_areaMin(INT_MAX)
@@ -17,7 +17,7 @@ cRoot::cRoot()
 	, m_areaFloorCnt(0)
 	, m_input(eInputType::FILE)
 {
-	m_pDepthBuff = new USHORT[cDepthWidth * cDepthHeight];
+	//m_pDepthBuff = new USHORT[g_kinectDepthWidth * g_kinectDepthHeight];
 
 	//m_depthThresholdMin = 0;
 	//m_depthThresholdMax = USHORT_MAX;
@@ -100,13 +100,13 @@ bool cRoot::Create()
 }
 
 
-void cRoot::Update(const float deltaSeconds)
+void cRoot::Update(graphic::cRenderer &renderer, const float deltaSeconds)
 {
-	UpdateDepthImage();
+	UpdateDepthImage(renderer);
 }
 
 
-void cRoot::UpdateDepthImage()
+void cRoot::UpdateDepthImage(graphic::cRenderer &renderer)
 {
 	if (!m_isUpdate)
 		return;
@@ -121,7 +121,7 @@ void cRoot::UpdateDepthImage()
 	IFrameDescription* pFrameDescription = NULL;
 	int nWidth = 0;
 	int nHeight = 0;
-	UINT nBufferSize = cDepthHeight * cDepthWidth;
+	UINT nBufferSize = g_kinectDepthHeight * g_kinectDepthWidth;
 	UINT16 *pBuffer = NULL;
 
 	hr = pDepthFrame->get_RelativeTime(&m_nTime);
@@ -151,13 +151,15 @@ void cRoot::UpdateDepthImage()
 	// Note:  If you wish to filter by reliable depth distance, uncomment the following line.
 	hr = pDepthFrame->get_DepthMaxReliableDistance(&m_nDepthMaxDistance);
 
-	//hr = pDepthFrame->AccessUnderlyingBuffer(&nBufferSize, &pBuffer);
-	hr = pDepthFrame->CopyFrameDataToArray(nBufferSize, m_pDepthBuff);
+	hr = pDepthFrame->AccessUnderlyingBuffer(&nBufferSize, &pBuffer);
+	//hr = pDepthFrame->CopyFrameDataToArray(nBufferSize, m_pDepthBuff);
 	if (FAILED(hr))
 		goto error;
 
 	if (USHORT_MAX == m_depthThresholdMax)
 		m_depthThresholdMax = m_nDepthMaxDistance / 4;
+
+	m_sensorBuff.ReadKinectSensor(renderer, m_nTime, pBuffer, m_nDepthMinReliableDistance, m_nDepthMaxDistance);
 
 error:
 	SAFE_RELEASE(pFrameDescription);
@@ -174,7 +176,7 @@ void cRoot::Clear()
 	}
 	m_areaBuff.clear();
 
-	SAFE_DELETEA(m_pDepthBuff);
+	//SAFE_DELETEA(m_pDepthBuff);
 
 	// done with depth frame reader
 	SAFE_RELEASE(m_pDepthFrameReader);

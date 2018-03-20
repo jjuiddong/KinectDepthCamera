@@ -1,6 +1,7 @@
 
 #include "stdafx.h"
 #include "3dview.h"
+#include "plyreader.h"
 
 using namespace graphic;
 using namespace framework;
@@ -12,7 +13,7 @@ c3DView::c3DView(const string &name)
 	, m_groundPlane2(Vector3(0, -1, 0), 0)
 	, m_showGround(true)
 	, m_showWireframe(false)
-	, m_pointCloudCount(0)
+	//, m_pointCloudCount(0)
 	, m_genPlane(-1)
 	, m_showSensorPlane(true)
 	, m_isGenPlane(false)
@@ -48,10 +49,8 @@ bool c3DView::Init(cRenderer &renderer)
 	m_ground.Create(renderer, 100, 100, 10, 10);
 	m_planeGrid.Create(renderer, 100, 100, 10, 10);
 
-	m_vtxBuff.Create(renderer, cDepthHeight*cDepthWidth, sizeof(sVertex), D3D11_USAGE_DYNAMIC);
-	//m_vtxBuff2.Create(renderer, cDepthHeight*cDepthWidth, sizeof(sVertex), D3D11_USAGE_DYNAMIC);
-
-	m_vertices.resize(cDepthHeight*cDepthWidth);
+	//m_vtxBuff.Create(renderer, g_kinectDepthHeight*g_kinectDepthWidth, sizeof(sVertex), D3D11_USAGE_DYNAMIC);
+	//m_vertices.resize(g_kinectDepthHeight*g_kinectDepthWidth);
 
 	m_sphere.Create(renderer, 1, 10, 10, cColor::WHITE);
 
@@ -70,14 +69,14 @@ void c3DView::OnPreRender(const float deltaSeconds)
 {
 	if (g_root.m_isUpdate)
 	{
-		ProcessDepth(g_root.m_nTime, g_root.m_pDepthBuff
-			, cDepthWidth, cDepthHeight
-			, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
+		//ProcessDepth(g_root.m_nTime, g_root.m_pDepthBuff
+		//	, g_kinectDepthWidth, g_kinectDepthHeight
+		//	, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
 
 		if (m_isAutoProcess)
 		{
-			ChangeSpace();
-			MeasureVolume();
+			//ChangeSpace();
+			//MeasureVolume();
 		}
 	}
 
@@ -116,21 +115,7 @@ void c3DView::OnPreRender(const float deltaSeconds)
 		// Render Point Cloud
 		if (m_showPointCloud)
 		{
-			cShader11 *shader = renderer.m_shaderMgr.FindShader(eVertexType::POSITION);
-			assert(shader);
-			shader->SetTechnique("Unlit");
-			shader->Begin();
-			shader->BeginPass(renderer, 0);
-
-			renderer.m_cbPerFrame.m_v->mWorld = XMMatrixIdentity();
-			renderer.m_cbPerFrame.Update(renderer);
-			XMVECTOR diffuse = XMLoadFloat4((XMFLOAT4*)&common::Vector4(.7f, .7f, .7f, 1.f));
-			renderer.m_cbMaterial.m_v->diffuse = diffuse;
-			renderer.m_cbMaterial.Update(renderer, 2);
-
-			m_vtxBuff.Bind(renderer);
-			renderer.GetDevContext()->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
-			renderer.GetDevContext()->DrawInstanced(m_pointCloudCount,1, 0, 0);
+			g_root.m_sensorBuff.Render(renderer);
 		}
 
 		if (m_showBoxAreaPointCloud)
@@ -149,7 +134,7 @@ void c3DView::OnPreRender(const float deltaSeconds)
 				cColor::YELLOW, cColor::RED, cColor::GREEN, cColor::BLUE
 			};
 
-			for (u_int i=0; i < g_root.m_areaFloorCnt; ++i)			
+			for (int i=0; i < g_root.m_areaFloorCnt; ++i)			
 			{
 				auto &areaFloor = g_root.m_areaBuff[i];
 
@@ -209,14 +194,14 @@ void c3DView::OnRender(const float deltaSeconds)
 
 		if (ImGui::Button("Process"))
 		{
-			ProcessDepth(g_root.m_nTime, g_root.m_pDepthBuff
-				, cDepthWidth, cDepthHeight
-				, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
+			//ProcessDepth(g_root.m_nTime, g_root.m_pDepthBuff
+			//	, g_kinectDepthWidth, g_kinectDepthHeight
+			//	, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
 
 			if (m_isAutoProcess)
 			{
-				ChangeSpace();
-				MeasureVolume();
+				//ChangeSpace();
+				//MeasureVolume();
 			}
 		}
 
@@ -237,16 +222,17 @@ void c3DView::OnRender(const float deltaSeconds)
 		{
 			m_state = eState::VCENTER;
 		}
-		ImGui::Text("volume center = %f, %f, %f", m_volumeCenter.x, m_volumeCenter.y, m_volumeCenter.z);
+		const Vector3 &volumeCenter = g_root.m_sensorBuff.m_volumeCenter;
+		ImGui::Text("volume center = %f, %f, %f", volumeCenter.x, volumeCenter.y, volumeCenter.z);
 
 		if (ImGui::Button("Change Space"))
 		{
-			ChangeSpace();
+			//ChangeSpace();
 		}
 
 		if (ImGui::Button("Volume Measure"))
 		{
-			MeasureVolume();
+			//MeasureVolume();
 		}
 
 		ImGui::Checkbox("Auto Process", &m_isAutoProcess);
@@ -265,335 +251,347 @@ void c3DView::OnResizeEnd(const framework::eDockResize::Enum type, const sRectf 
 }
 
 
-bool c3DView::ProcessDepth(INT64 nTime
-	, const UINT16* pBuffer
-	, int nWidth
-	, int nHeight
-	, USHORT nMinDepth
-	, USHORT nMaxDepth)
+bool c3DView::ReadPlyFile(const string &fileName)
 {
-	// Make sure we've received valid data
-	if (!pBuffer
-		|| (nWidth != cDepthWidth)
-		|| (nHeight != cDepthHeight))
+	cPlyReader reader;
+	if (!reader.Read(fileName))
 		return false;
 
-	for (int i = 0; i < cDepthHeight; ++i)
-	{
-		for (int k = 0; k < cDepthWidth; ++k)
-		{
-			const Vector3 pos = Get3DPos(k, i, nMinDepth, nMaxDepth);
-			m_vertices[i*cDepthWidth + k] = pos + m_offset;
-		}
-	}
 
-	// Update Texture
-	cRenderer &renderer = GetRenderer();
-
-	// Update Point Cloud
-	m_pointCloudCount = 0;
-	if (sVertex *dst = (sVertex*)m_vtxBuff.Lock(renderer))
-	{
-		int cnt = 0;
-
-		for (int i = 0; i < cDepthHeight; ++i)
-		{
-			for (int k = 0; k < cDepthWidth; ++k)
-			{
-				const Vector3 p1 = GetVertex(k, i);
-				const Vector3 p2 = GetVertex(k-1, i);
-				const Vector3 p3 = GetVertex(k, i-1);
-				const Vector3 p4 = GetVertex(k+1, i);
-				const Vector3 p5 = GetVertex(k, i+1);
-
-				const float l1 = p1.Distance(p2);
-				const float l2 = p1.Distance(p3);
-				const float l3 = p1.Distance(p4);
-				const float l4 = p1.Distance(p5);
-
-				const float maxDist = g_root.m_depthDensity;
-				if ((l1 > maxDist)
-					|| (l2 > maxDist)
-					|| (l3 > maxDist)
-					|| (l4 > maxDist)
-					)
-					continue;					
-
-
-				dst->p = p1;
-				m_vertices[cnt++] = p1;
-
-				++dst;
-				++m_pointCloudCount;
-			}
-		}
-
-		m_vtxBuff.Unlock(renderer);
-
-		for (u_int i = (u_int)cnt; i < m_vertices.size(); ++i)
-			m_vertices[i] = Vector3(0, 0, 0);
-	}
-
+	
 	return true;
 }
 
-
-inline Vector3 c3DView::Get3DPos(const int x, const int y, USHORT nMinDepth, USHORT nMaxDepth)
-{
-	if ((x < 0) || (x >= cDepthWidth)
-		|| (y < 0) || (y >= cDepthHeight))
-		return Vector3(0, 0, 0);
-
-	const USHORT depth = g_root.m_pDepthBuff[y * cDepthWidth + x];
-	if (depth < nMinDepth)
-		return Vector3();
-
-	const float w = 10.f;
-	const float h = ((float)cDepthHeight / (float)cDepthWidth) * w;
-	const float d = (float)depth / (float)nMaxDepth;
-
-	// x = -w ~ +w
-	// y = -h ~ +h
-	const float x0 = ((float)x - (cDepthWidth / 2.f)) / (cDepthWidth / 2.f) * w;
-	const float y0 = -((float)y - (cDepthHeight / 2.f)) / (cDepthHeight / 2.f) * h;
-	const Vector3 p0(x0, y0, 10);
-	const Vector3 p1 = p0 * 50.f;
-	const float len = p0.Distance(p1);
-
-	const Vector3 p2 = p0.Normal() * (d * len);
-
-	return p2;
-}
-
-
-inline common::Vector3 c3DView::GetVertex(const int x, const int y)
-{
-	if ((x < 0) || (x >= cDepthWidth)
-		|| (y < 0) || (y >= cDepthHeight))
-		return Vector3(0, 0, 0);
-
-	return m_vertices[y*cDepthWidth + x];
-}
-
-
-Vector3 c3DView::PickVertex(const Ray &ray)
-{
-	Vector3 mostNearVertex;
-	float maxDot = 0;
-
-	for (auto &vtx : m_vertices)
-	{
-		const Vector3 p = vtx;
-		const Vector3 v = (p - ray.orig).Normal();
-		const float d = abs(ray.dir.DotProduct(v));
-		if (maxDot < d)
-		{
-			maxDot = d;
-			mostNearVertex = vtx;
-		}
-	}
-
-	return mostNearVertex;
-}
-
-
-// sensor plane, volume center space change
-void c3DView::ChangeSpace()
-{
-	Quaternion q;
-	q.SetRotationArc(m_plane.N, Vector3(0, 1, 0));
-	const Matrix44 tm = q.GetMatrix();
-
-	Vector3 center = m_volumeCenter * tm;
-	center.y = 0;
-
-	for (u_int i = 0; i < m_vertices.size(); ++i)
-	{
-		Vector3 pos = m_vertices[i];
-		m_vertices[i] = pos * tm;
-		m_vertices[i].y += m_plane.D;
-		m_vertices[i].x -= center.x;
-		m_vertices[i].z -= center.z;
-	}
-
-	cRenderer &renderer = GetRenderer();
-	if (sVertex *dst = (sVertex*)m_vtxBuff.Lock(renderer))
-	{
-		for (u_int i = 0; i < m_vertices.size(); ++i)
-		{
-			dst->p = m_vertices[i];
-			++dst;
-		}
-		m_vtxBuff.Unlock(renderer);
-	}
-}
-
-
-void c3DView::MeasureVolume()
-{
-	m_isAutoProcess = true;
-
-	// Calculate Height Distribution
-	g_root.m_distribCount = 0;
-	ZeroMemory(g_root.m_hDistrib, sizeof(g_root.m_hDistrib));
-
-	for (auto &vtx : m_vertices)
-	{
-		if (abs(vtx.x) > 15.f)
-			continue;
-		if (abs(vtx.z) > 15.f)
-			continue;
-
-		const int h = (int)(vtx.y * 10.f);
-		if ((h >= 0) && (h < ARRAYSIZE(g_root.m_hDistrib)))
-		{
-			g_root.m_distribCount++;
-			g_root.m_hDistrib[h] += 1.f;
-		}
-	}
-
-	// height distribute differential - 2
-	ZeroMemory(&g_root.m_hDistribDifferential, sizeof(g_root.m_hDistribDifferential));
-
-	float oldD = 0;
-	float oldArea = 0;
-	for (int i = 0; i < ARRAYSIZE(g_root.m_hDistrib); ++i)
-	{
-		if (i == 0)
-		{
-			g_root.m_hDistribDifferential.AddValue(0);
-			continue;
-		}
-
-		const float a = g_root.m_hDistrib[i];
-		const float d = g_root.m_hDistrib[i] - g_root.m_hDistrib[i - 1];
-		if ((d * oldD <= 0) && ((oldArea > 100) || (a > 100)))
-			g_root.m_hDistribDifferential.AddValue( a );
-		else
-			g_root.m_hDistribDifferential.AddValue(0);
-
-		oldD = d;
-		oldArea = a;
-	}
-
-	// Generate Area Floor
-	cRenderer &renderer = GetRenderer();
-	u_int floor = 0;
-	for (int i = 10; i < g_root.m_hDistribDifferential.size; ++i)
-	{
-		if (g_root.m_hDistribDifferential.values[i] <= 0)
-			continue;
-
-		int maxAreaIdx = i;
-		for (int k = i+1; k < (i + 4); ++k)
-		{
-			if (g_root.m_hDistribDifferential.values[i] > g_root.m_hDistribDifferential.values[maxAreaIdx])
-				maxAreaIdx = k;			
-		}
-		i += 3;
-
-		if (g_root.m_areaBuff.size() <= floor)
-		{
-			cVertexBuffer *vtxBuff = new cVertexBuffer();
-			vtxBuff->Create(renderer, cDepthHeight*cDepthWidth, sizeof(sVertex), D3D11_USAGE_DYNAMIC);
-			
-			cRoot::sAreaFloor *areaFloor = new cRoot::sAreaFloor;
-			areaFloor->vtxBuff = vtxBuff;
-			g_root.m_areaBuff.push_back(areaFloor);
-		}
-
-		cRoot::sAreaFloor *areaFloor = g_root.m_areaBuff[floor++];
-		areaFloor->areaCnt = 0;
-		areaFloor->areaMin = INT_MAX;
-		areaFloor->areaMax = 0;
-		ZeroMemory(&areaFloor->areaGraph, sizeof(areaFloor->areaGraph));
-
-		// Generate AreaFloor Vertex
-		if (sVertex *dst = (sVertex*)areaFloor->vtxBuff->Lock(renderer))
-		{
-			for (auto &vtx : m_vertices)
-			{
-				if (abs(vtx.x) > 15.f)
-					continue;
-				if (abs(vtx.z) > 15.f)
-					continue;
-
-				const int mostHighIdx = maxAreaIdx;
-				const int h = (int)(vtx.y * 10.f);
-				if ((h >= 0) && (h < ARRAYSIZE(g_root.m_hDistrib)))
-				{
-					const bool ok = ((h - mostHighIdx) == 0)
-						|| (((h - mostHighIdx) > 0) && (abs(h - mostHighIdx) < g_root.m_heightErr[0]))
-						|| (((h - mostHighIdx) < 0) && (abs(h - mostHighIdx) < g_root.m_heightErr[1]));
-
-					if (ok)
-					{
-						++areaFloor->areaCnt;
-						dst->p = vtx + Vector3(0, 0.01f, 0);
-						++dst;
-					}
-				}
-			}
-
-			areaFloor->vtxBuff->Unlock(renderer);
-		}
-
-		if (areaFloor->areaCnt > areaFloor->areaMax)
-			areaFloor->areaMax = areaFloor->areaCnt;
-		if (areaFloor->areaCnt < areaFloor->areaMin)
-			areaFloor->areaMin = areaFloor->areaCnt;
-
-		areaFloor->areaGraph.AddValue((float)areaFloor->areaCnt);
-	}
-	g_root.m_areaFloorCnt = floor;
-
-	// minimum height 10
-	//int mostHighIdx = 10;
-	//for (int i = 10; i < ARRAYSIZE(g_root.m_hDistrib); ++i)
-	//{
-	//	if (g_root.m_hDistrib[i] > g_root.m_hDistrib[mostHighIdx])
-	//	{
-	//		mostHighIdx = i;
-	//	}
-	//}
-
-	//g_root.m_areaCount = 0;
-	//cRenderer &renderer = GetRenderer();
-	//if (sVertex *dst = (sVertex*)m_vtxBuff2.Lock(renderer))
-	//{
-	//	for (auto &vtx : m_vertices)
-	//	{
-	//		if (abs(vtx.x) > 15.f)
-	//			continue;
-	//		if (abs(vtx.z) > 15.f)
-	//			continue;
-
-	//		const int h = (int)(vtx.y * 10.f);
-	//		if ((h >= 0) && (h < ARRAYSIZE(g_root.m_hDistrib)))
-	//		{
-	//			const bool ok = ((h - mostHighIdx) == 0)
-	//				|| (((h - mostHighIdx) > 0) && (abs(h - mostHighIdx) < g_root.m_heightErr[0]))
-	//				|| (((h - mostHighIdx) < 0) && (abs(h - mostHighIdx) < g_root.m_heightErr[1]));
-	//			
-	//			if (ok)
-	//			{
-	//				++g_root.m_areaCount;
-	//				dst->p = vtx + Vector3(0,0.01f,0);
-	//				++dst;
-	//			}
-	//		}
-	//	}
-
-	//	m_vtxBuff2.Unlock(renderer);
-	//}
-
-	//if (g_root.m_areaCount > g_root.m_areaMax)
-	//	g_root.m_areaMax = g_root.m_areaCount;
-	//if (g_root.m_areaCount < g_root.m_areaMin)
-	//	g_root.m_areaMin = g_root.m_areaCount;
-
-	//g_root.m_areaGraph.AddValue((float)g_root.m_areaCount);
-}
+//
+//bool c3DView::ProcessDepth(INT64 nTime
+//	, const UINT16* pBuffer
+//	, int nWidth
+//	, int nHeight
+//	, USHORT nMinDepth
+//	, USHORT nMaxDepth)
+//{
+//	// Make sure we've received valid data
+//	if (!pBuffer
+//		|| (nWidth != g_kinectDepthWidth)
+//		|| (nHeight != g_kinectDepthHeight))
+//		return false;
+//
+//	for (int i = 0; i < g_kinectDepthHeight; ++i)
+//	{
+//		for (int k = 0; k < g_kinectDepthWidth; ++k)
+//		{
+//			const Vector3 pos = Get3DPos(k, i, nMinDepth, nMaxDepth);
+//			m_vertices[i*g_kinectDepthWidth + k] = pos + m_offset;
+//		}
+//	}
+//
+//	// Update Texture
+//	cRenderer &renderer = GetRenderer();
+//
+//	// Update Point Cloud
+//	m_pointCloudCount = 0;
+//	if (sVertex *dst = (sVertex*)m_vtxBuff.Lock(renderer))
+//	{
+//		int cnt = 0;
+//
+//		for (int i = 0; i < g_kinectDepthHeight; ++i)
+//		{
+//			for (int k = 0; k < g_kinectDepthWidth; ++k)
+//			{
+//				const Vector3 p1 = GetVertex(k, i);
+//				const Vector3 p2 = GetVertex(k-1, i);
+//				const Vector3 p3 = GetVertex(k, i-1);
+//				const Vector3 p4 = GetVertex(k+1, i);
+//				const Vector3 p5 = GetVertex(k, i+1);
+//
+//				const float l1 = p1.Distance(p2);
+//				const float l2 = p1.Distance(p3);
+//				const float l3 = p1.Distance(p4);
+//				const float l4 = p1.Distance(p5);
+//
+//				const float maxDist = g_root.m_depthDensity;
+//				if ((l1 > maxDist)
+//					|| (l2 > maxDist)
+//					|| (l3 > maxDist)
+//					|| (l4 > maxDist)
+//					)
+//					continue;					
+//
+//
+//				dst->p = p1;
+//				m_vertices[cnt++] = p1;
+//
+//				++dst;
+//				++m_pointCloudCount;
+//			}
+//		}
+//
+//		m_vtxBuff.Unlock(renderer);
+//
+//		for (u_int i = (u_int)cnt; i < m_vertices.size(); ++i)
+//			m_vertices[i] = Vector3(0, 0, 0);
+//	}
+//
+//	return true;
+//}
+//
+//
+//inline Vector3 c3DView::Get3DPos(const int x, const int y, USHORT nMinDepth, USHORT nMaxDepth)
+//{
+//	if ((x < 0) || (x >= g_kinectDepthWidth)
+//		|| (y < 0) || (y >= g_kinectDepthHeight))
+//		return Vector3(0, 0, 0);
+//
+//	const USHORT depth = g_root.m_pDepthBuff[y * g_kinectDepthWidth + x];
+//	if (depth < nMinDepth)
+//		return Vector3();
+//
+//	const float w = 10.f;
+//	const float h = ((float)g_kinectDepthHeight / (float)g_kinectDepthWidth) * w;
+//	const float d = (float)depth / (float)nMaxDepth;
+//
+//	// x = -w ~ +w
+//	// y = -h ~ +h
+//	const float x0 = ((float)x - (g_kinectDepthWidth / 2.f)) / (g_kinectDepthWidth / 2.f) * w;
+//	const float y0 = -((float)y - (g_kinectDepthHeight / 2.f)) / (g_kinectDepthHeight / 2.f) * h;
+//	const Vector3 p0(x0, y0, 10);
+//	const Vector3 p1 = p0 * 50.f;
+//	const float len = p0.Distance(p1);
+//
+//	const Vector3 p2 = p0.Normal() * (d * len);
+//
+//	return p2;
+//}
+//
+//
+//inline common::Vector3 c3DView::GetVertex(const int x, const int y)
+//{
+//	if ((x < 0) || (x >= g_kinectDepthWidth)
+//		|| (y < 0) || (y >= g_kinectDepthHeight))
+//		return Vector3(0, 0, 0);
+//
+//	return m_vertices[y*g_kinectDepthWidth + x];
+//}
+//
+//
+//Vector3 c3DView::PickVertex(const Ray &ray)
+//{
+//	Vector3 mostNearVertex;
+//	float maxDot = 0;
+//
+//	for (auto &vtx : g_root.m_sensorBuff.m_vertices)
+//	{
+//		const Vector3 p = vtx;
+//		const Vector3 v = (p - ray.orig).Normal();
+//		const float d = abs(ray.dir.DotProduct(v));
+//		if (maxDot < d)
+//		{
+//			maxDot = d;
+//			mostNearVertex = vtx;
+//		}
+//	}
+//
+//	return mostNearVertex;
+//}
+//
+//
+//// sensor plane, volume center space change
+//void c3DView::ChangeSpace()
+//{
+//	Quaternion q;
+//	q.SetRotationArc(m_plane.N, Vector3(0, 1, 0));
+//	const Matrix44 tm = q.GetMatrix();
+//
+//	Vector3 center = m_volumeCenter * tm;
+//	center.y = 0;
+//
+//	for (u_int i = 0; i < g_root.m_sensorBuff.m_vertices.size(); ++i)
+//	{
+//		Vector3 pos = g_root.m_sensorBuff.m_vertices[i];
+//		g_root.m_sensorBuff.m_vertices[i] = pos * tm;
+//		g_root.m_sensorBuff.m_vertices[i].y += m_plane.D;
+//		g_root.m_sensorBuff.m_vertices[i].x -= center.x;
+//		g_root.m_sensorBuff.m_vertices[i].z -= center.z;
+//	}
+//
+//	cRenderer &renderer = GetRenderer();
+//	if (sVertex *dst = (sVertex*)g_root.m_sensorBuff.m_vtxBuff.Lock(renderer))
+//	{
+//		for (u_int i = 0; i < g_root.m_sensorBuff.m_vertices.size(); ++i)
+//		{
+//			dst->p = g_root.m_sensorBuff.m_vertices[i];
+//			++dst;
+//		}
+//		g_root.m_sensorBuff.m_vtxBuff.Unlock(renderer);
+//	}
+//}
+//
+//
+//void c3DView::MeasureVolume()
+//{
+//	m_isAutoProcess = true;
+//
+//	// Calculate Height Distribution
+//	g_root.m_distribCount = 0;
+//	ZeroMemory(g_root.m_hDistrib, sizeof(g_root.m_hDistrib));
+//
+//	for (auto &vtx : g_root.m_sensorBuff.m_vertices)
+//	{
+//		if (abs(vtx.x) > 15.f)
+//			continue;
+//		if (abs(vtx.z) > 15.f)
+//			continue;
+//
+//		const int h = (int)(vtx.y * 10.f);
+//		if ((h >= 0) && (h < ARRAYSIZE(g_root.m_hDistrib)))
+//		{
+//			g_root.m_distribCount++;
+//			g_root.m_hDistrib[h] += 1.f;
+//		}
+//	}
+//
+//	// height distribute differential - 2
+//	ZeroMemory(&g_root.m_hDistribDifferential, sizeof(g_root.m_hDistribDifferential));
+//
+//	float oldD = 0;
+//	float oldArea = 0;
+//	for (int i = 0; i < ARRAYSIZE(g_root.m_hDistrib); ++i)
+//	{
+//		if (i == 0)
+//		{
+//			g_root.m_hDistribDifferential.AddValue(0);
+//			continue;
+//		}
+//
+//		const float a = g_root.m_hDistrib[i];
+//		const float d = g_root.m_hDistrib[i] - g_root.m_hDistrib[i - 1];
+//		if ((d * oldD <= 0) && ((oldArea > 100) || (a > 100)))
+//			g_root.m_hDistribDifferential.AddValue( a );
+//		else
+//			g_root.m_hDistribDifferential.AddValue(0);
+//
+//		oldD = d;
+//		oldArea = a;
+//	}
+//
+//	// Generate Area Floor
+//	cRenderer &renderer = GetRenderer();
+//	u_int floor = 0;
+//	for (int i = 10; i < g_root.m_hDistribDifferential.size; ++i)
+//	{
+//		if (g_root.m_hDistribDifferential.values[i] <= 0)
+//			continue;
+//
+//		int maxAreaIdx = i;
+//		for (int k = i+1; k < (i + 4); ++k)
+//		{
+//			if (g_root.m_hDistribDifferential.values[i] > g_root.m_hDistribDifferential.values[maxAreaIdx])
+//				maxAreaIdx = k;			
+//		}
+//		i += 3;
+//
+//		if (g_root.m_areaBuff.size() <= floor)
+//		{
+//			cVertexBuffer *vtxBuff = new cVertexBuffer();
+//			vtxBuff->Create(renderer, g_kinectDepthHeight*g_kinectDepthWidth, sizeof(sVertex), D3D11_USAGE_DYNAMIC);
+//			
+//			cRoot::sAreaFloor *areaFloor = new cRoot::sAreaFloor;
+//			areaFloor->vtxBuff = vtxBuff;
+//			g_root.m_areaBuff.push_back(areaFloor);
+//		}
+//
+//		cRoot::sAreaFloor *areaFloor = g_root.m_areaBuff[floor++];
+//		areaFloor->areaCnt = 0;
+//		areaFloor->areaMin = INT_MAX;
+//		areaFloor->areaMax = 0;
+//		ZeroMemory(&areaFloor->areaGraph, sizeof(areaFloor->areaGraph));
+//
+//		// Generate AreaFloor Vertex
+//		if (sVertex *dst = (sVertex*)areaFloor->vtxBuff->Lock(renderer))
+//		{
+//			for (auto &vtx : g_root.m_sensorBuff.m_vertices)
+//			{
+//				if (abs(vtx.x) > 15.f)
+//					continue;
+//				if (abs(vtx.z) > 15.f)
+//					continue;
+//
+//				const int mostHighIdx = maxAreaIdx;
+//				const int h = (int)(vtx.y * 10.f);
+//				if ((h >= 0) && (h < ARRAYSIZE(g_root.m_hDistrib)))
+//				{
+//					const bool ok = ((h - mostHighIdx) == 0)
+//						|| (((h - mostHighIdx) > 0) && (abs(h - mostHighIdx) < g_root.m_heightErr[0]))
+//						|| (((h - mostHighIdx) < 0) && (abs(h - mostHighIdx) < g_root.m_heightErr[1]));
+//
+//					if (ok)
+//					{
+//						++areaFloor->areaCnt;
+//						dst->p = vtx + Vector3(0, 0.01f, 0);
+//						++dst;
+//					}
+//				}
+//			}
+//
+//			areaFloor->vtxBuff->Unlock(renderer);
+//		}
+//
+//		if (areaFloor->areaCnt > areaFloor->areaMax)
+//			areaFloor->areaMax = areaFloor->areaCnt;
+//		if (areaFloor->areaCnt < areaFloor->areaMin)
+//			areaFloor->areaMin = areaFloor->areaCnt;
+//
+//		areaFloor->areaGraph.AddValue((float)areaFloor->areaCnt);
+//	}
+//	g_root.m_areaFloorCnt = floor;
+//
+//	// minimum height 10
+//	//int mostHighIdx = 10;
+//	//for (int i = 10; i < ARRAYSIZE(g_root.m_hDistrib); ++i)
+//	//{
+//	//	if (g_root.m_hDistrib[i] > g_root.m_hDistrib[mostHighIdx])
+//	//	{
+//	//		mostHighIdx = i;
+//	//	}
+//	//}
+//
+//	//g_root.m_areaCount = 0;
+//	//cRenderer &renderer = GetRenderer();
+//	//if (sVertex *dst = (sVertex*)m_vtxBuff2.Lock(renderer))
+//	//{
+//	//	for (auto &vtx : m_vertices)
+//	//	{
+//	//		if (abs(vtx.x) > 15.f)
+//	//			continue;
+//	//		if (abs(vtx.z) > 15.f)
+//	//			continue;
+//
+//	//		const int h = (int)(vtx.y * 10.f);
+//	//		if ((h >= 0) && (h < ARRAYSIZE(g_root.m_hDistrib)))
+//	//		{
+//	//			const bool ok = ((h - mostHighIdx) == 0)
+//	//				|| (((h - mostHighIdx) > 0) && (abs(h - mostHighIdx) < g_root.m_heightErr[0]))
+//	//				|| (((h - mostHighIdx) < 0) && (abs(h - mostHighIdx) < g_root.m_heightErr[1]));
+//	//			
+//	//			if (ok)
+//	//			{
+//	//				++g_root.m_areaCount;
+//	//				dst->p = vtx + Vector3(0,0.01f,0);
+//	//				++dst;
+//	//			}
+//	//		}
+//	//	}
+//
+//	//	m_vtxBuff2.Unlock(renderer);
+//	//}
+//
+//	//if (g_root.m_areaCount > g_root.m_areaMax)
+//	//	g_root.m_areaMax = g_root.m_areaCount;
+//	//if (g_root.m_areaCount < g_root.m_areaMin)
+//	//	g_root.m_areaMin = g_root.m_areaCount;
+//
+//	//g_root.m_areaGraph.AddValue((float)g_root.m_areaCount);
+//}
 
 
 void c3DView::UpdateLookAt()
@@ -693,7 +691,7 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 		// Generate Plane
 		if ((m_genPlane >= 0) && (m_genPlane < 3))
 		{
-			const Vector3 vtxPos = PickVertex(ray);
+			const Vector3 vtxPos = g_root.m_sensorBuff.PickVertex(ray);
 			m_sphere.SetPos(vtxPos);
 			m_planePos[m_genPlane++] = vtxPos;
 
@@ -710,14 +708,15 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 				m_planeGrid.m_transform.pos = Vector3(0, 0, 0);
 				m_planeGrid.m_transform.pos = plane.N * -plane.D;
 
-				m_plane = plane;
+				//m_plane = plane;
+				g_root.m_sensorBuff.GeneratePlane(m_planePos);
 			}
 		}
 
 		// Picking Vertex Pos
 		if (eState::PICKPOS == m_state)
 		{
-			const Vector3 vtxPos = PickVertex(ray);
+			const Vector3 vtxPos = g_root.m_sensorBuff.PickVertex(ray);
 			m_pickPos = vtxPos;
 			m_sphere.SetPos(vtxPos);
 			m_state = eState::NORMAL;
@@ -726,12 +725,13 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 		// Picking Volume Center
 		if (eState::VCENTER == m_state)
 		{
-			const Vector3 vtxPos = PickVertex(ray);
-			m_volumeCenter = vtxPos;
+			const Vector3 vtxPos = g_root.m_sensorBuff.PickVertex(ray);
+			g_root.m_sensorBuff.m_volumeCenter = vtxPos;
 			m_isGenVolumeCenter = true;
 
-			const float d = m_plane.Distance(vtxPos) * 10.f;
-			m_volumeCenterLine.SetLine(vtxPos + m_plane.N*d, vtxPos - m_plane.N*d, 0.1f);
+			const Plane &plane = g_root.m_sensorBuff.m_plane;
+			const float d = plane.Distance(vtxPos) * 10.f;
+			m_volumeCenterLine.SetLine(vtxPos + plane.N*d, vtxPos - plane.N*d, 0.1f);
 			
 			m_state = eState::NORMAL;
 		}

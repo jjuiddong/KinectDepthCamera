@@ -2,6 +2,8 @@
 #include "stdafx.h"
 #include "input.h"
 #include "plyreader.h"
+#include "depthframe.h"
+#include "3dview.h"
 
 
 using namespace graphic;
@@ -73,12 +75,7 @@ void cInputView::OnRender(const float deltaSeconds)
 					{
 						selectIdx = i;
 						m_selectPath = str.ansi(); // change UTF8 -> UTF16
-						//g_root.m_resViewer->LoadResource(m_selectPath.c_str());
-
-						cPlyReader plyReader;
-						plyReader.Read(str.ansi().c_str());
-
-						//cResourceManager::Get()->LoadRawMesh(str.ansi().c_str());
+						((cViewer*)g_application)->m_3dView->ReadPlyFile(str.ansi().c_str());
 
 						// Popup Menu
 						if (ImGui::IsItemClicked(1))

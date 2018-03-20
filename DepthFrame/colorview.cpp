@@ -19,7 +19,7 @@ cColorView::~cColorView()
 
 bool cColorView::Init(graphic::cRenderer &renderer)
 {
-	m_colorTexture.Create(renderer, cColorWidth, cColorHeight);
+	m_colorTexture.Create(renderer, g_kinectColorWidth, g_kinectColorHeight);
 	return true;
 }
 
@@ -97,14 +97,14 @@ void cColorView::ProcessColor(INT64 nTime, const BYTE* pBuffer, int nWidth, int 
 	D3D11_MAPPED_SUBRESOURCE map;
 	if (BYTE *dst = (BYTE*)m_colorTexture.Lock(renderer, map))
 	{
-		for (int i = 0; i < cColorHeight; ++i)
+		for (int i = 0; i < g_kinectColorHeight; ++i)
 		{
-			for (int k = 0; k < cColorWidth; ++k)
+			for (int k = 0; k < g_kinectColorWidth; ++k)
 			{
 				BYTE *p = dst + (i * map.RowPitch) + (k * 4);
-				*p = pBuffer[i * (cColorWidth * 4) + (k * 4)];
-				*(p + 1) = pBuffer[i * (cColorWidth * 4) + (k * 4) + 1];
-				*(p + 2) = pBuffer[i * (cColorWidth * 4) + (k * 4) + 2];
+				*p = pBuffer[i * (g_kinectColorWidth * 4) + (k * 4)];
+				*(p + 1) = pBuffer[i * (g_kinectColorWidth * 4) + (k * 4) + 1];
+				*(p + 2) = pBuffer[i * (g_kinectColorWidth * 4) + (k * 4) + 2];
 				*(p + 3) = 0xFF;
 			}
 		}

@@ -4,6 +4,19 @@
 #pragma once
 
 #include "graphbuff.h"
+#include "sensorbuffer.h"
+
+// Kinect V2
+static const int g_kinectDepthWidth = 512;
+static const int g_kinectDepthHeight = 424;
+static const int g_kinectColorWidth = 1920;
+static const int g_kinectColorHeight = 1080;
+static const int g_kinectInfraredWidth = 512;
+static const int g_kinectInfraredHeight = 424;
+
+static const int g_baslerDepthWidth = 640;
+static const int g_baslerDepthHeight = 480;
+
 
 
 class cRoot
@@ -13,12 +26,12 @@ public:
 	virtual ~cRoot();
 
 	bool Create();
-	void Update(const float deltaSeconds);
+	void Update(graphic::cRenderer &renderer, const float deltaSeconds);
 	void Clear();
 
 
 protected:
-	void UpdateDepthImage();
+	void UpdateDepthImage(graphic::cRenderer &renderer);
 
 
 public:
@@ -36,8 +49,10 @@ public:
 	IDepthFrameReader *m_pDepthFrameReader;
 	IColorFrameReader *m_pColorFrameReader;
 	IInfraredFrameReader *m_pInfraredFrameReader;
-	USHORT *m_pDepthBuff;
+	//USHORT *m_pDepthBuff;
 	//
+
+	cSensorBuffer m_sensorBuff;
 
 	// Update Every Time
 	INT64 m_nTime;
@@ -66,12 +81,3 @@ public:
 	vector<sAreaFloor*> m_areaBuff;
 	int m_areaFloorCnt;
 };
-
-
-// Kinect V2
-static const int cDepthWidth = 512;
-static const int cDepthHeight = 424;
-static const int cColorWidth = 1920;
-static const int cColorHeight = 1080;
-static const int cInfraredWidth = 512;
-static const int cInfraredHeight = 424;
