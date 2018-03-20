@@ -18,7 +18,6 @@ static const int g_baslerDepthWidth = 640;
 static const int g_baslerDepthHeight = 480;
 
 
-
 class cRoot
 {
 public:
@@ -49,7 +48,6 @@ public:
 	IDepthFrameReader *m_pDepthFrameReader;
 	IColorFrameReader *m_pColorFrameReader;
 	IInfraredFrameReader *m_pInfraredFrameReader;
-	//USHORT *m_pDepthBuff;
 	//
 
 	cSensorBuffer m_sensorBuff;

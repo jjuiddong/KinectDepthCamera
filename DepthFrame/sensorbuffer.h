@@ -30,14 +30,11 @@ public:
 	void MeasureVolume(graphic::cRenderer &renderer);
 	void Clear();
 
-
-protected:
 	bool ProcessKinectDepthBuff(graphic::cRenderer &renderer
 		, INT64 nTime
 		, const USHORT* pBuffer
 		, USHORT nMinDepth
 		, USHORT nMaxDepth);
-
 
 
 public:

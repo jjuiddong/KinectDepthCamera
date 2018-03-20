@@ -75,7 +75,8 @@ void cInputView::OnRender(const float deltaSeconds)
 					{
 						selectIdx = i;
 						m_selectPath = str.ansi(); // change UTF8 -> UTF16
-						((cViewer*)g_application)->m_3dView->ReadPlyFile(str.ansi().c_str());
+						g_root.m_sensorBuff.ReadPlyFile(
+							((cViewer*)g_application)->m_3dView->GetRenderer(), str.ansi().c_str());
 
 						// Popup Menu
 						if (ImGui::IsItemClicked(1))

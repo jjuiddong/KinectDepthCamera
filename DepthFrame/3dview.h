@@ -18,16 +18,6 @@ public:
 	virtual void OnResizeEnd(const framework::eDockResize::Enum type, const common::sRectf &rect) override;
 	virtual void OnEventProc(const sf::Event &evt) override;
 	virtual void OnResetDevice() override;
-	bool ReadPlyFile(const string &fileName);
-
-
-public:
-	//bool ProcessDepth(INT64 nTime, const UINT16* pBuffer, int nWidth, int nHeight, USHORT nMinDepth, USHORT nMaxDepth);
-	//inline common::Vector3 Get3DPos(const int x, const int y, USHORT nMinDepth, USHORT nMaxDepth);
-	//inline common::Vector3 GetVertex(const int x, const int y);
-	//common::Vector3 PickVertex(const common::Ray &ray);
-	//void ChangeSpace();
-	//void MeasureVolume();
 
 
 protected:
@@ -47,9 +37,6 @@ public:
 	bool m_showSensorPlane;
 	bool m_showPointCloud;
 	bool m_showBoxAreaPointCloud;
-	//int m_pointCloudCount;
-	//graphic::cVertexBuffer m_vtxBuff;
-	//vector<common::Vector3> m_vertices;
 
 	struct eState {
 		enum Enum {
@@ -63,12 +50,10 @@ public:
 	bool m_isGenVolumeCenter;
 	int m_genPlane;
 	common::Vector3 m_planePos[3];
-	//common::Plane m_plane;
 
 	graphic::cDbgSphere m_sphere;
 	graphic::cGridLine m_planeGrid;
 	graphic::cDbgLine m_volumeCenterLine;
-	//common::Vector3 m_volumeCenter;
 	common::Vector3 m_pickPos;
 
 	// MouseMove Variable

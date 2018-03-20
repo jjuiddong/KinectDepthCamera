@@ -1,6 +1,7 @@
 
 #include "stdafx.h"
 #include "sensorbuffer.h"
+#include "plyreader.h"
 
 using namespace graphic;
 
@@ -8,6 +9,7 @@ using namespace graphic;
 cSensorBuffer::cSensorBuffer()
 	: m_width(0)
 	, m_height(0)
+	, m_plane(Vector3(0, 0, 0), 0)
 {
 }
 
@@ -81,6 +83,69 @@ bool cSensorBuffer::ReadPlyFile(cRenderer &renderer, const string &fileName)
 		m_vtxBuff.Create(renderer, w * h, sizeof(sVertex), D3D11_USAGE_DYNAMIC);
 	}
 
+	cPlyReader reader;
+	if (!reader.Read(fileName))
+		return false;
+
+	Transform tfm;
+	tfm.scale = Vector3(1, 1, 1)*0.1f;
+	const Matrix44 tm = tfm.GetMatrix();
+
+	for (u_int i = 0; i < reader.m_vertices.size(); ++i)
+		m_vertices[i] = reader.m_vertices[i] * tm;
+
+	// Update Point Cloud
+	m_pointCloudCount = 0;
+	if (sVertex *dst = (sVertex*)m_vtxBuff.Lock(renderer))
+	{
+		int cnt = 0;
+		for (int i = 0; i < m_height; ++i)
+		{
+			for (int k = 0; k < m_width; ++k)
+			{
+				const Vector3 p1 = GetVertex(k, i);
+				const Vector3 p2 = GetVertex(k - 1, i);
+				const Vector3 p3 = GetVertex(k, i - 1);
+				const Vector3 p4 = GetVertex(k + 1, i);
+				const Vector3 p5 = GetVertex(k, i + 1);
+
+				const float l1 = p1.Distance(p2);
+				const float l2 = p1.Distance(p3);
+				const float l3 = p1.Distance(p4);
+				const float l4 = p1.Distance(p5);
+
+				//const float maxDist = g_root.m_depthDensity;
+				//if ((l1 > maxDist)
+				//	|| (l2 > maxDist)
+				//	|| (l3 > maxDist)
+				//	|| (l4 > maxDist)
+				//	)
+				//	continue;
+
+				if (p1.IsEmpty())
+					continue;
+
+				//dst->p = p1;
+				//m_vertices[cnt++] = p1;
+
+				//dst->p = m_vertices[cnt++];
+				dst->p = p1;
+
+				++cnt;
+				++dst;
+				++m_pointCloudCount;
+			}
+		}
+
+		m_vtxBuff.Unlock(renderer);
+
+		for (u_int i = (u_int)cnt; i < m_vertices.size(); ++i)
+			m_vertices[i] = Vector3(0, 0, 0);
+	}
+
+	if (!m_plane.N.IsEmpty())
+		ChangeSpace(renderer);
+
 	return true;
 }
 
@@ -106,9 +171,9 @@ bool cSensorBuffer::ProcessKinectDepthBuff(cRenderer &renderer
 	{
 		int cnt = 0;
 
-		for (int i = 0; i < g_kinectDepthHeight; ++i)
+		for (int i = 0; i < m_width; ++i)
 		{
-			for (int k = 0; k < g_kinectDepthWidth; ++k)
+			for (int k = 0; k < m_height; ++k)
 			{
 				const Vector3 p1 = GetVertex(k, i);
 				const Vector3 p2 = GetVertex(k - 1, i);
@@ -191,8 +256,9 @@ Vector3 cSensorBuffer::PickVertex(const Ray &ray)
 	Vector3 mostNearVertex;
 	float maxDot = 0;
 
-	for (auto &vtx : g_root.m_sensorBuff.m_vertices)
+	for (int i=0; i < m_pointCloudCount; ++i)
 	{
+		auto &vtx = m_vertices[i];
 		const Vector3 p = vtx;
 		const Vector3 v = (p - ray.orig).Normal();
 		const float d = abs(ray.dir.DotProduct(v));
@@ -224,23 +290,23 @@ void cSensorBuffer::ChangeSpace(cRenderer &renderer)
 	Vector3 center = m_volumeCenter * tm;
 	center.y = 0;
 
-	for (u_int i = 0; i < g_root.m_sensorBuff.m_vertices.size(); ++i)
+	for (u_int i = 0; i < m_vertices.size(); ++i)
 	{
-		Vector3 pos = g_root.m_sensorBuff.m_vertices[i];
-		g_root.m_sensorBuff.m_vertices[i] = pos * tm;
-		g_root.m_sensorBuff.m_vertices[i].y += m_plane.D;
-		g_root.m_sensorBuff.m_vertices[i].x -= center.x;
-		g_root.m_sensorBuff.m_vertices[i].z -= center.z;
+		Vector3 pos = m_vertices[i];
+		m_vertices[i] = pos * tm;
+		m_vertices[i].y += m_plane.D;
+		m_vertices[i].x -= center.x;
+		m_vertices[i].z -= center.z;
 	}
 
-	if (sVertex *dst = (sVertex*)g_root.m_sensorBuff.m_vtxBuff.Lock(renderer))
+	if (sVertex *dst = (sVertex*)m_vtxBuff.Lock(renderer))
 	{
-		for (u_int i = 0; i < g_root.m_sensorBuff.m_vertices.size(); ++i)
+		for (u_int i = 0; i < m_vertices.size(); ++i)
 		{
-			dst->p = g_root.m_sensorBuff.m_vertices[i];
+			dst->p = m_vertices[i];
 			++dst;
 		}
-		g_root.m_sensorBuff.m_vtxBuff.Unlock(renderer);
+		m_vtxBuff.Unlock(renderer);
 	}
 }
 
@@ -251,7 +317,7 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 	g_root.m_distribCount = 0;
 	ZeroMemory(g_root.m_hDistrib, sizeof(g_root.m_hDistrib));
 
-	for (auto &vtx : g_root.m_sensorBuff.m_vertices)
+	for (auto &vtx : m_vertices)
 	{
 		if (abs(vtx.x) > 15.f)
 			continue;
@@ -309,7 +375,7 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 		if (g_root.m_areaBuff.size() <= floor)
 		{
 			cVertexBuffer *vtxBuff = new cVertexBuffer();
-			vtxBuff->Create(renderer, g_kinectDepthHeight*g_kinectDepthWidth, sizeof(sVertex), D3D11_USAGE_DYNAMIC);
+			vtxBuff->Create(renderer, m_width*m_height, sizeof(sVertex), D3D11_USAGE_DYNAMIC);
 
 			cRoot::sAreaFloor *areaFloor = new cRoot::sAreaFloor;
 			areaFloor->vtxBuff = vtxBuff;
@@ -325,7 +391,7 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 		// Generate AreaFloor Vertex
 		if (sVertex *dst = (sVertex*)areaFloor->vtxBuff->Lock(renderer))
 		{
-			for (auto &vtx : g_root.m_sensorBuff.m_vertices)
+			for (auto &vtx : m_vertices)
 			{
 				if (abs(vtx.x) > 15.f)
 					continue;
