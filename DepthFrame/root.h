@@ -62,11 +62,11 @@ public:
 	int m_distribCount;
 	int m_areaCount;
 	int m_heightErr[2]; // Upper, Lower
-	float m_hDistrib[150]; // 0 ~ 10 분포, 0.1 단위
-	int m_areaMin;
-	int m_areaMax;
-	sGraph<150> m_hDistribDifferential; // 2 differential
-	sGraph<100> m_areaGraph;
+	float m_hDistrib[2000]; // 0 ~ 2000 분포, 0.1cm 단위
+	//int m_areaMin;
+	//int m_areaMax;
+	sGraph<2000> m_hDistribDifferential; // 2 differential
+	//sGraph<100> m_areaGraph;
 
 	struct sAreaFloor
 	{
