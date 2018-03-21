@@ -12,5 +12,4 @@ public:
 	virtual ~cAnalysisView();
 
 	virtual void OnRender(const float deltaSeconds) override;
-
 };

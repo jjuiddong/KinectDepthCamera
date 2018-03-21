@@ -7,6 +7,8 @@ using namespace framework;
 
 cDepthView::cDepthView(const string &name)
 	: framework::cDockWindow(name)
+	, m_thresholdMin(0)
+	, m_thresholdMax(50000)
 {
 }
 
@@ -33,7 +35,35 @@ void cDepthView::OnRender(const float deltaSeconds)
 			, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
 	}
 
+	ImVec2 pos = ImGui::GetCursorScreenPos();
 	ImGui::Image(m_depthTexture.m_texSRV, ImVec2(m_rect.Width() - 15, m_rect.Height() - 50));
+
+	// HUD
+	const float windowAlpha = 0.0f;
+	bool isOpen = true;
+	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
+	ImGui::SetNextWindowPos(pos);
+	ImGui::SetNextWindowSize(ImVec2(min(m_rect.Width() - 15, 500), 250));
+	if (ImGui::Begin("DepthView Info", &isOpen, ImVec2(min(m_rect.Width() - 15, 500), 250.f), windowAlpha, flags))
+	{
+		bool isUpdate = false;
+		if (ImGui::DragInt("Threshold Min", &m_thresholdMin, 100, 0, USHORT_MAX))
+			isUpdate = true;
+		if (ImGui::DragInt("Threshold Max", &m_thresholdMax, 100, 1, USHORT_MAX))
+			isUpdate = true;
+
+		m_thresholdMin = min(m_thresholdMin, m_thresholdMax);
+		m_thresholdMax = max(m_thresholdMin, m_thresholdMax);
+
+		if (isUpdate)
+		{
+			ProcessDepth(g_root.m_nTime, &g_root.m_sensorBuff.m_depthBuff[0]
+				, g_root.m_sensorBuff.m_width, g_root.m_sensorBuff.m_height
+				, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
+		}
+
+		ImGui::End();
+	}
 }
 
 
@@ -49,37 +79,33 @@ void cDepthView::ProcessDepth(INT64 nTime
 		m_depthTexture.Create(GetRenderer(), nWidth, nHeight, DXGI_FORMAT_R32_FLOAT);
 	}
 
-	// Make sure we've received valid data
-	//if (pBuffer && (nWidth == g_kinectDepthWidth) && (nHeight == g_kinectDepthHeight))
+	// Update Texture
+	cRenderer &renderer = GetRenderer();
+	D3D11_MAPPED_SUBRESOURCE map;
+	if (BYTE *dst = (BYTE*)m_depthTexture.Lock(renderer, map))
 	{
-		// Update Texture
-		cRenderer &renderer = GetRenderer();
-		D3D11_MAPPED_SUBRESOURCE map;
-		if (BYTE *dst = (BYTE*)m_depthTexture.Lock(renderer, map))
+		for (int i = 0; i < nHeight; ++i)
 		{
-			for (int i = 0; i < nHeight; ++i)
+			for (int k = 0; k < nWidth; ++k)
 			{
-				for (int k = 0; k < nWidth; ++k)
-				{
-					USHORT depth = pBuffer[i * nWidth + k];
-					BYTE *p = dst + (i * map.RowPitch) + (k * 4);
-					//*(float*)p = max(0, (float)(depth - g_root.m_depthThresholdMin) / (g_root.m_depthThresholdMax - g_root.m_depthThresholdMin));
-					*(float*)p = max(0, abs((float)(depth - 4000.f) / 4000.f));
+				USHORT depth = pBuffer[i * nWidth + k];
+				BYTE *p = dst + (i * map.RowPitch) + (k * 4);
+				//*(float*)p = max(0, (float)(depth - g_root.m_depthThresholdMin) / (g_root.m_depthThresholdMax - g_root.m_depthThresholdMin));
+				*(float*)p = max(0, (float)(depth - m_thresholdMin) / (float)(m_thresholdMax - m_thresholdMin));
 
 
-					//USHORT depth = pBuffer[i * nWidth + k];
-					//BYTE intensity = static_cast<BYTE>((depth >= nMinDepth) && (depth <= nMaxDepth) ? (depth % 256) : 0);
+				//USHORT depth = pBuffer[i * nWidth + k];
+				//BYTE intensity = static_cast<BYTE>((depth >= nMinDepth) && (depth <= nMaxDepth) ? (depth % 256) : 0);
 
-					//BYTE *p = dst + (i * map.RowPitch) + (k * 4);
-					//*p = intensity;
-					//*(p + 1) = intensity;
-					//*(p + 2) = intensity;
-					//*(p + 3) = 0xFF;
-				}
+				//BYTE *p = dst + (i * map.RowPitch) + (k * 4);
+				//*p = intensity;
+				//*(p + 1) = intensity;
+				//*(p + 2) = intensity;
+				//*(p + 3) = 0xFF;
 			}
-
-			m_depthTexture.Unlock(renderer);
 		}
+
+		m_depthTexture.Unlock(renderer);
 	}
 }
 

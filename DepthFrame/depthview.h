@@ -21,4 +21,6 @@ protected:
 
 public:
 	graphic::cTexture m_depthTexture;
+	int m_thresholdMin;
+	int m_thresholdMax;
 };

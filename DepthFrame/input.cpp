@@ -75,11 +75,19 @@ void cInputView::OnRender(const float deltaSeconds)
 					if (ImGui::IsItemClicked() || ImGui::IsItemClicked(1))
 					{
 						selectIdx = i;
-						m_selectPath = str.ansi(); // change UTF8 -> UTF16
-						//g_root.m_sensorBuff.ReadPlyFile(
-						//	((cViewer*)g_application)->m_3dView->GetRenderer(), str.ansi().c_str());
-						g_root.m_sensorBuff.ReadDatFile(
-							((cViewer*)g_application)->m_3dView->GetRenderer(), str.ansi().c_str());
+						common::StrPath ansifileName = str.ansi();// change UTF8 -> UTF16
+						m_selectPath = ansifileName;
+
+						if (string(".ply") == ansifileName.GetFileExt())
+						{
+							g_root.m_sensorBuff.ReadPlyFile(
+								((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
+						}
+						else if (string(".pcd") == ansifileName.GetFileExt())
+						{
+							g_root.m_sensorBuff.ReadDatFile(
+								((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
+						}
 
 						// Popup Menu
 						if (ImGui::IsItemClicked(1))

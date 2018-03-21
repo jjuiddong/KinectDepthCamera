@@ -138,7 +138,7 @@ void c3DView::OnPreRender(const float deltaSeconds)
 				renderer.m_cbMaterial.Update(renderer, 2);
 				areaFloor->vtxBuff->Bind(renderer);
 				renderer.GetDevContext()->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
-				renderer.GetDevContext()->DrawInstanced(areaFloor->areaCnt, 1, 0, 0);
+				//renderer.GetDevContext()->DrawInstanced(areaFloor->areaCnt, 1, 0, 0);
 			}
 		}
 	}

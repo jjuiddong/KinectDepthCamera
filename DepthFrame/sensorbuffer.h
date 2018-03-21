@@ -7,6 +7,8 @@
 #pragma once
 
 
+#include "graphbuff.h"
+
 class cSensorBuffer
 {
 public:
@@ -29,6 +31,7 @@ public:
 	void GeneratePlane(common::Vector3 pos[3]);
 	void ChangeSpace(graphic::cRenderer &renderer);
 	void MeasureVolume(graphic::cRenderer &renderer);
+	void AnalysisDepth();
 	void Clear();
 
 	bool ProcessKinectDepthBuff(graphic::cRenderer &renderer
@@ -42,11 +45,15 @@ public:
 	int m_width;
 	int m_height;
 	int m_pointCloudCount;
-	vector<USHORT> m_depthBuff;
-	vector<USHORT> m_depthBuff2;
+	vector<USHORT> m_depthBuff; // intensity
+	vector<USHORT> m_depthBuff2; // confidence
 	vector<common::Vector3> m_vertices;
 	vector<graphic::cColor> m_colors;
 	common::Plane m_plane;
 	common::Vector3 m_volumeCenter;
 	graphic::cVertexBuffer m_vtxBuff;
+
+	// Analysis
+	sGraph<50000> m_analysis1;
+	sGraph<50000> m_analysis2;
 };

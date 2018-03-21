@@ -80,6 +80,7 @@ bool cSensorBuffer::ReadPlyFile(cRenderer &renderer, const string &fileName)
 		m_vertices.resize(w * h);
 		m_colors.resize(w * h);
 		m_depthBuff.resize(w * h);
+		m_depthBuff2.resize(w * h);
 		m_vtxBuff.Clear();
 		m_vtxBuff.Create(renderer, w * h, sizeof(sVertex), D3D11_USAGE_DYNAMIC);
 	}
@@ -94,6 +95,8 @@ bool cSensorBuffer::ReadPlyFile(cRenderer &renderer, const string &fileName)
 
 	for (u_int i = 0; i < reader.m_vertices.size(); ++i)
 		m_vertices[i] = reader.m_vertices[i] * tm;
+	for (u_int i = reader.m_vertices.size(); i < w*h; ++i)
+		m_vertices[i] = Vector3(0,0,0);
 
 	// Update Point Cloud
 	m_pointCloudCount = 0;
@@ -566,6 +569,36 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 	//	g_root.m_areaMin = g_root.m_areaCount;
 
 	//g_root.m_areaGraph.AddValue((float)g_root.m_areaCount);
+}
+
+
+void cSensorBuffer::AnalysisDepth()
+{
+	// Analyze m_depthBuff
+	int buff1[50000];
+	ZeroMemory(buff1, sizeof(buff1));
+	for (u_int i = 0; i < m_depthBuff.size(); ++i)
+	{
+		if (ARRAYSIZE(buff1) > m_depthBuff[i])
+			++buff1[m_depthBuff[i]];
+	}
+
+	ZeroMemory(&m_analysis1, sizeof(m_analysis1));
+	for (u_int i = 0; i < ARRAYSIZE(buff1); ++i)
+		m_analysis1.AddValue((float)buff1[i]);
+
+	// Analyze m_depthBuff2
+	int buff2[50000];
+	ZeroMemory(buff2, sizeof(buff2));
+	for (u_int i = 0; i < m_depthBuff2.size(); ++i)
+	{
+		if (ARRAYSIZE(buff1) > m_depthBuff2[i])
+			++buff2[m_depthBuff2[i]];
+	}
+
+	ZeroMemory(&m_analysis2, sizeof(m_analysis2));
+	for (u_int i = 0; i < ARRAYSIZE(buff2); ++i)
+		m_analysis2.AddValue((float)buff2[i]);
 }
 
 
