@@ -409,9 +409,13 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 
 	for (auto &vtx : m_vertices)
 	{
-		if (abs(vtx.x) > 15.f)
+		//if (abs(vtx.x) > 15.f)
+		//	continue;
+		//if (abs(vtx.z) > 15.f)
+		//	continue;
+		if (abs(vtx.x) > 150.f)
 			continue;
-		if (abs(vtx.z) > 15.f)
+		if (abs(vtx.z) > 150.f)
 			continue;
 
 		const int h = (int)(vtx.y * 10.f);
@@ -447,9 +451,8 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 	}
 
 	// Generate Area Floor
-	//cRenderer &renderer = GetRenderer();
 	u_int floor = 0;
-	for (int i = 10; i < g_root.m_hDistribDifferential.size; ++i)
+	for (int i = 500; i < g_root.m_hDistribDifferential.size; ++i)
 	{
 		if (g_root.m_hDistribDifferential.values[i] <= 0)
 			continue;

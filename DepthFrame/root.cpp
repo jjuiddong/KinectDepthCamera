@@ -12,8 +12,8 @@ cRoot::cRoot()
 	//, m_pDepthBuff(NULL)
 	, m_distribCount(0)
 	, m_areaCount(0)
-	, m_areaMin(INT_MAX)
-	, m_areaMax(0)
+	//, m_areaMin(INT_MAX)
+	//, m_areaMax(0)
 	, m_areaFloorCnt(0)
 	, m_input(eInputType::FILE)
 {
@@ -29,7 +29,7 @@ cRoot::cRoot()
 
 	ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
 	ZeroMemory(&m_hDistribDifferential, sizeof(m_hDistribDifferential));	
-	ZeroMemory(&m_areaGraph, sizeof(m_areaGraph));
+	//ZeroMemory(&m_areaGraph, sizeof(m_areaGraph));
 }
 
 cRoot::~cRoot()
