@@ -162,6 +162,7 @@
   <ItemGroup>
     <ClCompile Include="analysisview.cpp" />
     <ClCompile Include="colorview.cpp" />
+    <ClCompile Include="datreader.cpp" />
     <ClCompile Include="depthframe.cpp" />
     <ClCompile Include="depthview.cpp" />
     <ClCompile Include="depthview2.cpp" />
@@ -181,6 +182,7 @@
     <ClInclude Include="3dview.h" />
     <ClInclude Include="analysisview.h" />
     <ClInclude Include="colorview.h" />
+    <ClInclude Include="datreader.h" />
     <ClInclude Include="depthframe.h" />
     <ClInclude Include="depthview.h" />
     <ClInclude Include="depthview2.h" />
