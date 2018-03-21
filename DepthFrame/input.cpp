@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "input.h"
 #include "plyreader.h"
+#include "datreader.h"
 #include "depthframe.h"
 #include "3dview.h"
 
@@ -75,7 +76,9 @@ void cInputView::OnRender(const float deltaSeconds)
 					{
 						selectIdx = i;
 						m_selectPath = str.ansi(); // change UTF8 -> UTF16
-						g_root.m_sensorBuff.ReadPlyFile(
+						//g_root.m_sensorBuff.ReadPlyFile(
+						//	((cViewer*)g_application)->m_3dView->GetRenderer(), str.ansi().c_str());
+						g_root.m_sensorBuff.ReadDatFile(
 							((cViewer*)g_application)->m_3dView->GetRenderer(), str.ansi().c_str());
 
 						// Popup Menu
@@ -121,6 +124,9 @@ void cInputView::UpdateFileList()
 		vector<WStr32> exts;
 		exts.reserve(16);
 		exts.push_back(L"ply"); exts.push_back(L"PLY");
+		exts.push_back(L"pcd"); exts.push_back(L"PCD");
+		exts.push_back(L"pcd2"); exts.push_back(L"PCD2");
+
 		vector<WStrPath> out;
 		out.reserve(256);
 		common::CollectFiles(exts, L"../media/", out);

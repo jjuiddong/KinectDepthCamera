@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "sensorbuffer.h"
 #include "plyreader.h"
+#include "datreader.h"
 
 using namespace graphic;
 
@@ -93,6 +94,95 @@ bool cSensorBuffer::ReadPlyFile(cRenderer &renderer, const string &fileName)
 
 	for (u_int i = 0; i < reader.m_vertices.size(); ++i)
 		m_vertices[i] = reader.m_vertices[i] * tm;
+
+	// Update Point Cloud
+	m_pointCloudCount = 0;
+	if (sVertex *dst = (sVertex*)m_vtxBuff.Lock(renderer))
+	{
+		int cnt = 0;
+		for (int i = 0; i < m_height; ++i)
+		{
+			for (int k = 0; k < m_width; ++k)
+			{
+				const Vector3 p1 = GetVertex(k, i);
+				const Vector3 p2 = GetVertex(k - 1, i);
+				const Vector3 p3 = GetVertex(k, i - 1);
+				const Vector3 p4 = GetVertex(k + 1, i);
+				const Vector3 p5 = GetVertex(k, i + 1);
+
+				const float l1 = p1.Distance(p2);
+				const float l2 = p1.Distance(p3);
+				const float l3 = p1.Distance(p4);
+				const float l4 = p1.Distance(p5);
+
+				//const float maxDist = g_root.m_depthDensity;
+				//if ((l1 > maxDist)
+				//	|| (l2 > maxDist)
+				//	|| (l3 > maxDist)
+				//	|| (l4 > maxDist)
+				//	)
+				//	continue;
+
+				if (p1.IsEmpty())
+					continue;
+
+				//dst->p = p1;
+				//m_vertices[cnt++] = p1;
+
+				//dst->p = m_vertices[cnt++];
+				dst->p = p1;
+
+				++cnt;
+				++dst;
+				++m_pointCloudCount;
+			}
+		}
+
+		m_vtxBuff.Unlock(renderer);
+
+		for (u_int i = (u_int)cnt; i < m_vertices.size(); ++i)
+			m_vertices[i] = Vector3(0, 0, 0);
+	}
+
+	if (!m_plane.N.IsEmpty())
+		ChangeSpace(renderer);
+
+	return true;
+}
+
+
+bool cSensorBuffer::ReadDatFile(cRenderer &renderer, const string &fileName)
+{
+	const int w = g_baslerDepthWidth;
+	const int h = g_baslerDepthHeight;
+	if (m_depthBuff.size() != (w * h))
+	{
+		m_pointCloudCount = 0;
+		m_width = w;
+		m_height = h;
+		m_vertices.resize(w * h);
+		m_colors.resize(w * h);
+		m_depthBuff.resize(w * h);
+		m_depthBuff2.resize(w * h);
+		m_vtxBuff.Clear();
+		m_vtxBuff.Create(renderer, w * h, sizeof(sVertex), D3D11_USAGE_DYNAMIC);
+	}
+
+	cDatReader reader;
+	if (!reader.Read(fileName))
+		return false;
+
+	Transform tfm;
+	tfm.scale = Vector3(1, 1, 1)*0.1f;
+	const Matrix44 tm = tfm.GetMatrix();
+
+	for (u_int i = 0; i < reader.m_vertices.size(); ++i)
+	{
+		m_vertices[i] = reader.m_vertices[i] * tm;
+		m_depthBuff[i] = reader.m_intensity[i];
+		m_depthBuff2[i] = reader.m_confidence[i];
+	}
+
 
 	// Update Point Cloud
 	m_pointCloudCount = 0;

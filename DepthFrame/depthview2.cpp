@@ -17,7 +17,7 @@ cDepthView2::~cDepthView2()
 
 bool cDepthView2::Init(graphic::cRenderer &renderer)
 {
-	m_depthTexture.Create(renderer, g_kinectDepthWidth, g_kinectDepthHeight, DXGI_FORMAT_R32_FLOAT);
+	m_depthTexture.Create(renderer, g_baslerDepthWidth, g_baslerDepthHeight, DXGI_FORMAT_R32_FLOAT);
 
 	return true;
 }
@@ -27,8 +27,8 @@ void cDepthView2::OnRender(const float deltaSeconds)
 {
 	if (g_root.m_isUpdate)
 	{
-		ProcessDepth(g_root.m_nTime, &g_root.m_sensorBuff.m_depthBuff[0]
-			, g_kinectDepthWidth, g_kinectDepthHeight
+		ProcessDepth(g_root.m_nTime, &g_root.m_sensorBuff.m_depthBuff2[0]
+			, g_root.m_sensorBuff.m_width, g_root.m_sensorBuff.m_height
 			, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
 	}
 
@@ -58,20 +58,27 @@ void cDepthView2::ProcessDepth(INT64 nTime
 	, USHORT nMaxDepth)
 {
 	// Make sure we've received valid data
-	if (pBuffer && (nWidth == g_kinectDepthWidth) && (nHeight == g_kinectDepthHeight))
+	if ((nWidth != m_depthTexture.Width()) || (nHeight != m_depthTexture.Height()))
+	{
+		m_depthTexture.Create(GetRenderer(), nWidth, nHeight, DXGI_FORMAT_R32_FLOAT);
+	}
+
+	//if (pBuffer && (nWidth == g_kinectDepthWidth) && (nHeight == g_kinectDepthHeight))
 	{
 		// Update Texture
 		cRenderer &renderer = GetRenderer();
 		D3D11_MAPPED_SUBRESOURCE map;
 		if (BYTE *dst = (BYTE*)m_depthTexture.Lock(renderer, map))
 		{
-			for (int i = 0; i < g_kinectDepthHeight; ++i)
-			{
-				for (int k = 0; k < g_kinectDepthWidth; ++k)
+			for (int i = 0; i < nHeight; ++i)
+			{	
+				for (int k = 0; k < nWidth; ++k)
 				{
-					USHORT depth = pBuffer[i * g_kinectDepthWidth + k];
+					USHORT depth = pBuffer[i * nWidth + k];
 					BYTE *p = dst + (i * map.RowPitch) + (k * 4);
-					*(float*)p = max(0, (float)(depth - g_root.m_depthThresholdMin) / (g_root.m_depthThresholdMax - g_root.m_depthThresholdMin));
+					//*(float*)p = max(0, (float)(depth - g_root.m_depthThresholdMin) / (g_root.m_depthThresholdMax - g_root.m_depthThresholdMin));
+					*(float*)p = max(0, (float)(depth - 18000.f) / 3000.f);
+
 				}
 			}
 
