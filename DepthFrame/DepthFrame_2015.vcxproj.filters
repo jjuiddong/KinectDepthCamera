@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="depthframe.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="3dview.cpp" />
+    <ClCompile Include="root.cpp" />
+    <ClCompile Include="depthview.cpp" />
+    <ClCompile Include="colorview.cpp" />
+    <ClCompile Include="infraredview.cpp" />
+    <ClCompile Include="depthview2.cpp" />
+    <ClCompile Include="analysisview.cpp" />
+    <ClCompile Include="graphbuff.cpp" />
+    <ClCompile Include="input.cpp" />
+    <ClCompile Include="plyreader.cpp" />
+    <ClCompile Include="sensorbuffer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="depthframe.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="3dview.h" />
+    <ClInclude Include="root.h" />
+    <ClInclude Include="depthview.h" />
+    <ClInclude Include="colorview.h" />
+    <ClInclude Include="infraredview.h" />
+    <ClInclude Include="depthview2.h" />
+    <ClInclude Include="analysisview.h" />
+    <ClInclude Include="graphbuff.h" />
+    <ClInclude Include="input.h" />
+    <ClInclude Include="plyreader.h" />
+    <ClInclude Include="sensorbuffer.h" />
+  </ItemGroup>
+</Project>
