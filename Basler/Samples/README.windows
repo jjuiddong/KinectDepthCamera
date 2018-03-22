@@ -1,0 +1,156 @@
+Introduction
+=============
+
+Access to ToF cameras is provided by a GenICam-compliant GenTL Producer.
+A GenTL Producer is a dynamic library implementing a standardized software
+interface for accessing the camera.
+
+The software interacting with the GenTL Producer is called a GenTL Consumer.
+Using this terminology, each of the samples is a GenTL consumer.
+
+As part of this suite of sample programs, Basler provides the ConsumerImplHelper
+C++ template library serving as an implementation helper for GenTL consumers.
+
+The GenICam GenApi library is used to access the camera parameters.
+
+For more details about GenICam, GenTL, and GenApi, refer to
+the http://www.emva.org/standards-technology/genicam/ website.
+The GenICam GenApi standard document can be downloaded from
+http://www.emva.org/wp-content/uploads/GenICam_Standard_v2_0.pdf
+The GenTL standard document can be downloaded from
+http://www.emva.org/wp-content/uploads/GenICam_GenTL_1_5.pdf
+
+
+How To Build the Samples
+=========================
+
+This folder contains solution files and project files for Microsoft Visual
+Studio 2010, (C++ samples), Visual Studio 2013 (.Net and OpenCV
+samples) and Visual Studio 2015 (point cloud library sample).
+
+1. Copy the Samples folder to a working folder of your choice. Make sure that
+   you have write access to that folder.
+2. In Visual Studio, open the solution file of your choice.
+3. On opening the sample solution for the first time, Visual Studio may ask
+   if the projects should be converted. Conversion is required if you use a
+   a higher version of Visual Studio than the one used to create the solutions. 
+   If you're converting .NET or the OpenCV solutions, the solutions will not
+   compile without errors. The project settings have to be adjusted manually.
+   For details refer to the Troubleshooting section below.
+4. Build the solution configuration of your choice.
+
+Controlling the Heartbeat Timeout
+==================================
+
+GigE Vision cameras like the ToF camera require the application to periodically
+access the camera by sending special network packets to the camera in defined
+intervals. If the camera doesn't receive these heartbeats, it will consider the
+connection as broken and won't accept any commands from the application.
+
+When you run your application, the GenTL producer for ToF cameras will normally
+generate these heartbeats. When you set a breakpoint in your application and the
+breakpoint is hit, the debugger will suspend all threads including the one
+sending the heartbeats. Therefore, when you debug your application and single-
+step through your code, no heartbeats are sent to the camera. As a result, the
+camera notices a heartbeat timeout and closes the connection. The default value
+for the heartbeat timeout is 3000 ms.
+
+To work around this, you have to extend the heartbeat timeout during 
+development. You can do this by setting an environment variable named
+GEV_HEARTBEAT_TIMEOUT to the desired timeout in milliseconds. Using Visual
+Studio, you can easily set the environment variable in the project settings for
+your debugging session (in the project properties select:
+Configuration Properties->Debugging->Environment).
+
+For convenience, the GenTL producer automatically sets the heartbeat timeout to
+5 minutes when running under a debugger. This behavior can be overridden by
+setting the GEV_HEARTBEAT_TIMEOUT environment variable as explained above.
+
+When you extend the heartbeat to a high value and stop your application without
+closing the device properly by calling the Close function, you won't be able to
+open the camera again and will receive an error stating the device is currently
+in use. This can happen if you stop your application using the debugger or if
+your application terminates unexpectedly. To open the camera again you must
+either wait until the timeout has elapsed or disconnect the network cable from
+the camera.
+
+Troubleshooting
+=================
+
+The DotNet samples fail to compile after automatic project conversion 
+---------------------------------------------------------------------
+
+Reason: The automated conversion procedure resulted in different values for 
+the "Target framework" settings of the Visual Studio projects. Due to the 
+different targeted .Net frameworks the solution fails to compile.
+
+Solution: Ensure that all projects of the solution target use the same version
+of the.NET framework, e.g., 4.5.2.
+
+
+OpenCV samples fail to compile and/or to link, or create assertions when running
+--------------------------------------------------------------------------------
+
+The Basler ToF Driver installer installs all header files, import libraries, and 
+DLLs of the OpenCV library that are required to build and run the OpenCV
+samples. The OpenCV files are located in the Samples/OpenCV/include and
+Samples/OpenCV/x86 folders.
+Import libraries and DLLs for Visual Studio 2013 are provided.
+
+The project settings are configured to use the libraries and DLLs targeting
+Visual Studio 2013.
+
+IMPORTANT NOTE:
+
+Since OpenCV always requires that the OpenCV libraries and DLLs match the Visual
+Studio version used for building an application, you manually have to adjust the
+project settings in order to use the correct version of the OpenCV libraries and
+DLLs.
+In particular, you will have to adjust the settings for the "Output Directory"
+and the "Additional Library Directories".
+
+In case you are going to use Visual Studio 2015 or newer, you cannot use the
+OpenCV files that have been installed together with the samples. Instead, you
+will have to provide an OpenCV installation that supports the Visual Studio
+version you want to use. 
+For building the OpenCV solution with Visual Studio 2015 or newer,
+the "Additional Dependencies" settings have to be adjusted as well as the
+settings mentioned above.
+
+
+The application faces an "The device is controlled by another application" error
+--------------------------------------------------------------------------------
+
+Reason: The device has already been opened by another application like the ToF
+Viewer.
+
+Solution: Close that application prior to running your application.
+
+Reason: An extended heartbeat timeout has been set and the last time the 
+application was run, it was terminated or stopped by the debugger before the
+connection to the device had been closed properly. The camera doesn't accept new
+connections until the heartbeat timeout has elapsed or the network connection is
+cut temporarily.
+
+Solution: Try not to terminate your application until it has closed the camera
+connection. If not applicable, temporarily disconnect the camera's network
+connection. Refer to the "Controlling the Heartbeat Timeout" section above for
+more details about how to control the heartbeat mechanism.
+
+
+When debugging your application, it fails to access the camera
+--------------------------------------------------------------
+
+Reason: The application has been suspended for more than 5 minutes. The camera
+has automatically closed the connection.
+
+Solution: Extend the heartbeat timeout as described in the "Controlling the
+Heartbeat Timeout" section above.
+
+Reason: You attached the debugger to the process after the application
+established the connection to the camera. In that case, the default heartbeat
+timeout of 3 seconds causes the camera to close the connection if you hit a
+breakpoint or single-step through the application.
+
+Solution: Extend the heartbeat timeout as described in the "Controlling the
+Heartbeat Timeout" section above.

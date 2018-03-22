@@ -38,6 +38,18 @@ void cInputView::OnRender(const float deltaSeconds)
 	ImGui::SameLine();
 	ImGui::RadioButton("Basler", (int*)&g_root.m_input, cRoot::eInputType::BASLER);
 	ImGui::Spacing();
+
+	ImGui::Text(g_root.m_baslerSetupSuccess? "BaslerCamera - Connect" : "BaslerCamera - Off");
+	ImGui::SameLine();
+	if (ImGui::Button("BaslerCamera Capture"))
+	{
+		if (g_root.m_baslerSetupSuccess)
+		{
+
+		}		
+	}
+
+	ImGui::Spacing();
 	ImGui::Separator();
 	ImGui::Spacing();
 

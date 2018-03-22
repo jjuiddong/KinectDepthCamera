@@ -1,0 +1,290 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SyncFreerun.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\include\GenTL\GenTL_v1_5.h">
+      <Filter>Header Files\GenTL</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenTL\PFNC.h">
+      <Filter>Header Files\GenTL</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ConsumerImplHelper\GenTLCamera.h">
+      <Filter>Header Files\ConsumerImplHelper</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ConsumerImplHelper\ProducerProxy.h">
+      <Filter>Header Files\ConsumerImplHelper</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ConsumerImplHelper\ToFCamera.h">
+      <Filter>Header Files\ConsumerImplHelper</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ConsumerImplHelper\DynamicLib.h">
+      <Filter>Header Files\ConsumerImplHelper</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ConsumerImplHelper\BufferAllocator.h">
+      <Filter>Header Files\ConsumerImplHelper</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ConsumerImplHelper\Platform.h">
+      <Filter>Header Files\ConsumerImplHelper</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ConsumerImplHelper\GrabResources.h">
+      <Filter>Header Files\ConsumerImplHelper</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Base\GCArray.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Base\GCBase.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Base\GCError.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Base\GCException.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Base\GCLinkage.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Base\GCNamespace.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Base\GCRTSSUtilities.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Base\GCString.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Base\GCStringVector.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Base\GCSynch.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Base\GCTypes.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Base\GCUtilities.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\Autovector.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\ChunkAdapter.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\ChunkAdapterDcam.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\ChunkAdapterGeneric.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\ChunkAdapterGEV.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\ChunkAdapterU3V.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\ChunkPort.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\Compatibility.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\Container.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\Counter.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\DLLLoad.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\EnumClasses.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\EventAdapter.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\EventAdapter1394.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\EventAdapterCL.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\EventAdapterGeneric.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\EventAdapterGEV.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\EventAdapterU3V.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\EventPort.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\Filestream.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\GenApi.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\GenApiDll.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\GenApiLinkage.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\GenApiNamespace.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\GenApiVersion.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\IBase.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\IBoolean.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\ICategory.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\IChunkPort.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\ICommand.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\IDestroy.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\IDeviceInfo.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\IEnumEntry.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\IEnumeration.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\IEnumerationT.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\IFloat.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\IInteger.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\INode.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\INodeMap.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\INodeMapDyn.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\IPort.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\IPortConstruct.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\IPortRecorder.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\IRegister.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\ISelector.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\ISelectorDigit.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\IString.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\IUserData.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\IValue.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\NodeCallback.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\NodeMapFactory.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\NodeMapRef.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\Persistence.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\Pointer.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\PortImpl.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\PortWriteList.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\Reference.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\RegisterSetHelper.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\SelectorSet.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\StructPort.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\Synch.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\GenApi\Types.h">
+      <Filter>Header Files\GenApi</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StopWatch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\GenTL">
+      <UniqueIdentifier>{78935aa0-040e-45c1-941a-488b1b76ed86}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ConsumerImplHelper">
+      <UniqueIdentifier>{fed797bb-67e6-4a1c-8d93-226aeefe9518}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\GenApi">
+      <UniqueIdentifier>{0ad2f2af-72bf-4195-adb5-7a485d1de98d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{b710ae32-8820-47fa-8caa-aa110902fe58}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,283 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{E69160AE-E8FE-4635-A13E-E018DC51D005}</ProjectGuid>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <Keyword>ManagedCProj</Keyword>
+    <RootNamespace>DotNetSample</RootNamespace>
+    <ProjectName>ToFCameraWrapper</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CLRSupport>true</CLRSupport>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CLRSupport>true</CLRSupport>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <CLRSupport>true</CLRSupport>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <CLRSupport>true</CLRSupport>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(ProjectDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(ProjectDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(ProjectDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(ProjectDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(BASLER_TOF_INC);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(BASLER_TOF_LIB)\win32</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>GCBase_MD_VC120_v3_0_Basler_pylon_v5_0.dll;GenApi_MD_VC120_v3_0_Basler_pylon_v5_0.dll</DelayLoadDLLs>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(BASLER_TOF_INC);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(BASLER_TOF_LIB)\x64</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>GCBase_MD_VC120_v3_0_Basler_pylon_v5_0.dll;GenApi_MD_VC120_v3_0_Basler_pylon_v5_0.dll</DelayLoadDLLs>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(BASLER_TOF_INC);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(BASLER_TOF_LIB)\win32</AdditionalLibraryDirectories>
+      <NoEntryPoint>true</NoEntryPoint>
+      <DelayLoadDLLs>GCBase_MD_VC120_v3_0_Basler_pylon_v5_0.dll;GenApi_MD_VC120_v3_0_Basler_pylon_v5_0.dll</DelayLoadDLLs>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(BASLER_TOF_INC);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(BASLER_TOF_LIB)\x64</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>GCBase_MD_VC120_v3_0_Basler_pylon_v5_0.dll;GenApi_MD_VC120_v3_0_Basler_pylon_v5_0.dll</DelayLoadDLLs>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\include\ConsumerImplHelper\BufferAllocator.h" />
+    <ClInclude Include="..\..\..\include\ConsumerImplHelper\DynamicLib.h" />
+    <ClInclude Include="..\..\..\include\ConsumerImplHelper\GenTLCamera.h" />
+    <ClInclude Include="..\..\..\include\ConsumerImplHelper\Platform.h" />
+    <ClInclude Include="..\..\..\include\ConsumerImplHelper\ProducerProxy.h" />
+    <ClInclude Include="..\..\..\include\ConsumerImplHelper\ToFCamera.h" />
+    <ClInclude Include="..\..\..\include\ConsumerImplHelper\GrabResources.h" />
+    <ClInclude Include="..\..\..\include\ConsumerImplHelper\WaitObject.h" />
+    <ClInclude Include="..\..\..\include\GenTL\GenTL_v1_5.h" />
+    <ClInclude Include="..\..\..\include\GenTL\PFNC.h" />
+    <ClInclude Include="..\..\..\include\Base\GCArray.h" />
+    <ClInclude Include="..\..\..\include\Base\GCBase.h" />
+    <ClInclude Include="..\..\..\include\Base\GCError.h" />
+    <ClInclude Include="..\..\..\include\Base\GCException.h" />
+    <ClInclude Include="..\..\..\include\Base\GCLinkage.h" />
+    <ClInclude Include="..\..\..\include\Base\GCNamespace.h" />
+    <ClInclude Include="..\..\..\include\Base\GCRTSSUtilities.h" />
+    <ClInclude Include="..\..\..\include\Base\GCString.h" />
+    <ClInclude Include="..\..\..\include\Base\GCStringVector.h" />
+    <ClInclude Include="..\..\..\include\Base\GCSynch.h" />
+    <ClInclude Include="..\..\..\include\Base\GCTypes.h" />
+    <ClInclude Include="..\..\..\include\Base\GCUtilities.h" />
+    <ClInclude Include="..\..\..\include\GenApi\Autovector.h" />
+    <ClInclude Include="..\..\..\include\GenApi\ChunkAdapter.h" />
+    <ClInclude Include="..\..\..\include\GenApi\ChunkAdapterDcam.h" />
+    <ClInclude Include="..\..\..\include\GenApi\ChunkAdapterGeneric.h" />
+    <ClInclude Include="..\..\..\include\GenApi\ChunkAdapterGEV.h" />
+    <ClInclude Include="..\..\..\include\GenApi\ChunkAdapterU3V.h" />
+    <ClInclude Include="..\..\..\include\GenApi\ChunkPort.h" />
+    <ClInclude Include="..\..\..\include\GenApi\Compatibility.h" />
+    <ClInclude Include="..\..\..\include\GenApi\Container.h" />
+    <ClInclude Include="..\..\..\include\GenApi\Counter.h" />
+    <ClInclude Include="..\..\..\include\GenApi\DLLLoad.h" />
+    <ClInclude Include="..\..\..\include\GenApi\EnumClasses.h" />
+    <ClInclude Include="..\..\..\include\GenApi\EventAdapter.h" />
+    <ClInclude Include="..\..\..\include\GenApi\EventAdapter1394.h" />
+    <ClInclude Include="..\..\..\include\GenApi\EventAdapterCL.h" />
+    <ClInclude Include="..\..\..\include\GenApi\EventAdapterGeneric.h" />
+    <ClInclude Include="..\..\..\include\GenApi\EventAdapterGEV.h" />
+    <ClInclude Include="..\..\..\include\GenApi\EventAdapterU3V.h" />
+    <ClInclude Include="..\..\..\include\GenApi\EventPort.h" />
+    <ClInclude Include="..\..\..\include\GenApi\Filestream.h" />
+    <ClInclude Include="..\..\..\include\GenApi\GenApi.h" />
+    <ClInclude Include="..\..\..\include\GenApi\GenApiDll.h" />
+    <ClInclude Include="..\..\..\include\GenApi\GenApiLinkage.h" />
+    <ClInclude Include="..\..\..\include\GenApi\GenApiNamespace.h" />
+    <ClInclude Include="..\..\..\include\GenApi\GenApiVersion.h" />
+    <ClInclude Include="..\..\..\include\GenApi\IBase.h" />
+    <ClInclude Include="..\..\..\include\GenApi\IBoolean.h" />
+    <ClInclude Include="..\..\..\include\GenApi\ICategory.h" />
+    <ClInclude Include="..\..\..\include\GenApi\IChunkPort.h" />
+    <ClInclude Include="..\..\..\include\GenApi\ICommand.h" />
+    <ClInclude Include="..\..\..\include\GenApi\IDestroy.h" />
+    <ClInclude Include="..\..\..\include\GenApi\IDeviceInfo.h" />
+    <ClInclude Include="..\..\..\include\GenApi\IEnumEntry.h" />
+    <ClInclude Include="..\..\..\include\GenApi\IEnumeration.h" />
+    <ClInclude Include="..\..\..\include\GenApi\IEnumerationT.h" />
+    <ClInclude Include="..\..\..\include\GenApi\IFloat.h" />
+    <ClInclude Include="..\..\..\include\GenApi\IInteger.h" />
+    <ClInclude Include="..\..\..\include\GenApi\INode.h" />
+    <ClInclude Include="..\..\..\include\GenApi\INodeMap.h" />
+    <ClInclude Include="..\..\..\include\GenApi\INodeMapDyn.h" />
+    <ClInclude Include="..\..\..\include\GenApi\IPort.h" />
+    <ClInclude Include="..\..\..\include\GenApi\IPortConstruct.h" />
+    <ClInclude Include="..\..\..\include\GenApi\IPortRecorder.h" />
+    <ClInclude Include="..\..\..\include\GenApi\IRegister.h" />
+    <ClInclude Include="..\..\..\include\GenApi\ISelector.h" />
+    <ClInclude Include="..\..\..\include\GenApi\ISelectorDigit.h" />
+    <ClInclude Include="..\..\..\include\GenApi\IString.h" />
+    <ClInclude Include="..\..\..\include\GenApi\IUserData.h" />
+    <ClInclude Include="..\..\..\include\GenApi\IValue.h" />
+    <ClInclude Include="..\..\..\include\GenApi\NodeCallback.h" />
+    <ClInclude Include="..\..\..\include\GenApi\NodeMapFactory.h" />
+    <ClInclude Include="..\..\..\include\GenApi\NodeMapRef.h" />
+    <ClInclude Include="..\..\..\include\GenApi\Persistence.h" />
+    <ClInclude Include="..\..\..\include\GenApi\Pointer.h" />
+    <ClInclude Include="..\..\..\include\GenApi\PortImpl.h" />
+    <ClInclude Include="..\..\..\include\GenApi\PortWriteList.h" />
+    <ClInclude Include="..\..\..\include\GenApi\Reference.h" />
+    <ClInclude Include="..\..\..\include\GenApi\RegisterSetHelper.h" />
+    <ClInclude Include="..\..\..\include\GenApi\SelectorSet.h" />
+    <ClInclude Include="..\..\..\include\GenApi\StructPort.h" />
+    <ClInclude Include="..\..\..\include\GenApi\Synch.h" />
+    <ClInclude Include="..\..\..\include\GenApi\Types.h" />
+    <ClInclude Include="Converter.h" />
+    <ClInclude Include="Native.h" />
+    <ClInclude Include="ToFCameraWrapper.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="Stdafx.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AssemblyInfo.cpp" />
+    <ClCompile Include="Converter.cpp" />
+    <ClCompile Include="Native.cpp">
+      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</CompileAsManaged>
+      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</CompileAsManaged>
+      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</CompileAsManaged>
+      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</CompileAsManaged>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="ToFCameraWrapper.cpp" />
+    <ClCompile Include="Stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="app.rc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

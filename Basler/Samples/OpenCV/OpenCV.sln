@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShowPointCloud", "ShowPointCloud\ShowPointCloud.vcxproj", "{E201DC09-5895-4DE0-AC9A-D1142DAB621D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{749B41F4-E615-41D2-B79E-7DDA691F0A51}"
+	ProjectSection(SolutionItems) = preProject
+		..\README.windows = ..\README.windows
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E201DC09-5895-4DE0-AC9A-D1142DAB621D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E201DC09-5895-4DE0-AC9A-D1142DAB621D}.Debug|Win32.Build.0 = Debug|Win32
+		{E201DC09-5895-4DE0-AC9A-D1142DAB621D}.Release|Win32.ActiveCfg = Release|Win32
+		{E201DC09-5895-4DE0-AC9A-D1142DAB621D}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

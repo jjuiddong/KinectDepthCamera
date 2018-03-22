@@ -5,6 +5,8 @@
 
 #include "graphbuff.h"
 #include "sensorbuffer.h"
+#include <ConsumerImplHelper/ToFCamera.h>
+using namespace GenTLConsumerImplHelper;
 
 // Kinect V2
 static const int g_kinectDepthWidth = 512;
@@ -30,6 +32,10 @@ public:
 
 
 protected:
+	int BaslerCameraSetup();
+	void setupCamera();
+	bool BalserCapture();
+	void processData(const GrabResult& grabResult);
 	void UpdateDepthImage(graphic::cRenderer &renderer);
 
 
@@ -75,4 +81,8 @@ public:
 	};
 	vector<sAreaFloor*> m_areaBuff;
 	int m_areaFloorCnt;
+
+	// Basler
+	bool m_baslerSetupSuccess;
+	CToFCamera *m_Camera;
 };

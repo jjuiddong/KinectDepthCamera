@@ -11,6 +11,7 @@
 #include "analysisview.h"
 #include "input.h"
 
+
 using namespace graphic;
 using namespace framework;
 
@@ -91,6 +92,7 @@ bool cViewer::OnInit()
 	m_inputView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_analysisView);
 	result = m_inputView->Init(m_renderer);
 	assert(result);
+
 
 	//m_depthView = new cDepthView("Depth View");
 	//m_depthView->Create(eDockState::DOCKWINDOW, eDockSlot::BOTTOM, this, m_3dView, 0.3f);
