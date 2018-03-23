@@ -19,4 +19,11 @@ protected:
 	void UpdateFileList();
 	common::StrPath m_selectPath; // UTF-16
 	vector<common::StrPath> m_files; // UTF-8 encoding
+	bool m_isCaptureContinuos;
+	float m_captureTime;
+
+	// Animation
+	bool m_isFileAnimation;
+	int m_aniIndex;
+	float m_aniTime;
 };

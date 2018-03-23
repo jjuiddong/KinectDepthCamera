@@ -102,6 +102,16 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 		ImGui::SliderInt("Scroll4", &scroll, 0, g_root.m_sensorBuff.m_analysis2.size - range);
 	}
 
+
+	// Diff Average
+	{
+		ImGui::Text("Height Different Average");
+		ImGui::PlotLines("Height Different Average", g_root.m_sensorBuff.m_diffAvrs.values
+			, g_root.m_sensorBuff.m_diffAvrs.size
+			, g_root.m_sensorBuff.m_diffAvrs.idx, "", 0, .5f, ImVec2(0, 100));
+	}
+
+
 	//ImGui::Text("Area Min = %d, Max = %d, Avr = %f", g_root.m_areaMin, g_root.m_areaMax
 	//	, g_root.m_areaGraph.GetAverage());
 	//ImGui::SameLine();

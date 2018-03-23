@@ -158,8 +158,8 @@ void c3DView::OnRender(const float deltaSeconds)
 	bool isOpen = true;
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 	ImGui::SetNextWindowPos(pos);
-	ImGui::SetNextWindowSize(ImVec2(min(m_viewRect.Width(), 400), min(m_viewRect.Height(), 500)));
-	if (ImGui::Begin("Information", &isOpen, ImVec2(400.f, 500.f), windowAlpha, flags))
+	ImGui::SetNextWindowSize(ImVec2(min(m_viewRect.Width(), 800), min(m_viewRect.Height(), 500)));
+	if (ImGui::Begin("Information", &isOpen, ImVec2(m_viewRect.Width(), 800.f), windowAlpha, flags))
 	{
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
@@ -211,6 +211,55 @@ void c3DView::OnRender(const float deltaSeconds)
 		if (ImGui::Button("Gen Plane"))
 		{
 			m_genPlane = 0;
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Save Plane"))
+		{
+			if (m_isGenPlane)
+			{
+				g_root.m_config.SetValue("plane-x", g_root.m_sensorBuff.m_plane.N.x);
+				g_root.m_config.SetValue("plane-y", g_root.m_sensorBuff.m_plane.N.y);
+				g_root.m_config.SetValue("plane-z", g_root.m_sensorBuff.m_plane.N.z);
+				g_root.m_config.SetValue("plane-d", g_root.m_sensorBuff.m_plane.D);
+			}
+
+			if (m_isGenVolumeCenter)
+			{
+				g_root.m_config.SetValue("center-x", g_root.m_sensorBuff.m_volumeCenter.x);
+				g_root.m_config.SetValue("center-y", g_root.m_sensorBuff.m_volumeCenter.y);
+				g_root.m_config.SetValue("center-z", g_root.m_sensorBuff.m_volumeCenter.z);
+			}
+
+			if (g_root.m_config.Write("config_depthframe.txt"))
+			{
+				// ok
+			}
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Load Plane"))
+		{
+			common::cConfig config;
+			if (config.Read("config_depthframe.txt"))
+			{
+				if (config.GetString("plane-x", "none") != "none")
+				{
+					m_isGenPlane = true;
+					g_root.m_sensorBuff.m_plane.N.x = config.GetFloat("plane-x");
+					g_root.m_sensorBuff.m_plane.N.y = config.GetFloat("plane-y");
+					g_root.m_sensorBuff.m_plane.N.z = config.GetFloat("plane-z");
+					g_root.m_sensorBuff.m_plane.D = config.GetFloat("plane-d");
+				}
+
+				if (config.GetString("center-x", "none") != "none")
+				{
+					m_isGenVolumeCenter = true;
+					g_root.m_sensorBuff.m_volumeCenter.x = config.GetFloat("center-x");
+					g_root.m_sensorBuff.m_volumeCenter.y = config.GetFloat("center-y");
+					g_root.m_sensorBuff.m_volumeCenter.z = config.GetFloat("center-z");
+				}
+			}
 		}
 
 		ImGui::SameLine();

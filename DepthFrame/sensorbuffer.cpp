@@ -12,6 +12,8 @@ cSensorBuffer::cSensorBuffer()
 	, m_height(0)
 	, m_plane(Vector3(0, 0, 0), 0)
 {
+	ZeroMemory(&m_diffAvrs, sizeof(m_diffAvrs));
+
 }
 
 cSensorBuffer::~cSensorBuffer()
@@ -156,6 +158,18 @@ bool cSensorBuffer::ReadPlyFile(cRenderer &renderer, const string &fileName)
 
 bool cSensorBuffer::ReadDatFile(cRenderer &renderer, const string &fileName)
 {
+	cDatReader reader;
+	if (!reader.Read(fileName))
+		return false;
+
+	ReadDatFile(renderer, reader);
+	
+	return true;
+}
+
+
+bool cSensorBuffer::ReadDatFile(graphic::cRenderer &renderer, const cDatReader &reader)
+{
 	const int w = g_baslerDepthWidth;
 	const int h = g_baslerDepthHeight;
 	if (m_depthBuff.size() != (w * h))
@@ -171,20 +185,42 @@ bool cSensorBuffer::ReadDatFile(cRenderer &renderer, const string &fileName)
 		m_vtxBuff.Create(renderer, w * h, sizeof(sVertex), D3D11_USAGE_DYNAMIC);
 	}
 
-	cDatReader reader;
-	if (!reader.Read(fileName))
-		return false;
-
 	Transform tfm;
 	tfm.scale = Vector3(1, 1, 1)*0.1f;
-	const Matrix44 tm = tfm.GetMatrix();
+	Matrix44 tm = tfm.GetMatrix();
 
+	// plane calculation
+	if (!m_plane.N.IsEmpty())
+	{
+		Quaternion q;
+		q.SetRotationArc(m_plane.N, Vector3(0, 1, 0));
+		tm *= q.GetMatrix();
+
+		Vector3 center = m_volumeCenter * q.GetMatrix();
+		center.y = 0;
+
+		Matrix44 T;
+		T.SetPosition(Vector3(-center.x, m_plane.D, -center.z));
+
+		tm *= T;
+	}
+
+
+	float diffAvrs = 0;
 	for (u_int i = 0; i < reader.m_vertices.size(); ++i)
 	{
-		m_vertices[i] = reader.m_vertices[i] * tm;
-		m_depthBuff[i] = reader.m_intensity[i];
-		m_depthBuff2[i] = reader.m_confidence[i];
+		Vector3 pos = reader.m_vertices[i] * tm;
+
+		if (!isnan(m_vertices[i].x) && !isnan(reader.m_vertices[i].x))
+			diffAvrs += abs(pos.y - m_vertices[i].y);
+	
+		m_vertices[i] = pos;
 	}
+	diffAvrs /= (float)m_vertices.size();
+	m_diffAvrs.AddValue(diffAvrs);
+
+	memcpy(&m_depthBuff[0], &reader.m_intensity[0], reader.m_intensity.size() * sizeof(unsigned short));
+	memcpy(&m_depthBuff2[0], &reader.m_confidence[0], reader.m_confidence.size() * sizeof(unsigned short));
 
 
 	// Update Point Cloud
@@ -197,15 +233,15 @@ bool cSensorBuffer::ReadDatFile(cRenderer &renderer, const string &fileName)
 			for (int k = 0; k < m_width; ++k)
 			{
 				const Vector3 p1 = GetVertex(k, i);
-				const Vector3 p2 = GetVertex(k - 1, i);
-				const Vector3 p3 = GetVertex(k, i - 1);
-				const Vector3 p4 = GetVertex(k + 1, i);
-				const Vector3 p5 = GetVertex(k, i + 1);
+				//const Vector3 p2 = GetVertex(k - 1, i);
+				//const Vector3 p3 = GetVertex(k, i - 1);
+				//const Vector3 p4 = GetVertex(k + 1, i);
+				//const Vector3 p5 = GetVertex(k, i + 1);
 
-				const float l1 = p1.Distance(p2);
-				const float l2 = p1.Distance(p3);
-				const float l3 = p1.Distance(p4);
-				const float l4 = p1.Distance(p5);
+				//const float l1 = p1.Distance(p2);
+				//const float l2 = p1.Distance(p3);
+				//const float l3 = p1.Distance(p4);
+				//const float l4 = p1.Distance(p5);
 
 				//const float maxDist = g_root.m_depthDensity;
 				//if ((l1 > maxDist)
@@ -218,10 +254,6 @@ bool cSensorBuffer::ReadDatFile(cRenderer &renderer, const string &fileName)
 				if (p1.IsEmpty())
 					continue;
 
-				//dst->p = p1;
-				//m_vertices[cnt++] = p1;
-
-				//dst->p = m_vertices[cnt++];
 				dst->p = p1;
 
 				++cnt;
@@ -235,9 +267,6 @@ bool cSensorBuffer::ReadDatFile(cRenderer &renderer, const string &fileName)
 		for (u_int i = (u_int)cnt; i < m_vertices.size(); ++i)
 			m_vertices[i] = Vector3(0, 0, 0);
 	}
-
-	if (!m_plane.N.IsEmpty())
-		ChangeSpace(renderer);
 
 	return true;
 }

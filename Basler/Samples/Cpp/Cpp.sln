@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2027
+VisualStudioVersion = 15.0.27130.2010
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FirstSample", "FirstSample\FirstSample.vcxproj", "{B8A8CF1A-5406-46F5-8D3F-9CEF5EB2B01E}"
 EndProject
@@ -21,6 +21,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CustomGrabLoop2", "CustomGrabLoop2\CustomGrabLoop2.vcxproj", "{6B9337D5-4231-44BF-970E-0689D0E193A5}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SavePointCloud2", "SavePointCloud2\SavePointCloud2.vcxproj", "{C79A67C7-E289-4EC2-B11B-6D9F1CF1B46A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -86,6 +88,14 @@ Global
 		{6B9337D5-4231-44BF-970E-0689D0E193A5}.Release|Win32.Build.0 = Release|Win32
 		{6B9337D5-4231-44BF-970E-0689D0E193A5}.Release|x64.ActiveCfg = Release|x64
 		{6B9337D5-4231-44BF-970E-0689D0E193A5}.Release|x64.Build.0 = Release|x64
+		{C79A67C7-E289-4EC2-B11B-6D9F1CF1B46A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C79A67C7-E289-4EC2-B11B-6D9F1CF1B46A}.Debug|Win32.Build.0 = Debug|Win32
+		{C79A67C7-E289-4EC2-B11B-6D9F1CF1B46A}.Debug|x64.ActiveCfg = Debug|x64
+		{C79A67C7-E289-4EC2-B11B-6D9F1CF1B46A}.Debug|x64.Build.0 = Debug|x64
+		{C79A67C7-E289-4EC2-B11B-6D9F1CF1B46A}.Release|Win32.ActiveCfg = Release|Win32
+		{C79A67C7-E289-4EC2-B11B-6D9F1CF1B46A}.Release|Win32.Build.0 = Release|Win32
+		{C79A67C7-E289-4EC2-B11B-6D9F1CF1B46A}.Release|x64.ActiveCfg = Release|x64
+		{C79A67C7-E289-4EC2-B11B-6D9F1CF1B46A}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

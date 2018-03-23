@@ -5,6 +5,7 @@
 
 #include "graphbuff.h"
 #include "sensorbuffer.h"
+#include "datreader.h"
 #include <ConsumerImplHelper/ToFCamera.h>
 using namespace GenTLConsumerImplHelper;
 
@@ -28,13 +29,13 @@ public:
 
 	bool Create();
 	void Update(graphic::cRenderer &renderer, const float deltaSeconds);
+	bool BaslerCapture();
 	void Clear();
 
 
 protected:
 	int BaslerCameraSetup();
 	void setupCamera();
-	bool BalserCapture();
 	void processData(const GrabResult& grabResult);
 	void UpdateDepthImage(graphic::cRenderer &renderer);
 
@@ -85,4 +86,9 @@ public:
 	// Basler
 	bool m_baslerSetupSuccess;
 	CToFCamera *m_Camera;
+	bool m_isConnectBasler;
+	bool m_isAutoSaveCapture;
+
+	// Config
+	common::cConfig m_config;
 };

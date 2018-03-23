@@ -67,6 +67,14 @@ void cDepthView::OnRender(const float deltaSeconds)
 }
 
 
+void cDepthView::ProcessDepth()
+{
+	ProcessDepth(g_root.m_nTime, &g_root.m_sensorBuff.m_depthBuff[0]
+		, g_root.m_sensorBuff.m_width, g_root.m_sensorBuff.m_height
+		, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
+}
+
+
 void cDepthView::ProcessDepth(INT64 nTime
 	, const UINT16* pBuffer
 	, int nWidth

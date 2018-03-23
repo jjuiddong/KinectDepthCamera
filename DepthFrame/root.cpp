@@ -4,6 +4,11 @@
 #include <ConsumerImplHelper/ToFCamera.h>
 #include <iostream>
 #include <iomanip> 
+#include "3dview.h"
+#include "depthframe.h"
+#include "depthview.h"
+#include "depthview2.h"
+
 
 /* Allocator class used by the CToFCamera class for allocating memory buffers
 used for grabbing. This custom allocator allocates buffers on the C++ heap.
@@ -34,6 +39,8 @@ cRoot::cRoot()
 	, m_input(eInputType::FILE)
 	, m_Camera(NULL)
 	, m_baslerSetupSuccess(false)
+	, m_isAutoSaveCapture(false)
+	, m_isConnectBasler(true)
 {
 	//m_pDepthBuff = new USHORT[g_kinectDepthWidth * g_kinectDepthHeight];
 
@@ -46,8 +53,7 @@ cRoot::cRoot()
 	m_heightErr[1] = 3;
 
 	ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
-	ZeroMemory(&m_hDistribDifferential, sizeof(m_hDistribDifferential));	
-	//ZeroMemory(&m_areaGraph, sizeof(m_areaGraph));
+	ZeroMemory(&m_hDistribDifferential, sizeof(m_hDistribDifferential));
 }
 
 cRoot::~cRoot()
@@ -114,20 +120,28 @@ bool cRoot::Create()
 		return false;
 	}
 
-	try
+	if (m_config.Read("config_depthframe.txt"))
 	{
-		CToFCamera::InitProducer();
-		m_Camera = new CToFCamera();
-		if (EXIT_SUCCESS == BaslerCameraSetup())
-		{
-			m_baslerSetupSuccess = true;
-		}
+		m_isConnectBasler = m_config.GetBool("basler_connect", true);
 	}
-	catch (GenICam::GenericException& e)
+
+	if (m_isConnectBasler)
 	{
-		//cerr << "Exception occurred: " << endl << e.GetDescription() << endl;
-		//exitCode = EXIT_FAILURE;
-		return false;
+		try
+		{
+			CToFCamera::InitProducer();
+			m_Camera = new CToFCamera();
+			if (EXIT_SUCCESS == BaslerCameraSetup())
+			{
+				m_baslerSetupSuccess = true;
+			}
+		}
+		catch (GenICam::GenericException& e)
+		{
+			//cerr << "Exception occurred: " << endl << e.GetDescription() << endl;
+			//exitCode = EXIT_FAILURE;
+			return false;
+		}
 	}
 
 	return true;
@@ -217,7 +231,7 @@ void cRoot::setupCamera()
 }
 
 
-bool cRoot::BalserCapture()
+bool cRoot::BaslerCapture()
 {
 	RETV(!m_baslerSetupSuccess, false);
 
@@ -226,7 +240,7 @@ bool cRoot::BalserCapture()
 		GrabResult grabResult;
 		// Wait up to 1000 ms for the next grabbed buffer available in the 
 		// acquisition engine's output queue.
-		m_Camera->GetGrabResult(grabResult, 1000);
+		m_Camera->GetGrabResult(grabResult, 100);
 
 		// Check whether a buffer has been grabbed successfully.
 		if (grabResult.status == GrabResult::Timeout)
@@ -251,7 +265,7 @@ bool cRoot::BalserCapture()
 		//nImagesGrabbed++;
 		// We can process the buffer now. The buffer will not be overwritten with new data until
 		// it is explicitly placed in the acquisition engine's input queue again.
-		//processData(grabResult);
+		processData(grabResult);
 
 		// We finished processing the data, put the buffer back into the acquisition 
 		// engine's input queue to be filled with new image data.
@@ -279,21 +293,40 @@ void cRoot::processData(const GrabResult& grabResult)
 	m_Camera->GetBufferParts(grabResult, parts);
 
 	// Retrieve the values for the center pixel
-	const int width = (int)parts[0].width;
-	const int height = (int)parts[0].height;
-	const int x = (int)(0.5 * width);
-	const int y = (int)(0.5 * height);
-	CToFCamera::Coord3D *p3DCoordinate = (CToFCamera::Coord3D*) parts[0].pData + y * width + x;
-	uint16_t *pIntensity = (uint16_t*)parts[1].pData + y * width + x;
-	uint16_t *pConfidence = (uint16_t*)parts[2].pData + y * width + x;
+	CToFCamera::Coord3D *p3DCoordinate = (CToFCamera::Coord3D*) parts[0].pData;
+	uint16_t *pIntensity = (uint16_t*)parts[1].pData;
+	uint16_t *pConfidence = (uint16_t*)parts[2].pData;
+	const size_t nPixel = parts[0].width * parts[0].height;
 
-	//cout.setf(ios_base::fixed);
-	//cout.precision(1);
-	//if (p3DCoordinate->IsValid())
-	//	cout << "x=" << setw(6) << p3DCoordinate->x << " y=" << setw(6) << p3DCoordinate->y << " z=" << setw(6) << p3DCoordinate->z;
-	//else
-	//	cout << "x=   n/a y=   n/a z=   n/a";
-	//cout << " intensity=" << setw(5) << *pIntensity << " confidence=" << setw(5) << *pConfidence << endl;
+	cDatReader reader;
+	reader.m_vertices.resize(640 * 480);
+	reader.m_intensity.resize(640 * 480);
+	reader.m_confidence.resize(640 * 480);
+
+	memcpy(&reader.m_vertices[0], p3DCoordinate, sizeof(float) * 3 * 640 * 480);
+	memcpy(&reader.m_intensity[0], pIntensity, sizeof(unsigned short) * 640 * 480);
+	memcpy(&reader.m_confidence[0], pConfidence, sizeof(unsigned short) * 640 * 480);
+
+	m_sensorBuff.ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer(), reader);
+	
+	// Update DepthView, DepthView2
+	((cViewer*)g_application)->m_depthView->ProcessDepth();
+	((cViewer*)g_application)->m_depthView2->ProcessDepth();
+
+
+	// save *.pcd file
+	if (m_isAutoSaveCapture)
+	{
+		using namespace std;
+		string fileName = string("../media/depth/") + common::GetCurrentDateTime() + ".pcd";
+		ofstream o(fileName, ios::binary);
+		if (o)
+		{
+			o.write((char*)p3DCoordinate, sizeof(float)*nPixel * 3);
+			o.write((char*)pIntensity, sizeof(uint16_t)*nPixel);
+			o.write((char*)pConfidence, sizeof(uint16_t)*nPixel);
+		}
+	}
 }
 
 
@@ -389,7 +422,7 @@ void cRoot::Clear()
 	SAFE_RELEASE(m_pKinectSensor);
 
 
-	if (m_baslerSetupSuccess)
+	if (m_baslerSetupSuccess && m_Camera)
 	{
 		// Stop the camera
 		m_Camera->IssueAcquisitionStopCommand();
@@ -406,4 +439,7 @@ void cRoot::Clear()
 		if (CToFCamera::IsProducerInitialized())
 			CToFCamera::TerminateProducer();  // Won't throw any exceptions
 	}
+
+	m_config.SetValue("basler_connect", m_isConnectBasler);
+	m_config.Write("config_depthframe.txt");
 }

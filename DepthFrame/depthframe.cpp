@@ -65,6 +65,12 @@ bool cViewer::OnInit()
 	bool result = m_3dView->Init(m_renderer);
 	assert(result);
 
+	m_inputView = new cInputView("Input View");
+	m_inputView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_3dView, 0.2f);
+	result = m_inputView->Init(m_renderer);
+	assert(result);
+
+
 	m_depthView = new cDepthView("Depth View");
 	m_depthView->Create(eDockState::DOCKWINDOW, eDockSlot::BOTTOM, this, m_3dView, 0.46f);
 	result = m_depthView->Init(m_renderer);
@@ -86,36 +92,10 @@ bool cViewer::OnInit()
 	assert(result);
 
 	m_analysisView = new cAnalysisView("Analysis View");
-	m_analysisView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_depthView);
+	m_analysisView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_depthView, 0.6f);
 
-	m_inputView = new cInputView("Input View");
-	m_inputView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_analysisView);
-	result = m_inputView->Init(m_renderer);
-	assert(result);
-
-
-	//m_depthView = new cDepthView("Depth View");
-	//m_depthView->Create(eDockState::DOCKWINDOW, eDockSlot::BOTTOM, this, m_3dView, 0.3f);
-	//result = m_depthView->Init(m_renderer);
-	//assert(result);
-
-	//m_depthView2 = new cDepthView2("Depth2 View");
-	//m_depthView2->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_depthView, 3.f/4.f);
-	//result = m_depthView2->Init(m_renderer);
-	//assert(result);
-
-	//m_colorView = new cColorView("Color View");
-	//m_colorView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_depthView2, 2.f/3.f);
-	//result = m_colorView->Init(m_renderer);
-	//assert(result);
-
-	//m_infraredView = new cInfraredView("Infrared View");
-	//m_infraredView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_colorView, 1.f/2.f);
-	//result = m_infraredView->Init(m_renderer);
-	//assert(result);
 
 	g_root.Create();
-
 
 	m_gui.SetContext();
 
