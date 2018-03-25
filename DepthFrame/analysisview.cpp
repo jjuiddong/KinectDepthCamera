@@ -19,7 +19,7 @@ cAnalysisView::~cAnalysisView()
 
 void cAnalysisView::OnRender(const float deltaSeconds)
 {
-	ImGui::DragInt2("Height Error Upper, Lower", g_root.m_heightErr, 1, 0, 20);
+	ImGui::DragInt2("Height Error Upper, Lower", g_root.m_heightErr, 1, 0, 200);
 	if (ImGui::Button("Volume Measure"))
 	{
 		g_root.m_sensorBuff.MeasureVolume(((cViewer*)g_application)->m_3dView->GetRenderer());
@@ -33,7 +33,7 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 
 	ImGui::Spacing();
 	ImGui::Separator();
-	ImGui::Text("Height Area Count = %d", g_root.m_areaCount);
+	//ImGui::Text("Height Area Count = %d", g_root.m_areaCount);
 	ImGui::Text("Distribute Count = %d", g_root.m_distribCount);
 
 	ImGui::Spacing();
@@ -74,33 +74,34 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 	ImGui::Spacing();
 	ImGui::Spacing();
 
-	// Analysis Intensity
-	{
-		ImGui::Text("Analysis Intensity");
-		static int range = g_root.m_sensorBuff.m_analysis1.size;
-		static int scroll = 0;
-		ImGui::PlotLines("Analysis Intensity", &g_root.m_sensorBuff.m_analysis1.values[scroll]
-			, range
-			, 0, "", 0, 500, ImVec2(0, 100));
 
-		if (ImGui::SliderInt("Range3", &range, 100, g_root.m_sensorBuff.m_analysis1.size))
-			scroll = 0;
-		ImGui::SliderInt("Scroll3", &scroll, 0, g_root.m_sensorBuff.m_analysis1.size - range);
-	}
+	//// Analysis Intensity
+	//{
+	//	ImGui::Text("Analysis Intensity");
+	//	static int range = g_root.m_sensorBuff.m_analysis1.size;
+	//	static int scroll = 0;
+	//	ImGui::PlotLines("Analysis Intensity", &g_root.m_sensorBuff.m_analysis1.values[scroll]
+	//		, range
+	//		, 0, "", 0, 500, ImVec2(0, 100));
 
-	// Analysis Confidence
-	{
-		ImGui::Text("Analysis Confidence");
-		static int range = g_root.m_sensorBuff.m_analysis2.size;
-		static int scroll = 0;
-		ImGui::PlotLines("Analysis Confidence", &g_root.m_sensorBuff.m_analysis2.values[scroll]
-			, range
-			, 0, "", 0, 500, ImVec2(0, 100));
+	//	if (ImGui::SliderInt("Range3", &range, 100, g_root.m_sensorBuff.m_analysis1.size))
+	//		scroll = 0;
+	//	ImGui::SliderInt("Scroll3", &scroll, 0, g_root.m_sensorBuff.m_analysis1.size - range);
+	//}
 
-		if (ImGui::SliderInt("Range4", &range, 100, g_root.m_sensorBuff.m_analysis2.size))
-			scroll = 0;
-		ImGui::SliderInt("Scroll4", &scroll, 0, g_root.m_sensorBuff.m_analysis2.size - range);
-	}
+	//// Analysis Confidence
+	//{
+	//	ImGui::Text("Analysis Confidence");
+	//	static int range = g_root.m_sensorBuff.m_analysis2.size;
+	//	static int scroll = 0;
+	//	ImGui::PlotLines("Analysis Confidence", &g_root.m_sensorBuff.m_analysis2.values[scroll]
+	//		, range
+	//		, 0, "", 0, 500, ImVec2(0, 100));
+
+	//	if (ImGui::SliderInt("Range4", &range, 100, g_root.m_sensorBuff.m_analysis2.size))
+	//		scroll = 0;
+	//	ImGui::SliderInt("Scroll4", &scroll, 0, g_root.m_sensorBuff.m_analysis2.size - range);
+	//}
 
 
 	// Diff Average
@@ -109,6 +110,20 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 		ImGui::PlotLines("Height Different Average", g_root.m_sensorBuff.m_diffAvrs.values
 			, g_root.m_sensorBuff.m_diffAvrs.size
 			, g_root.m_sensorBuff.m_diffAvrs.idx, "", 0, .5f, ImVec2(0, 100));
+	}
+
+
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+	for (int i = 0; i < g_root.m_areaFloorCnt; ++i)
+	{
+		cRoot::sAreaFloor *area = g_root.m_areaBuff[i];
+		ImGui::Text("Area-%d", i + 1);
+		ImGui::Text("AreaSize : %d", area->areaCnt);
+		ImGui::PlotLines("Area ", area->areaGraph.values
+			, ARRAYSIZE(area->areaGraph.values)
+			, area->areaGraph.idx, "", 0, 2000, ImVec2(0, 100));
 	}
 
 

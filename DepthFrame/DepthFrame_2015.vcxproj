@@ -96,16 +96,17 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_WINDOWS;_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../../Common/Framework/external/sfml/include;../../Common/Framework/external/sfml/src/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../Common/Framework/external/sfml/include;../../Common/Framework/external/sfml/src/;$(BASLER_TOF_INC);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
-      <AdditionalLibraryDirectories>../../Common/external;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../../Common/external;$(BASLER_TOF_LIB)\win32</AdditionalLibraryDirectories>
       <AdditionalDependencies>kinect20.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DelayLoadDLLs>GCBase_MD_VC120_v3_0_Basler_pylon_v5_0.dll;GenApi_MD_VC120_v3_0_Basler_pylon_v5_0.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -130,7 +131,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../../Common/Framework/external/sfml/include;../../Common/Framework/external/sfml/src/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../Common/Framework/external/sfml/include;../../Common/Framework/external/sfml/src/;$(BASLER_TOF_INC);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
@@ -138,8 +139,9 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
-      <AdditionalLibraryDirectories>../../Common/external;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../../Common/external;$(BASLER_TOF_LIB)\win32</AdditionalLibraryDirectories>
       <AdditionalDependencies>kinect20.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DelayLoadDLLs>GCBase_MD_VC120_v3_0_Basler_pylon_v5_0.dll;GenApi_MD_VC120_v3_0_Basler_pylon_v5_0.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -166,6 +168,7 @@
     <ClCompile Include="depthframe.cpp" />
     <ClCompile Include="depthview.cpp" />
     <ClCompile Include="depthview2.cpp" />
+    <ClCompile Include="filterview.cpp" />
     <ClCompile Include="graphbuff.cpp" />
     <ClCompile Include="infraredview.cpp" />
     <ClCompile Include="input.cpp" />
@@ -186,6 +189,7 @@
     <ClInclude Include="depthframe.h" />
     <ClInclude Include="depthview.h" />
     <ClInclude Include="depthview2.h" />
+    <ClInclude Include="filterview.h" />
     <ClInclude Include="graphbuff.h" />
     <ClInclude Include="infraredview.h" />
     <ClInclude Include="input.h" />

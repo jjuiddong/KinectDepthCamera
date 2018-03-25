@@ -7,6 +7,7 @@
 #include "3dview.h"
 #include "depthview.h"
 #include "depthview2.h"
+#include "filterview.h"
 
 
 using namespace graphic;
@@ -65,6 +66,8 @@ void cInputView::OnRender(const float deltaSeconds)
 	ImGui::Checkbox("Basler Connect", &g_root.m_isConnectBasler);
 	ImGui::SameLine();
 	ImGui::Checkbox("AutoSave", &g_root.m_isAutoSaveCapture);
+	ImGui::SameLine();
+	ImGui::Checkbox("AutoMeasure", &g_root.m_isAutoMeasure);
 
 	if (m_isCaptureContinuos && g_root.m_baslerSetupSuccess)
 	{
@@ -166,15 +169,26 @@ void cInputView::OnRender(const float deltaSeconds)
 						{
 							g_root.m_sensorBuff.ReadPlyFile(
 								((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
+
+							// Update FilterView, DepthView, DepthView2
+							((cViewer*)g_application)->m_filterView->ProcessDepth();
+							((cViewer*)g_application)->m_depthView->ProcessDepth();
+							((cViewer*)g_application)->m_depthView2->ProcessDepth();
 						}
 						else if (string(".pcd") == ansifileName.GetFileExt())
 						{
 							g_root.m_sensorBuff.ReadDatFile(
 								((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
 						
-							// Update DepthView, DepthView2
+							// Update FilterView, DepthView, DepthView2
+							((cViewer*)g_application)->m_filterView->ProcessDepth();
 							((cViewer*)g_application)->m_depthView->ProcessDepth();
 							((cViewer*)g_application)->m_depthView2->ProcessDepth();
+						}
+
+						if (g_root.m_isAutoMeasure)
+						{
+							g_root.m_sensorBuff.MeasureVolume(GetRenderer());
 						}
 
 						// Popup Menu
@@ -225,7 +239,7 @@ void cInputView::UpdateFileList()
 
 		vector<WStrPath> out;
 		out.reserve(256);
-		common::CollectFiles(exts, L"../media/Depth2", out);
+		common::CollectFiles(exts, L"../media/Depth5", out);
 
 		m_files.reserve(256);
 		for (auto &str : out)

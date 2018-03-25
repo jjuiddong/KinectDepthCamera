@@ -45,7 +45,7 @@ public:
 	};
 
 	eState::Enum m_state;
-	bool m_isAutoProcess;
+	//bool m_isAutoProcess;
 	bool m_isGenPlane;
 	bool m_isGenVolumeCenter;
 	int m_genPlane;

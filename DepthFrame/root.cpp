@@ -41,6 +41,7 @@ cRoot::cRoot()
 	, m_baslerSetupSuccess(false)
 	, m_isAutoSaveCapture(false)
 	, m_isConnectBasler(true)
+	, m_isAutoMeasure(false)
 {
 	//m_pDepthBuff = new USHORT[g_kinectDepthWidth * g_kinectDepthHeight];
 
@@ -49,8 +50,8 @@ cRoot::cRoot()
 	m_depthThresholdMin = 440;
 	m_depthThresholdMax = 945;
 	m_depthDensity = 1.5f;
-	m_heightErr[0] = 8;
-	m_heightErr[1] = 3;
+	m_heightErr[0] = 80;
+	m_heightErr[1] = 30;
 
 	ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
 	ZeroMemory(&m_hDistribDifferential, sizeof(m_hDistribDifferential));

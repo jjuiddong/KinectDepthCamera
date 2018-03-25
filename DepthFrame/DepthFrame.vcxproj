@@ -96,7 +96,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_WINDOWS;_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../../Common/Framework/external/sfml/include;../../Common/Framework/external/sfml/src/;$(BASLER_TOF_INC);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -168,10 +168,12 @@
     <ClCompile Include="depthframe.cpp" />
     <ClCompile Include="depthview.cpp" />
     <ClCompile Include="depthview2.cpp" />
+    <ClCompile Include="filterview.cpp" />
     <ClCompile Include="graphbuff.cpp" />
     <ClCompile Include="infraredview.cpp" />
     <ClCompile Include="input.cpp" />
     <ClCompile Include="plyreader.cpp" />
+    <ClCompile Include="rectcontour.cpp" />
     <ClCompile Include="root.cpp" />
     <ClCompile Include="sensorbuffer.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -188,10 +190,12 @@
     <ClInclude Include="depthframe.h" />
     <ClInclude Include="depthview.h" />
     <ClInclude Include="depthview2.h" />
+    <ClInclude Include="filterview.h" />
     <ClInclude Include="graphbuff.h" />
     <ClInclude Include="infraredview.h" />
     <ClInclude Include="input.h" />
     <ClInclude Include="plyreader.h" />
+    <ClInclude Include="rectcontour.h" />
     <ClInclude Include="root.h" />
     <ClInclude Include="sensorbuffer.h" />
     <ClInclude Include="stdafx.h" />

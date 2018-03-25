@@ -19,6 +19,8 @@ static const int g_kinectInfraredHeight = 424;
 
 static const int g_baslerDepthWidth = 640;
 static const int g_baslerDepthHeight = 480;
+static const int g_baslerColorWidth = 640;
+static const int g_baslerColorHeight = 480;
 
 
 class cRoot
@@ -88,6 +90,7 @@ public:
 	CToFCamera *m_Camera;
 	bool m_isConnectBasler;
 	bool m_isAutoSaveCapture;
+	bool m_isAutoMeasure;
 
 	// Config
 	common::cConfig m_config;

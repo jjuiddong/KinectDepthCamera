@@ -18,7 +18,7 @@ c3DView::c3DView(const string &name)
 	, m_isGenVolumeCenter(false)
 	, m_state(eState::NORMAL)
 	, m_offset(Vector3(0,10,0))
-	, m_isAutoProcess(false)
+	//, m_isAutoProcess(false)
 	, m_showPointCloud(true)
 	, m_showBoxAreaPointCloud(true)
 {
@@ -31,7 +31,7 @@ c3DView::~c3DView()
 
 bool c3DView::Init(cRenderer &renderer)
 {
-	const Vector3 eyePos(0.f, 1.f, -30.f);
+	const Vector3 eyePos(0.f, 300.f, -300.f);
 	const Vector3 lookAt(0, 0, 0);
 	m_camera.SetCamera(eyePos, lookAt, Vector3(0, 1, 0));
 	m_camera.SetProjection(MATH_PI / 4.f, m_rect.Width() / m_rect.Height(), 1, 1000000.f);
@@ -62,11 +62,11 @@ void c3DView::OnPreRender(const float deltaSeconds)
 {
 	if (g_root.m_isUpdate)
 	{
-		if (m_isAutoProcess)
-		{
-			g_root.m_sensorBuff.ChangeSpace(GetRenderer());
-			g_root.m_sensorBuff.MeasureVolume(GetRenderer());
-		}
+		//if (m_isAutoProcess)
+		//{
+		//	g_root.m_sensorBuff.ChangeSpace(GetRenderer());
+		//	g_root.m_sensorBuff.MeasureVolume(GetRenderer());
+		//}
 	}
 
 	cRenderer &renderer = GetRenderer();
@@ -131,14 +131,15 @@ void c3DView::OnPreRender(const float deltaSeconds)
 				if (i < ARRAYSIZE(colors))
 					color = colors[i].GetColor();
 				else
-					color = common::Vector4(common::randfloatpositive(), common::randfloatpositive(), common::randfloatpositive(), 1);
+					color = common::Vector4(1,1,1,1);
+					//color = common::Vector4(common::randfloatpositive(), common::randfloatpositive(), common::randfloatpositive(), 1);
 
 				XMVECTOR diffuse = XMLoadFloat4((XMFLOAT4*)&color);
 				renderer.m_cbMaterial.m_v->diffuse = diffuse;
 				renderer.m_cbMaterial.Update(renderer, 2);
 				areaFloor->vtxBuff->Bind(renderer);
 				renderer.GetDevContext()->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
-				//renderer.GetDevContext()->DrawInstanced(areaFloor->areaCnt, 1, 0, 0);
+				renderer.GetDevContext()->DrawInstanced(areaFloor->areaCnt, 1, 0, 0);
 			}
 		}
 	}
@@ -158,7 +159,7 @@ void c3DView::OnRender(const float deltaSeconds)
 	bool isOpen = true;
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 	ImGui::SetNextWindowPos(pos);
-	ImGui::SetNextWindowSize(ImVec2(min(m_viewRect.Width(), 800), min(m_viewRect.Height(), 500)));
+	ImGui::SetNextWindowSize(ImVec2(std::min(m_viewRect.Width(), 800.f), std::min(m_viewRect.Height(), 500.f)));
 	if (ImGui::Begin("Information", &isOpen, ImVec2(m_viewRect.Width(), 800.f), windowAlpha, flags))
 	{
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
@@ -200,11 +201,11 @@ void c3DView::OnRender(const float deltaSeconds)
 				, &g_root.m_sensorBuff.m_depthBuff[0]
 				, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
 
-			if (m_isAutoProcess)
-			{
-				g_root.m_sensorBuff.ChangeSpace(renderer);
-				g_root.m_sensorBuff.MeasureVolume(renderer);
-			}
+			//if (m_isAutoProcess)
+			//{
+			//	g_root.m_sensorBuff.ChangeSpace(renderer);
+			//	g_root.m_sensorBuff.MeasureVolume(renderer);
+			//}
 		}
 
 		ImGui::SameLine();
@@ -281,13 +282,13 @@ void c3DView::OnRender(const float deltaSeconds)
 			g_root.m_sensorBuff.ChangeSpace(GetRenderer());
 		}
 
-		if (ImGui::Button("Volume Measure"))
-		{
-			m_isAutoProcess = true;
-			g_root.m_sensorBuff.MeasureVolume(GetRenderer());
-		}
+		//if (ImGui::Button("Volume Measure"))
+		//{
+		//	m_isAutoProcess = true;
+		//	g_root.m_sensorBuff.MeasureVolume(GetRenderer());
+		//}
 
-		ImGui::Checkbox("Auto Process", &m_isAutoProcess);
+		//ImGui::Checkbox("Auto Process", &m_isAutoProcess);
 
 		ImGui::End();
 	}
@@ -341,7 +342,7 @@ void c3DView::OnWheelMove(const float delta, const POINT mousePt)
 	if (len > 100)
 		zoomLen = len * 0.1f;
 	else if (len > 50)
-		zoomLen = max(1.f, (len / 2.f));
+		zoomLen = std::max(1.f, (len / 2.f));
 	else
 		zoomLen = (len / 3.f);
 

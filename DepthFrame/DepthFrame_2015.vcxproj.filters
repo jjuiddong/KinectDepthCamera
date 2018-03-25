@@ -15,6 +15,7 @@
     <ClCompile Include="plyreader.cpp" />
     <ClCompile Include="sensorbuffer.cpp" />
     <ClCompile Include="datreader.cpp" />
+    <ClCompile Include="filterview.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="depthframe.h" />
@@ -31,5 +32,6 @@
     <ClInclude Include="plyreader.h" />
     <ClInclude Include="sensorbuffer.h" />
     <ClInclude Include="datreader.h" />
+    <ClInclude Include="filterview.h" />
   </ItemGroup>
 </Project>

@@ -10,6 +10,7 @@
 #include "infraredview.h"
 #include "analysisview.h"
 #include "input.h"
+#include "filterview.h"
 
 
 using namespace graphic;
@@ -70,7 +71,6 @@ bool cViewer::OnInit()
 	result = m_inputView->Init(m_renderer);
 	assert(result);
 
-
 	m_depthView = new cDepthView("Depth View");
 	m_depthView->Create(eDockState::DOCKWINDOW, eDockSlot::BOTTOM, this, m_3dView, 0.46f);
 	result = m_depthView->Init(m_renderer);
@@ -93,6 +93,11 @@ bool cViewer::OnInit()
 
 	m_analysisView = new cAnalysisView("Analysis View");
 	m_analysisView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_depthView, 0.6f);
+
+	m_filterView = new cFilterView("Filter View");
+	m_filterView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_3dView);
+	result = m_filterView->Init(m_renderer);
+	assert(result);
 
 
 	g_root.Create();

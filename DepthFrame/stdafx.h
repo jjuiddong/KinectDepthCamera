@@ -11,6 +11,14 @@
 // Kinect Header files
 #include <Kinect.h>
 
+// OpenCV
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/objdetect/objdetect.hpp>
+#include <opencv2/features2d/features2d.hpp>
+#include <opencv/cvaux.h>
+#include <opencv2/calib3d.hpp>
+
 
 
 //#include "CFW1StateSaver.h"

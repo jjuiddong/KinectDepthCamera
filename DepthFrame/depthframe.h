@@ -11,6 +11,7 @@ class cDepthView2;
 class cInfraredView;
 class cAnalysisView;
 class cInputView;
+class cFilterView;
 
 class cViewer : public framework::cGameMain2
 {
@@ -32,4 +33,5 @@ public:
 	cInfraredView *m_infraredView;
 	cAnalysisView *m_analysisView;
 	cInputView *m_inputView;
+	cFilterView *m_filterView;
 };

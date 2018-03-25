@@ -17,7 +17,9 @@ public:
 
 
 protected:
-	void ProcessDepth(INT64 nTime, const UINT16* pBuffer, int nWidth, int nHeight, USHORT nMinDepth, USHORT nMaxDepth);
+	void ProcessDepth(INT64 nTime
+		, const UINT16* pBuffer
+		, int nWidth, int nHeight, USHORT nMinDepth, USHORT nMaxDepth);
 
 
 public:

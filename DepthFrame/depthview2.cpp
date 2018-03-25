@@ -42,8 +42,8 @@ void cDepthView2::OnRender(const float deltaSeconds)
 	bool isOpen = true;
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 	ImGui::SetNextWindowPos(pos);
-	ImGui::SetNextWindowSize(ImVec2(min(m_rect.Width()-15, 500), 250));
-	if (ImGui::Begin("DepthView2 Info", &isOpen, ImVec2(min(m_rect.Width()-15, 500), 250.f), windowAlpha, flags))
+	ImGui::SetNextWindowSize(ImVec2(std::min(m_rect.Width()-15.f, 500.f), 250));
+	if (ImGui::Begin("DepthView2 Info", &isOpen, ImVec2(std::min(m_rect.Width()-15.f, 500.f), 250.f), windowAlpha, flags))
 	{
 		//ImGui::DragInt("Depth Threshold Min", &g_root.m_depthThresholdMin, 10, 0, USHORT_MAX);
 		//ImGui::DragInt("Depth Threshold Max", &g_root.m_depthThresholdMax, 10, 1, USHORT_MAX);
@@ -53,8 +53,8 @@ void cDepthView2::OnRender(const float deltaSeconds)
 		if (ImGui::DragInt("Threshold Max", &m_thresholdMax, 100, 1, USHORT_MAX))
 			isUpdate = true;
 
-		m_thresholdMin = min(m_thresholdMin, m_thresholdMax);
-		m_thresholdMax = max(m_thresholdMin, m_thresholdMax);
+		m_thresholdMin = std::min(m_thresholdMin, m_thresholdMax);
+		m_thresholdMax = std::max(m_thresholdMin, m_thresholdMax);
 
 		if (isUpdate)
 		{
@@ -103,7 +103,7 @@ void cDepthView2::ProcessDepth(INT64 nTime
 				//*(float*)p = max(0, (float)(depth - g_root.m_depthThresholdMin) / (g_root.m_depthThresholdMax - g_root.m_depthThresholdMin));
 				//*(float*)p = max(0, (50000.f - (float)depth) / 50000.f);
 				//*(float*)p = max(0, (float)(depth-20000) / 1000.f);
-				*(float*)p = max(0, (float)(depth - m_thresholdMin) / (float)(m_thresholdMax - m_thresholdMin));
+				*(float*)p = std::max(0.f, (float)(depth - m_thresholdMin) / (float)(m_thresholdMax - m_thresholdMin));
 			}
 		}
 

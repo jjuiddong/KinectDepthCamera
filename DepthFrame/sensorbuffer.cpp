@@ -91,14 +91,52 @@ bool cSensorBuffer::ReadPlyFile(cRenderer &renderer, const string &fileName)
 	if (!reader.Read(fileName))
 		return false;
 
+	//Transform tfm;
+	//tfm.scale = Vector3(1, 1, 1)*0.1f;
+	//const Matrix44 tm = tfm.GetMatrix();
+
+	//for (u_int i = 0; i < reader.m_vertices.size(); ++i)
+	//	m_vertices[i] = reader.m_vertices[i] * tm;
+	//for (u_int i = reader.m_vertices.size(); i < w*h; ++i)
+	//	m_vertices[i] = Vector3(0,0,0);
+
 	Transform tfm;
 	tfm.scale = Vector3(1, 1, 1)*0.1f;
-	const Matrix44 tm = tfm.GetMatrix();
+	Matrix44 tm = tfm.GetMatrix();
 
+	// plane calculation
+	if (!m_plane.N.IsEmpty())
+	{
+		Quaternion q;
+		q.SetRotationArc(m_plane.N, Vector3(0, 1, 0));
+		tm *= q.GetMatrix();
+
+		Vector3 center = m_volumeCenter * q.GetMatrix();
+		center.y = 0;
+
+		Matrix44 T;
+		T.SetPosition(Vector3(-center.x, m_plane.D, -center.z));
+
+		tm *= T;
+	}
+
+
+	float diffAvrs = 0;
 	for (u_int i = 0; i < reader.m_vertices.size(); ++i)
-		m_vertices[i] = reader.m_vertices[i] * tm;
+	{
+		Vector3 pos = reader.m_vertices[i] * tm;
+
+		if (!isnan(m_vertices[i].x) && !isnan(reader.m_vertices[i].x))
+			diffAvrs += abs(pos.y - m_vertices[i].y);
+
+		m_vertices[i] = pos;
+	}
+	diffAvrs /= (float)m_vertices.size();
+	m_diffAvrs.AddValue(diffAvrs);
+
 	for (u_int i = reader.m_vertices.size(); i < w*h; ++i)
 		m_vertices[i] = Vector3(0,0,0);
+
 
 	// Update Point Cloud
 	m_pointCloudCount = 0;
@@ -110,15 +148,15 @@ bool cSensorBuffer::ReadPlyFile(cRenderer &renderer, const string &fileName)
 			for (int k = 0; k < m_width; ++k)
 			{
 				const Vector3 p1 = GetVertex(k, i);
-				const Vector3 p2 = GetVertex(k - 1, i);
-				const Vector3 p3 = GetVertex(k, i - 1);
-				const Vector3 p4 = GetVertex(k + 1, i);
-				const Vector3 p5 = GetVertex(k, i + 1);
+				//const Vector3 p2 = GetVertex(k - 1, i);
+				//const Vector3 p3 = GetVertex(k, i - 1);
+				//const Vector3 p4 = GetVertex(k + 1, i);
+				//const Vector3 p5 = GetVertex(k, i + 1);
 
-				const float l1 = p1.Distance(p2);
-				const float l2 = p1.Distance(p3);
-				const float l3 = p1.Distance(p4);
-				const float l4 = p1.Distance(p5);
+				//const float l1 = p1.Distance(p2);
+				//const float l2 = p1.Distance(p3);
+				//const float l3 = p1.Distance(p4);
+				//const float l4 = p1.Distance(p5);
 
 				//const float maxDist = g_root.m_depthDensity;
 				//if ((l1 > maxDist)
@@ -149,8 +187,8 @@ bool cSensorBuffer::ReadPlyFile(cRenderer &renderer, const string &fileName)
 			m_vertices[i] = Vector3(0, 0, 0);
 	}
 
-	if (!m_plane.N.IsEmpty())
-		ChangeSpace(renderer);
+	//if (!m_plane.N.IsEmpty())
+	//	ChangeSpace(renderer);
 
 	return true;
 }
@@ -441,10 +479,6 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 
 	for (auto &vtx : m_vertices)
 	{
-		//if (abs(vtx.x) > 15.f)
-		//	continue;
-		//if (abs(vtx.z) > 15.f)
-		//	continue;
 		if (abs(vtx.x) > 150.f)
 			continue;
 		if (abs(vtx.z) > 150.f)
@@ -473,7 +507,7 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 
 		const float a = g_root.m_hDistrib[i];
 		const float d = g_root.m_hDistrib[i] - g_root.m_hDistrib[i - 1];
-		if ((d * oldD <= 0) && ((oldArea > 100) || (a > 100)))
+		if ((d * oldD <= 0) && ((oldArea > 300) || (a > 300)))
 			g_root.m_hDistribDifferential.AddValue(a);
 		else
 			g_root.m_hDistribDifferential.AddValue(0);
@@ -484,7 +518,7 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 
 	// Generate Area Floor
 	u_int floor = 0;
-	for (int i = 500; i < g_root.m_hDistribDifferential.size; ++i)
+	for (int i = 300; i < g_root.m_hDistribDifferential.size; ++i)
 	{
 		if (g_root.m_hDistribDifferential.values[i] <= 0)
 			continue;
@@ -518,9 +552,9 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 		{
 			for (auto &vtx : m_vertices)
 			{
-				if (abs(vtx.x) > 15.f)
+				if (abs(vtx.x) > 150.f)
 					continue;
-				if (abs(vtx.z) > 15.f)
+				if (abs(vtx.z) > 150.f)
 					continue;
 
 				const int mostHighIdx = maxAreaIdx;
