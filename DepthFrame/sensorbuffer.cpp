@@ -13,7 +13,7 @@ cSensorBuffer::cSensorBuffer()
 	, m_plane(Vector3(0, 0, 0), 0)
 {
 	ZeroMemory(&m_diffAvrs, sizeof(m_diffAvrs));
-
+	m_srcImg = cv::Mat(480, 640, CV_32FC1);
 }
 
 cSensorBuffer::~cSensorBuffer()
@@ -22,15 +22,18 @@ cSensorBuffer::~cSensorBuffer()
 }
 
 
-void cSensorBuffer::Render(graphic::cRenderer &renderer)
+void cSensorBuffer::Render(graphic::cRenderer &renderer
+	, const char *techniqName //= "Unlit"
+	, const XMMATRIX &parentTm //= XMIdentity
+)
 {
 	cShader11 *shader = renderer.m_shaderMgr.FindShader(eVertexType::POSITION);
 	assert(shader);
-	shader->SetTechnique("Unlit");
+	shader->SetTechnique(techniqName);
 	shader->Begin();
 	shader->BeginPass(renderer, 0);
 
-	renderer.m_cbPerFrame.m_v->mWorld = XMMatrixIdentity();
+	renderer.m_cbPerFrame.m_v->mWorld = XMMatrixTranspose(parentTm);
 	renderer.m_cbPerFrame.Update(renderer);
 	XMVECTOR diffuse = XMLoadFloat4((XMFLOAT4*)&common::Vector4(.7f, .7f, .7f, 1.f));
 	renderer.m_cbMaterial.m_v->diffuse = diffuse;
@@ -90,15 +93,6 @@ bool cSensorBuffer::ReadPlyFile(cRenderer &renderer, const string &fileName)
 	cPlyReader reader;
 	if (!reader.Read(fileName))
 		return false;
-
-	//Transform tfm;
-	//tfm.scale = Vector3(1, 1, 1)*0.1f;
-	//const Matrix44 tm = tfm.GetMatrix();
-
-	//for (u_int i = 0; i < reader.m_vertices.size(); ++i)
-	//	m_vertices[i] = reader.m_vertices[i] * tm;
-	//for (u_int i = reader.m_vertices.size(); i < w*h; ++i)
-	//	m_vertices[i] = Vector3(0,0,0);
 
 	Transform tfm;
 	tfm.scale = Vector3(1, 1, 1)*0.1f;
@@ -187,8 +181,6 @@ bool cSensorBuffer::ReadPlyFile(cRenderer &renderer, const string &fileName)
 			m_vertices[i] = Vector3(0, 0, 0);
 	}
 
-	//if (!m_plane.N.IsEmpty())
-	//	ChangeSpace(renderer);
 
 	return true;
 }
@@ -271,24 +263,6 @@ bool cSensorBuffer::ReadDatFile(graphic::cRenderer &renderer, const cDatReader &
 			for (int k = 0; k < m_width; ++k)
 			{
 				const Vector3 p1 = GetVertex(k, i);
-				//const Vector3 p2 = GetVertex(k - 1, i);
-				//const Vector3 p3 = GetVertex(k, i - 1);
-				//const Vector3 p4 = GetVertex(k + 1, i);
-				//const Vector3 p5 = GetVertex(k, i + 1);
-
-				//const float l1 = p1.Distance(p2);
-				//const float l2 = p1.Distance(p3);
-				//const float l3 = p1.Distance(p4);
-				//const float l4 = p1.Distance(p5);
-
-				//const float maxDist = g_root.m_depthDensity;
-				//if ((l1 > maxDist)
-				//	|| (l2 > maxDist)
-				//	|| (l3 > maxDist)
-				//	|| (l4 > maxDist)
-				//	)
-				//	continue;
-
 				if (p1.IsEmpty())
 					continue;
 
@@ -492,44 +466,125 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 		}
 	}
 
-	// height distribute differential - 2
-	ZeroMemory(&g_root.m_hDistribDifferential, sizeof(g_root.m_hDistribDifferential));
-
-	float oldD = 0;
-	float oldArea = 0;
-	for (int i = 0; i < ARRAYSIZE(g_root.m_hDistrib); ++i)
+	// height distribute pulse
+	ZeroMemory(&g_root.m_hDistrib2, sizeof(g_root.m_hDistrib2));
 	{
-		if (i == 0)
+		const float minArea = 300.f;
+		const float limitLowArea = 30.f;
+		int state = 0;
+		int startIdx = 0, endIdx = 0;
+		int maxArea = 0;
+		for (int i = 0; i < ARRAYSIZE(g_root.m_hDistrib); ++i)
 		{
-			g_root.m_hDistribDifferential.AddValue(0);
-			continue;
+			const float a = g_root.m_hDistrib[i];
+
+			switch (state)
+			{
+			case 0:
+				if (a > minArea)
+				{
+					state = 1;
+					startIdx = i;
+					maxArea = i;
+				}
+				break;
+
+			case 1:
+				if (a > g_root.m_hDistrib[maxArea])
+				{
+					maxArea = i;
+				}
+				if (a < limitLowArea)
+				{
+					state = 2;
+					endIdx = i;
+				}
+				break;
+
+			case 2:
+				state = 0;
+				// find first again
+				for (int k = startIdx; k >= 0; --k)
+				{
+					if (g_root.m_hDistrib[k] < limitLowArea)
+					{
+						startIdx = k;
+						break;
+					}
+				}
+
+				for (int k = startIdx; k < endIdx; ++k)
+					g_root.m_hDistrib2[k] = 1;
+				g_root.m_hDistrib2[maxArea] = 2;
+				break;
+			}
 		}
-
-		const float a = g_root.m_hDistrib[i];
-		const float d = g_root.m_hDistrib[i] - g_root.m_hDistrib[i - 1];
-		if ((d * oldD <= 0) && ((oldArea > 300) || (a > 300)))
-			g_root.m_hDistribDifferential.AddValue(a);
-		else
-			g_root.m_hDistribDifferential.AddValue(0);
-
-		oldD = d;
-		oldArea = a;
 	}
+
+
+	// height distribute differential - 2
+	//ZeroMemory(&g_root.m_hDistribDifferential, sizeof(g_root.m_hDistribDifferential));
+	//float oldD = 0;
+	//float oldArea = 0;
+	//for (int i = 0; i < ARRAYSIZE(g_root.m_hDistrib); ++i)
+	//{
+	//	if (i == 0)
+	//	{
+	//		g_root.m_hDistribDifferential.AddValue(0);
+	//		continue;
+	//	}
+
+	//	const float a = g_root.m_hDistrib[i];
+	//	const float d = g_root.m_hDistrib[i] - g_root.m_hDistrib[i - 1];
+	//	if ((d * oldD <= 0) && ((oldArea > 300) || (a > 300)))
+	//		g_root.m_hDistribDifferential.AddValue(a);
+	//	else
+	//		g_root.m_hDistribDifferential.AddValue(0);
+
+	//	oldD = d;
+	//	oldArea = a;
+	//}
+
 
 	// Generate Area Floor
 	u_int floor = 0;
-	for (int i = 300; i < g_root.m_hDistribDifferential.size; ++i)
+	int state = 0;
+	int startIdx = 0;
+	int maxAreaIdx = 0;
+	for (int i = 0; i < ARRAYSIZE(g_root.m_hDistrib2); ++i)
 	{
-		if (g_root.m_hDistribDifferential.values[i] <= 0)
-			continue;
-
-		int maxAreaIdx = i;
-		for (int k = i + 1; k < (i + 4); ++k)
+		switch (state)
 		{
-			if (g_root.m_hDistribDifferential.values[i] > g_root.m_hDistribDifferential.values[maxAreaIdx])
-				maxAreaIdx = k;
+		case 0:
+			if (g_root.m_hDistrib2[i] > 0)
+			{
+				state = 1;
+				startIdx = i;
+
+				if (g_root.m_hDistrib2[i] > 1)
+					maxAreaIdx = i;
+			}
+			break;
+
+		case 1:
+			if (g_root.m_hDistrib2[i] <= 0)
+			{
+				if ((maxAreaIdx==0) || (i - startIdx > 80)) // 범위가 너무크면 무시
+				{
+					state = 0;
+				}
+				else
+				{
+					state = 2;
+				}
+			}
+			if (g_root.m_hDistrib2[i] > 1)
+				maxAreaIdx = i;
 		}
-		i += 3;
+
+		if (state != 2)
+			continue;
+		state = 0;
 
 		if (g_root.m_areaBuff.size() <= floor)
 		{
@@ -542,6 +597,8 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 		}
 
 		cRoot::sAreaFloor *areaFloor = g_root.m_areaBuff[floor++];
+		areaFloor->startIdx = startIdx;
+		areaFloor->maxIdx = maxAreaIdx;
 		areaFloor->areaCnt = 0;
 		areaFloor->areaMin = INT_MAX;
 		areaFloor->areaMax = 0;

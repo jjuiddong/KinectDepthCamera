@@ -81,18 +81,26 @@ void cInputView::OnRender(const float deltaSeconds)
 	else if (m_isFileAnimation)
 	{
 		m_aniTime += deltaSeconds;
-		if (m_aniTime > 0.1f)
+		if (m_aniTime > .1f)
 		{
 			if (m_files.size() > (u_int)m_aniIndex)
 			{
 				g_root.m_sensorBuff.ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
 					, m_files[m_aniIndex].ansi().c_str());
+
+				if (g_root.m_isAutoMeasure)
+				{
+					g_root.m_sensorBuff.MeasureVolume(GetRenderer());
+				}
 			
-				// Update DepthView, DepthView2
+				// Update FilterView, DepthView, DepthView2
+				((cViewer*)g_application)->m_3dView->Capture3D();
+				((cViewer*)g_application)->m_filterView->ProcessDepth();
 				((cViewer*)g_application)->m_depthView->ProcessDepth();
 				((cViewer*)g_application)->m_depthView2->ProcessDepth();
 			}
-			
+
+		
 			m_aniIndex++;
 			m_aniTime = 0.f;
 			if ((u_int)m_aniIndex >= m_files.size())
@@ -145,7 +153,7 @@ void cInputView::OnRender(const float deltaSeconds)
 		bool isOpenPopup = false;
 
 		ImGui::SetNextTreeNodeOpen(true, ImGuiSetCond_FirstUseEver);
-		if (ImGui::TreeNode((void*)1, "*.ply files"))
+		if (ImGui::TreeNode((void*)1, "*.ply, *.pcd files"))
 		{
 			ImGui::Columns(1, "modelcolumns5", false);
 			for (auto &str : m_files)
@@ -170,7 +178,13 @@ void cInputView::OnRender(const float deltaSeconds)
 							g_root.m_sensorBuff.ReadPlyFile(
 								((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
 
+							if (g_root.m_isAutoMeasure)
+							{
+								g_root.m_sensorBuff.MeasureVolume(GetRenderer());
+							}
+
 							// Update FilterView, DepthView, DepthView2
+							((cViewer*)g_application)->m_3dView->Capture3D();
 							((cViewer*)g_application)->m_filterView->ProcessDepth();
 							((cViewer*)g_application)->m_depthView->ProcessDepth();
 							((cViewer*)g_application)->m_depthView2->ProcessDepth();
@@ -180,15 +194,16 @@ void cInputView::OnRender(const float deltaSeconds)
 							g_root.m_sensorBuff.ReadDatFile(
 								((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
 						
+							if (g_root.m_isAutoMeasure)
+							{
+								g_root.m_sensorBuff.MeasureVolume(GetRenderer());
+							}
+
 							// Update FilterView, DepthView, DepthView2
+							((cViewer*)g_application)->m_3dView->Capture3D();
 							((cViewer*)g_application)->m_filterView->ProcessDepth();
 							((cViewer*)g_application)->m_depthView->ProcessDepth();
 							((cViewer*)g_application)->m_depthView2->ProcessDepth();
-						}
-
-						if (g_root.m_isAutoMeasure)
-						{
-							g_root.m_sensorBuff.MeasureVolume(GetRenderer());
 						}
 
 						// Popup Menu
@@ -239,7 +254,7 @@ void cInputView::UpdateFileList()
 
 		vector<WStrPath> out;
 		out.reserve(256);
-		common::CollectFiles(exts, L"../media/Depth5", out);
+		common::CollectFiles(exts, L"../media/Depth7", out);
 
 		m_files.reserve(256);
 		for (auto &str : out)

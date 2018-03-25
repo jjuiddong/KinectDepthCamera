@@ -56,23 +56,42 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 	ImGui::Spacing();
 	ImGui::Spacing();
 
-	// Height Distribute Differential
+	// Height Distribute2
 	{
-		ImGui::Text("Height Distribute Differential - 2");
-		static int range2 = g_root.m_hDistribDifferential.size;
-		static int scroll2 = 0;
-		ImGui::PlotLines("Height Distribute Differential - 2", &g_root.m_hDistribDifferential.values[scroll2]
-			//, ARRAYSIZE(g_root.m_hDistribDifferential.values)
-			, range2
-			, 0, "", 0, 3000, ImVec2(0, 100));
+		ImGui::Text("Height Distribute2");
+		static int range = ARRAYSIZE(g_root.m_hDistrib2);
+		static int scroll = 0;
+		ImGui::PlotLines("Height Distribute2", &g_root.m_hDistrib2[scroll]
+			, range
+			, 0, "", 0, 1, ImVec2(0, 100));
 
-		if (ImGui::SliderInt("Range2", &range2, 100, g_root.m_hDistribDifferential.size))
-			scroll2 = 0;
-		ImGui::SliderInt("Scroll2", &scroll2, 0, g_root.m_hDistribDifferential.size - range2);
+		if (ImGui::SliderInt("Range2", &range, 100, ARRAYSIZE(g_root.m_hDistrib2)))
+			scroll = 0;
+		ImGui::SliderInt("Scroll2", &scroll, 0, ARRAYSIZE(g_root.m_hDistrib2) - range);
 	}
 
+
 	ImGui::Spacing();
 	ImGui::Spacing();
+
+
+	//// Height Distribute Differential
+	//{
+	//	ImGui::Text("Height Distribute Differential - 2");
+	//	static int range2 = g_root.m_hDistribDifferential.size;
+	//	static int scroll2 = 0;
+	//	ImGui::PlotLines("Height Distribute Differential - 2", &g_root.m_hDistribDifferential.values[scroll2]
+	//		//, ARRAYSIZE(g_root.m_hDistribDifferential.values)
+	//		, range2
+	//		, 0, "", 0, 3000, ImVec2(0, 100));
+
+	//	if (ImGui::SliderInt("Range2", &range2, 100, g_root.m_hDistribDifferential.size))
+	//		scroll2 = 0;
+	//	ImGui::SliderInt("Scroll2", &scroll2, 0, g_root.m_hDistribDifferential.size - range2);
+	//}
+
+	//ImGui::Spacing();
+	//ImGui::Spacing();
 
 
 	//// Analysis Intensity

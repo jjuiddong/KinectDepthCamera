@@ -72,10 +72,13 @@ public:
 	int m_areaCount;
 	int m_heightErr[2]; // Upper, Lower
 	float m_hDistrib[2000]; // 0 ~ 2000 분포, 0.1cm 단위
+	float m_hDistrib2[2000]; // height distribution pulse
 	sGraph<2000> m_hDistribDifferential; // 2 differential
 
 	struct sAreaFloor
 	{
+		int startIdx;
+		int maxIdx;
 		int areaCnt;
 		int areaMin;
 		int areaMax;

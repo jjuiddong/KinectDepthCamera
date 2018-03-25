@@ -1,0 +1,62 @@
+
+#include "stdafx.h"
+#include "logview.h"
+#include "depthframe.h"
+
+using namespace common;
+using namespace graphic;
+
+
+cLogView::cLogView(const string &name)
+	: framework::cDockWindow(name)
+{
+	m_first = 0;
+	m_last = 0;
+	m_logs.resize(500);
+}
+
+cLogView::~cLogView()
+{
+}
+
+
+void cLogView::OnRender(const float deltaSeconds)
+{
+	if (ImGui::Button("Clear"))
+	{
+		m_first = 0;
+		m_last = 0;
+	}
+
+	ImGui::PushStyleVar(ImGuiStyleVar_ChildWindowRounding, 5.0f);
+	ImGui::BeginChild("Sub2", ImVec2(0, m_rect.Height()-85), true);
+
+	u_int i = (u_int)m_first;
+	while (i != (u_int)m_last)
+	{
+		ImGui::Selectable(m_logs[i].c_str());
+		i = (i + 1) % m_logs.size();
+	}
+
+	ImGui::EndChild();
+	ImGui::PopStyleVar();
+}
+
+
+// push circular queue
+void cLogView::AddLog(const string &str)
+{
+	m_logs[m_last++] = str.c_str();
+
+	if ((u_int)m_last >= m_logs.size())
+	{
+		m_last = 0;
+		m_first = (m_first + 1) % m_logs.size();
+	}
+}
+
+
+void AddLog(const string &str)
+{
+	((cViewer*)g_application)->m_logView->AddLog(str);
+}

@@ -172,6 +172,7 @@
     <ClCompile Include="graphbuff.cpp" />
     <ClCompile Include="infraredview.cpp" />
     <ClCompile Include="input.cpp" />
+    <ClCompile Include="logview.cpp" />
     <ClCompile Include="plyreader.cpp" />
     <ClCompile Include="rectcontour.cpp" />
     <ClCompile Include="root.cpp" />
@@ -194,6 +195,7 @@
     <ClInclude Include="graphbuff.h" />
     <ClInclude Include="infraredview.h" />
     <ClInclude Include="input.h" />
+    <ClInclude Include="logview.h" />
     <ClInclude Include="plyreader.h" />
     <ClInclude Include="rectcontour.h" />
     <ClInclude Include="root.h" />

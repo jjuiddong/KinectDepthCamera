@@ -18,6 +18,7 @@ public:
 	virtual void OnResizeEnd(const framework::eDockResize::Enum type, const common::sRectf &rect) override;
 	virtual void OnEventProc(const sf::Event &evt) override;
 	virtual void OnResetDevice() override;
+	void Capture3D();
 
 
 protected:
@@ -32,6 +33,7 @@ public:
 	common::Vector3 m_offset;
 	graphic::cGridLine m_ground;
 	graphic::cRenderTarget m_renderTarget;
+	graphic::cRenderTarget m_captureTarget;
 	bool m_showGround;
 	bool m_showWireframe;
 	bool m_showSensorPlane;

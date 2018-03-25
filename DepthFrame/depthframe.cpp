@@ -11,6 +11,7 @@
 #include "analysisview.h"
 #include "input.h"
 #include "filterview.h"
+#include "logview.h"
 
 
 using namespace graphic;
@@ -98,6 +99,9 @@ bool cViewer::OnInit()
 	m_filterView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_3dView);
 	result = m_filterView->Init(m_renderer);
 	assert(result);
+
+	m_logView = new cLogView("Output Log");
+	m_logView->Create(eDockState::DOCKWINDOW, eDockSlot::BOTTOM, this, m_inputView, 0.3f);
 
 
 	g_root.Create();

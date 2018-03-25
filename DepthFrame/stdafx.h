@@ -23,6 +23,7 @@
 
 //#include "CFW1StateSaver.h"
 #include "root.h"
+#include "logview.h"
 
 extern framework::cGameMain2 * g_application;
 extern cRoot g_root;

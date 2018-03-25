@@ -31,10 +31,13 @@ c3DView::~c3DView()
 
 bool c3DView::Init(cRenderer &renderer)
 {
-	const Vector3 eyePos(0.f, 300.f, -300.f);
+	const Vector3 eyePos(0.f, 350.f, -300.f);
+	//const Vector3 eyePos(0.f, 350.f, 00.f);
 	const Vector3 lookAt(0, 0, 0);
 	m_camera.SetCamera(eyePos, lookAt, Vector3(0, 1, 0));
 	m_camera.SetProjection(MATH_PI / 4.f, m_rect.Width() / m_rect.Height(), 1, 1000000.f);
+	//m_camera.SetProjectionOrthogonal(640, 480, 1, 10000.f);
+	//m_camera.SetProjectionOrthogonal(400, 400, 1, 10000.f);
 	m_camera.SetViewPort(m_rect.Width(), m_rect.Height());
 
 	sf::Vector2u size((u_int)m_rect.Width() - 15, (u_int)m_rect.Height() - 50);
@@ -43,6 +46,14 @@ bool c3DView::Init(cRenderer &renderer)
 	vp.m_vp.Height = (float)size.y;
 	m_renderTarget.Create(renderer, vp, DXGI_FORMAT_R8G8B8A8_UNORM, true, true
 		, DXGI_FORMAT_D24_UNORM_S8_UINT);
+
+	cViewport vp2 = renderer.m_viewPort;
+	vp2.m_vp.Width = 640.f;
+	vp2.m_vp.Height = 480.f;
+	m_captureTarget.Create(renderer, vp2
+		//, DXGI_FORMAT_R8G8B8A8_UNORM
+		, DXGI_FORMAT_R32_FLOAT
+		, true, true);
 
 	m_ground.Create(renderer, 100, 100, 10, 10);
 	m_planeGrid.Create(renderer, 100, 100, 10, 10);
@@ -147,6 +158,103 @@ void c3DView::OnPreRender(const float deltaSeconds)
 }
 
 
+void c3DView::Capture3D()
+{
+	const Vector3 eyePos(0.f, 350.f, 00.f);
+	const Vector3 lookAt(0, 0, 0);
+	cCamera3D camera("parallel camera");
+	camera.SetCamera(eyePos, lookAt, Vector3(0, 0, 1));
+	camera.SetProjectionOrthogonal(640, 480, 1, 10000.f);
+
+	sRectf curViewRect = { 0, 0, m_rect.Width() - 15, m_rect.Height() - 50 };
+	sRectf viewRect = { 0, 0, 640, 480 };
+	camera.SetViewPort(viewRect.Width(), viewRect.Height());
+
+	cRenderer &renderer = GetRenderer();
+	cAutoCam cam(&camera);
+
+	renderer.UnbindTextureAll();
+
+	GetMainCamera().Bind(renderer);
+	GetMainLight().Bind(renderer);
+
+	if (m_captureTarget.Begin(renderer, common::Vector4(0,0,0,1)))
+	{
+		CommonStates states(renderer.GetDevice());
+
+		renderer.GetDevContext()->RSSetState(states.CullCounterClockwise());
+
+		Transform tfm;
+		tfm.scale = Vector3(1.5f, 1, 1.5f);
+
+		g_root.m_sensorBuff.Render(renderer, "Heightmap", tfm.GetMatrixXM());
+
+		//if (m_showBoxAreaPointCloud)
+		//{
+		//	cShader11 *shader = renderer.m_shaderMgr.FindShader(eVertexType::POSITION);
+		//	assert(shader);
+		//	shader->SetTechnique("Heightmap");
+		//	shader->Begin();
+		//	shader->BeginPass(renderer, 0);
+
+		//	Transform tfm;
+		//	tfm.scale = Vector3(1, 1, 1)*1.5f;
+
+		//	renderer.m_cbPerFrame.m_v->mWorld = tfm.GetMatrixXM();// XMMatrixIdentity();
+		//	renderer.m_cbPerFrame.Update(renderer);
+		//	renderer.m_cbMaterial.Update(renderer, 2);
+
+		//	cColor colors[] = {
+		//		cColor::YELLOW, cColor::RED, cColor::GREEN, cColor::BLUE
+		//	};
+
+		//	for (int i = 0; i < g_root.m_areaFloorCnt; ++i)
+		//	{
+		//		auto &areaFloor = g_root.m_areaBuff[i];
+
+		//		common::Vector4 color;
+		//		if (i < ARRAYSIZE(colors))
+		//			color = colors[i].GetColor();
+		//		else
+		//			color = common::Vector4(1, 1, 1, 1);
+
+		//		XMVECTOR diffuse = XMLoadFloat4((XMFLOAT4*)&color);
+		//		renderer.m_cbMaterial.m_v->diffuse = diffuse;
+		//		renderer.m_cbMaterial.Update(renderer, 2);
+		//		areaFloor->vtxBuff->Bind(renderer);
+		//		renderer.GetDevContext()->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
+		//		renderer.GetDevContext()->DrawInstanced(areaFloor->areaCnt, 1, 0, 0);
+		//	}
+		//}
+	}
+	m_captureTarget.End(renderer);
+
+
+	// Copy RenderTarget to cv::Mat
+	{
+		using Microsoft::WRL::ComPtr;
+		D3D11_TEXTURE2D_DESC desc = {};
+		ComPtr<ID3D11Texture2D> pStaging;
+		HRESULT hr = DirectX::CaptureTexture(renderer.GetDevContext(), m_captureTarget.m_texture, desc, pStaging);
+		if (FAILED(hr))
+			return;
+
+		float *dst = (float*)g_root.m_sensorBuff.m_srcImg.data;
+		D3D11_MAPPED_SUBRESOURCE map;
+		hr = renderer.GetDevContext()->Map(pStaging.Get(), 0, D3D11_MAP_READ, 0, &map);
+		if (FAILED(hr))
+			return;
+
+		if (float *src = (float*)map.pData)
+		{
+			for (int i = 0; i < 640 * 480; ++i)
+				*dst++ = *src++;
+			renderer.GetDevContext()->Unmap(pStaging.Get(), 0);
+		}
+	}
+}
+
+
 void c3DView::OnRender(const float deltaSeconds)
 {
 	ImVec2 pos = ImGui::GetCursorScreenPos();
@@ -175,7 +283,7 @@ void c3DView::OnRender(const float deltaSeconds)
 
 		if (ImGui::Button("Camera Origin"))
 		{
-			const Vector3 eyePos(0.f, 1.f, -30.f);
+			const Vector3 eyePos(0.f, 350.f, -300.f);
 			const Vector3 lookAt(0, 0, 0);
 			m_camera.SetCamera(eyePos, lookAt, Vector3(0, 1, 0));
 		}
@@ -281,6 +389,14 @@ void c3DView::OnRender(const float deltaSeconds)
 		{
 			g_root.m_sensorBuff.ChangeSpace(GetRenderer());
 		}
+
+		//if (ImGui::Button("Capture"))
+		//{
+			//cRenderer &renderer = GetRenderer();
+			//m_renderTarget.m_texture->s;
+			//DirectX::SaveWICTextureToFile(renderer.GetDevContext(), m_renderTarget.m_texture
+			//	, GUID_ContainerFormatPng, L"test.png" );
+		//}
 
 		//if (ImGui::Button("Volume Measure"))
 		//{

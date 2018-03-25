@@ -17,6 +17,7 @@
     <ClCompile Include="datreader.cpp" />
     <ClCompile Include="filterview.cpp" />
     <ClCompile Include="rectcontour.cpp" />
+    <ClCompile Include="logview.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="depthframe.h" />
@@ -35,5 +36,6 @@
     <ClInclude Include="datreader.h" />
     <ClInclude Include="filterview.h" />
     <ClInclude Include="rectcontour.h" />
+    <ClInclude Include="logview.h" />
   </ItemGroup>
 </Project>

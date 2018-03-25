@@ -54,6 +54,7 @@ cRoot::cRoot()
 	m_heightErr[1] = 30;
 
 	ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
+	ZeroMemory(&m_hDistrib2, sizeof(m_hDistrib2));
 	ZeroMemory(&m_hDistribDifferential, sizeof(m_hDistribDifferential));
 }
 
