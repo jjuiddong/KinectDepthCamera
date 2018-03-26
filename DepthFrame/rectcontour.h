@@ -24,12 +24,14 @@ public:
 	void CalcWidthHeightVector();
 	void Draw(cv::Mat &dst, const cv::Scalar &color = cv::Scalar(0, 0, 0), const int thickness = 1) const;
 
+	bool IsEmpty();
 	int Width() const;
 	int Height() const;
 	cv::Point At(const int index) const;
 	cv::Point Center() const;
 	void ScaleCenter(const float scale);
 	void Scale(const float vscale, const float hscale);
+	bool IsContain(const cRectContour &rect);
 
 	cRectContour& operator = (const cRectContour &rhs);
 

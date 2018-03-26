@@ -198,7 +198,7 @@ bool OrderedContours(const vector<cv::Point> &src, OUT vector<cv::Point> &dst)
 
 
 cRectContour::cRectContour() :
-	m_contours(4)
+	m_contours(4, cv::Point(0,0))
 	, m_xIdx(0)
 {
 }
@@ -420,6 +420,23 @@ void cRectContour::Scale(const float vscale, const float hscale)
 }
 
 
+bool cRectContour::IsContain(const cRectContour &rect)
+{
+	const Point center1 = Center();
+	const int w1 = Width();
+	const int h1 = Height();
+	const Point center2 = rect.Center();
+	const int w2 = rect.Width();
+	const int h2 = rect.Height();
+
+	const Point c(abs(center1.x - center2.x), abs(center1.y - center2.y));
+	if ((c.x < (w1 / 2 + w2 / 2)) && (c.y < (h1 / 2 + h2 / 2)))
+		return true;
+
+	return false;
+}
+
+
 // index 번째 포인터를 리턴한다.
 Point cRectContour::At(const int index) const
 {
@@ -427,27 +444,65 @@ Point cRectContour::At(const int index) const
 }
 
 
-int cRectContour::Width() const
+bool cRectContour::IsEmpty()
 {
-	const int idx1 = m_xIdx;
-	const int idx2 = m_xIdx + 1;
-	const int idx3 = m_xIdx + 2;
-	const int idx4 = (m_xIdx + 3) % 4;
+	if ((m_contours[0] == cv::Point(0, 0))
+		&& (m_contours[1] == cv::Point(0, 0))
+		&& (m_contours[2] == cv::Point(0, 0))
+		&& (m_contours[3] == cv::Point(0, 0)))
+		return true;
 
-	return (int)abs(((m_contours[idx2].x - m_contours[idx1].x) + 
-		(m_contours[idx3].x - m_contours[idx4].x)) * 0.5f);
+	return false;
 }
 
 
+// AABB 
+int cRectContour::Width() const
+{
+	//const int idx1 = m_xIdx;
+	//const int idx2 = m_xIdx + 1;
+	//const int idx3 = m_xIdx + 2;
+	//const int idx4 = (m_xIdx + 3) % 4;
+
+	//return (int)abs(((m_contours[idx2].x - m_contours[idx1].x) + 
+	//	(m_contours[idx3].x - m_contours[idx4].x)) * 0.5f);
+
+	int minX = INT_MAX;
+	int maxX = 0;
+	for (u_int i = 0; i < m_contours.size(); ++i)
+	{
+		if (m_contours[i].x < minX)
+			minX = m_contours[i].x;
+		if (m_contours[i].x > maxX)
+			maxX = m_contours[i].x;
+	}
+
+	return abs(maxX - minX);
+}
+
+
+// AABB
 int cRectContour::Height() const
 {
-	const int idx1 = m_xIdx + 1;
-	const int idx2 = m_xIdx + 2;
-	const int idx3 = (m_xIdx + 3) % 4;
-	const int idx4 = m_xIdx;
+	//const int idx1 = m_xIdx + 1;
+	//const int idx2 = m_xIdx + 2;
+	//const int idx3 = (m_xIdx + 3) % 4;
+	//const int idx4 = m_xIdx;
 
-	return (int)abs(((m_contours[idx2].y - m_contours[idx1].y) + 
-		(m_contours[idx3].y - m_contours[idx4].y)) * 0.5f);
+	//return (int)abs(((m_contours[idx2].y - m_contours[idx1].y) + 
+	//	(m_contours[idx3].y - m_contours[idx4].y)) * 0.5f);
+
+	int minY = INT_MAX;
+	int maxY = 0;
+	for (u_int i = 0; i < m_contours.size(); ++i)
+	{
+		if (m_contours[i].y < minY)
+			minY = m_contours[i].y;
+		if (m_contours[i].x > maxY)
+			maxY = m_contours[i].y;
+	}
+
+	return abs(maxY - minY);
 }
 
 

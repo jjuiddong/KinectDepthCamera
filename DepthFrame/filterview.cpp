@@ -3,7 +3,7 @@
 #include "filterview.h"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
-#include "rectcontour.h"
+//#include "rectcontour.h"
 
 
 #ifdef _DEBUG
@@ -85,8 +85,6 @@ void setLabel(cv::Mat& im, const std::string &label, const cv::Point& pos, const
 
 cFilterView::cFilterView(const string &name)
 	: framework::cDockWindow(name)
-	//, m_thresholdMin(0)
-	//, m_thresholdMax(50000)
 {
 }
 
@@ -98,8 +96,6 @@ cFilterView::~cFilterView()
 bool cFilterView::Init(graphic::cRenderer &renderer)
 {
 	m_depthTexture.Create(renderer, g_baslerDepthWidth, g_baslerDepthHeight, DXGI_FORMAT_R32G32B32A32_FLOAT);
-
-	//m_srcImg = cv::Mat(480, 640, CV_32FC1);
 
 	return true;
 }
@@ -125,23 +121,17 @@ void cFilterView::OnRender(const float deltaSeconds)
 	ImGui::SetNextWindowSize(ImVec2(std::min(m_rect.Width() - 15.f, 500.f), 250));
 	if (ImGui::Begin("FilterView Info", &isOpen, ImVec2(std::min(m_rect.Width() - 15.f, 500.f), 250.f), windowAlpha, flags))
 	{
-		
-
-		//bool isUpdate = false;
-		//if (ImGui::DragInt("Threshold Min", &m_thresholdMin, 100, 0, USHORT_MAX))
-		//	isUpdate = true;
-		//if (ImGui::DragInt("Threshold Max", &m_thresholdMax, 100, 1, USHORT_MAX))
-		//	isUpdate = true;
-
-		//m_thresholdMin = min(m_thresholdMin, m_thresholdMax);
-		//m_thresholdMax = max(m_thresholdMin, m_thresholdMax);
-
-		//if (isUpdate)
-		//{
-		//	ProcessDepth(g_root.m_nTime, &g_root.m_sensorBuff.m_vertices[0]
-		//		, g_root.m_sensorBuff.m_width, g_root.m_sensorBuff.m_height
-		//		, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
-		//}
+		ImGui::Spacing();
+		ImGui::Separator();
+		for (u_int i=0; i < m_boxes.size(); ++i)
+		{
+			auto &box = m_boxes[i];
+			ImGui::Text("Box-%d, X = %f", i + 1, box.volume.x);
+			ImGui::Text("Box-%d, Y = %f", i + 1, box.volume.z);
+			ImGui::Text("Box-%d, H = %f", i + 1, box.volume.y);
+			ImGui::Spacing();
+			ImGui::Separator();
+		}
 
 		ImGui::End();
 	}
@@ -168,12 +158,14 @@ void cFilterView::ProcessDepth(INT64 nTime
 		m_depthTexture.Create(GetRenderer(), nWidth, nHeight, DXGI_FORMAT_R32G32B32_FLOAT);
 	}
 
+	m_rects.clear();
+	m_removeRects.clear();
 	cv::Mat &srcImg = g_root.m_sensorBuff.m_srcImg;
 
 	Mat grayscaleMat;
 	srcImg.convertTo(grayscaleMat, CV_16UC1, 500.0f);
 	srcImg.convertTo(m_dstImg, CV_8UC1, 255.0f);
-
+	cvtColor(m_dstImg, m_dstImg, cv::COLOR_GRAY2RGB);
 
 	const Mat element = cv::getStructuringElement(MORPH_RECT, Size(3, 3));
 	for (int k = 0; k < g_root.m_areaFloorCnt; ++k)
@@ -194,41 +186,128 @@ void cFilterView::ProcessDepth(INT64 nTime
 
 		while (loopCnt < 8)
 		{
-			if (FindBox(m_binImg))
+			vector<cRectContour> out;
+			if (FindBox(m_binImg, out))
+			{
+				for (auto &r : out)
+				{
+					sRectInfo info;
+					info.loop = loopCnt;
+					info.h = areaFloor->maxIdx * 0.1f;
+					info.r = r;
+					m_rects.push_back(info);
+				}
 				break;
+			}
 
 			cv::dilate(m_binImg, m_binImg, element);
 			++loopCnt;
 		}
 	}
 
-	//cv::threshold(grayscaleMat, m_binImg, 40, 255, cv::THRESH_BINARY);
-	//m_binImg.convertTo(m_binImg, CV_8UC1);
+	// Box 중복 제거
+	if (!m_rects.empty())
+	{
+		set<int> rmIndices;
+		for (u_int i = 0; i < m_rects.size()-1; ++i)
+		{
+			for (u_int k = i+1; k < m_rects.size(); ++k)
+			{
+				if (m_rects[i].r.IsContain(m_rects[k].r))
+				{
+					m_rects[i].h = max(m_rects[i].h, m_rects[k].h);
+					m_rects[k].h = max(m_rects[i].h, m_rects[k].h);
 
-	//cv::erode(m_binImg, m_binImg, element);
-	////cv::erode(m_binImg, m_binImg, element);
-	//cv::dilate(m_binImg, m_binImg, element);
-	//cv::dilate(m_binImg, m_binImg, element);
-	//cv::dilate(m_binImg, m_binImg, element);
-	//cv::dilate(m_binImg, m_binImg, element);
-	//cv::dilate(m_binImg, m_binImg, element);
-	//cv::dilate(m_binImg, m_binImg, element);
-	////cv::dilate(m_binImg, m_binImg, element);
+					const int a1 = m_rects[i].r.Width() * m_rects[i].r.Height();
+					const int a2 = m_rects[k].r.Width() * m_rects[k].r.Height();
+					m_rects[k].duplicate = ((float)a1 / (float)a2) < 1.1f; // 거의 같은 사이즈
 
+					if (a1 > a2)
+					{
+						rmIndices.insert(k);
+					}
+					else
+					{
+						rmIndices.insert(i);
+					}
+				}
+			}
+		}
+
+		// 높은 인덱스부터 제거한다.
+		for (auto it = rmIndices.rbegin(); it != rmIndices.rend(); ++it)
+		{
+			if (!m_rects[*it].duplicate) // 비슷한 크기의 박스는 표시하지 않는다. 중복 인식된 박스
+				m_removeRects.push_back(m_rects[*it]);
+
+			common::popvector(m_rects, *it);
+		}
+	}
+
+	// display remove rect
+	for (auto &info : m_removeRects)
+	{
+		cRectContour &rect = info.r;
+		const Scalar color(255, 0, 0);
+		rect.Draw(m_dstImg, color, 1);
+	}
+
+	// Display Detect Box
+	m_boxes.clear();
+	for (auto &info : m_rects)
+	{
+		cRectContour &rect = info.r;
+		const Scalar color(255, 255, 255);
+		setLabel(m_dstImg, "BOX", rect.m_contours, Scalar(1, 1, 1));
+		setLabel(m_dstImg, " 1", rect.At(0), color);
+		setLabel(m_dstImg, " 2", rect.At(1), color);
+		setLabel(m_dstImg, " 3", rect.At(2), color);
+		setLabel(m_dstImg, " 4", rect.At(3), color);
+
+		cv::circle(m_dstImg, rect.At(0), 5, color);
+		cv::circle(m_dstImg, rect.At(1), 5, color);
+		cv::circle(m_dstImg, rect.At(2), 5, color);
+		cv::circle(m_dstImg, rect.At(3), 5, color);
+		
+		rect.Draw(m_dstImg, color, 1);
+
+		const Vector2 v1((float)rect.At(0).x, (float)rect.At(0).y);
+		const Vector2 v2((float)rect.At(1).x, (float)rect.At(1).y);
+		const Vector2 v3((float)rect.At(2).x, (float)rect.At(2).y);
+		const Vector2 v4((float)rect.At(3).x, (float)rect.At(3).y);
+		
+		//const float scale = 50.f / 110.f;
+		const float scale = 50.f / 72.f;
+		const float offsetY = g_root.m_isPalete? -13.f : 2.5f;
+
+		sBoxInfo box;
+		box.volume.x = (((v1 - v2).Length()) + ((v3 - v4).Length())) * 0.5f;
+		box.volume.y = info.h + offsetY;
+		box.volume.z = (((v2 - v3).Length()) + ((v4 - v1).Length())) * 0.5f;
+
+		box.volume.x *= scale;
+		box.volume.y *= 1.f;
+		box.volume.z *= scale;
+
+		box.volume.x -= (float)info.loop*1.5f;
+		box.volume.z -= (float)info.loop*1.5f;
+
+		m_boxes.push_back(box);
+	}
 
 	UpdateTexture();
 }
 
 
-bool cFilterView::FindBox(cv::Mat &img)
+bool cFilterView::FindBox(cv::Mat &img, OUT vector<cRectContour> &out)
 {
-	bool isDetect = false;
 	findContours(img, m_contours, CV_RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
 	int m_minArea = 200;
 	double m_minCos = -0.4f;
 	double m_maxCos = 0.4f;
 
+	vector<cRectContour> rects;
 	std::vector<cv::Point> approx;
 	for (u_int i = 0; i < m_contours.size(); i++)
 	{
@@ -268,19 +347,20 @@ bool cFilterView::FindBox(cv::Mat &img)
 				rectPoint[3] = approx[3];
 				cRectContour rect;
 				rect.Init(rectPoint);
+				out.push_back(rect);
 
-				setLabel(m_dstImg, "BOX", m_contours[i], Scalar(1, 1, 1));
-				setLabel(m_dstImg, " 1", approx[0], Scalar(255, 255, 255));
-				setLabel(m_dstImg, " 2", approx[1], Scalar(255, 255, 255));
-				setLabel(m_dstImg, " 3", approx[2], Scalar(255, 255, 255));
-				setLabel(m_dstImg, " 4", approx[3], Scalar(255, 255, 255));
+				//setLabel(m_dstImg, "BOX", m_contours[i], Scalar(1, 1, 1));
+				//setLabel(m_dstImg, " 1", approx[0], Scalar(255, 255, 255));
+				//setLabel(m_dstImg, " 2", approx[1], Scalar(255, 255, 255));
+				//setLabel(m_dstImg, " 3", approx[2], Scalar(255, 255, 255));
+				//setLabel(m_dstImg, " 4", approx[3], Scalar(255, 255, 255));
 
-				cv::circle(m_dstImg, approx[0], 5, Scalar(255, 255, 255));
-				cv::circle(m_dstImg, approx[1], 5, Scalar(255, 255, 255));
-				cv::circle(m_dstImg, approx[2], 5, Scalar(255, 255, 255));
-				cv::circle(m_dstImg, approx[3], 5, Scalar(255, 255, 255));
+				//cv::circle(m_dstImg, approx[0], 5, Scalar(255, 255, 255));
+				//cv::circle(m_dstImg, approx[1], 5, Scalar(255, 255, 255));
+				//cv::circle(m_dstImg, approx[2], 5, Scalar(255, 255, 255));
+				//cv::circle(m_dstImg, approx[3], 5, Scalar(255, 255, 255));
 
-				rect.Draw(m_dstImg, Scalar(255, 255, 255), 1);
+				//rect.Draw(m_dstImg, Scalar(255, 255, 255), 1);
 
 				AddLog("Detect Box");
 				AddLog(common::format("pos1 = %d, %d", approx[0].x, approx[0].y));
@@ -296,13 +376,11 @@ bool cFilterView::FindBox(cv::Mat &img)
 				AddLog(common::format("pos2-3 len = %f", (v2 - v3).Length()));
 				AddLog(common::format("pos3-4 len = %f", (v3 - v4).Length()));
 				AddLog(common::format("pos4-1 len = %f", (v4 - v1).Length()));
-
-				isDetect = true;
 			}
 		}
 	}
 
-	return isDetect;
+	return !out.empty();
 }
 
 
@@ -321,12 +399,14 @@ void cFilterView::UpdateTexture()
 		{
 			for (int k = 0; k < nWidth; ++k)
 			{
-				const BYTE v1 = src[i * m_dstImg.step[0] + k];
+				const BYTE v1 = src[i * m_dstImg.step[0] + k * 3];
+				const BYTE v2 = src[i * m_dstImg.step[0] + k * 3 + 1];
+				const BYTE v3 = src[i * m_dstImg.step[0] + k * 3 + 2];
 				BYTE *p = dst + (i * map.RowPitch) + (k * sizeof(float) * 4);
 
 				*(float*)p = v1 / 255.f;
-				*(float*)(p + sizeof(float) * 1) = v1 / 255.f;
-				*(float*)(p + sizeof(float) * 2) = v1 / 255.f;
+				*(float*)(p + sizeof(float) * 1) = v2 / 255.f;
+				*(float*)(p + sizeof(float) * 2) = v3 / 255.f;
 				*(float*)(p + sizeof(float) * 3) = 1.f;
 			}
 		}

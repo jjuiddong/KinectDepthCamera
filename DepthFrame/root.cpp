@@ -42,6 +42,7 @@ cRoot::cRoot()
 	, m_isAutoSaveCapture(false)
 	, m_isConnectBasler(true)
 	, m_isAutoMeasure(false)
+	, m_isPalete(false)
 {
 	//m_pDepthBuff = new USHORT[g_kinectDepthWidth * g_kinectDepthHeight];
 

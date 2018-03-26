@@ -68,6 +68,7 @@ void cInputView::OnRender(const float deltaSeconds)
 	ImGui::Checkbox("AutoSave", &g_root.m_isAutoSaveCapture);
 	ImGui::SameLine();
 	ImGui::Checkbox("AutoMeasure", &g_root.m_isAutoMeasure);
+	ImGui::Checkbox("Palete", &g_root.m_isPalete);
 
 	if (m_isCaptureContinuos && g_root.m_baslerSetupSuccess)
 	{
@@ -81,8 +82,10 @@ void cInputView::OnRender(const float deltaSeconds)
 	else if (m_isFileAnimation)
 	{
 		m_aniTime += deltaSeconds;
-		if (m_aniTime > .1f)
+		if (m_aniTime > 0.1f)
 		{
+			//AddLog(common::format("t = %f", m_aniTime));
+
 			if (m_files.size() > (u_int)m_aniIndex)
 			{
 				g_root.m_sensorBuff.ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
@@ -254,7 +257,10 @@ void cInputView::UpdateFileList()
 
 		vector<WStrPath> out;
 		out.reserve(256);
-		common::CollectFiles(exts, L"../media/Depth7", out);
+		common::CollectFiles(exts, L"../media/Depth7", out); // test
+		//common::CollectFiles(exts, L"../media/Depth6", out); // sun day
+		//common::CollectFiles(exts, L"../media/Depth4", out); // satur day
+		//common::CollectFiles(exts, L"../media/Depth2", out); // thurs day
 
 		m_files.reserve(256);
 		for (auto &str : out)

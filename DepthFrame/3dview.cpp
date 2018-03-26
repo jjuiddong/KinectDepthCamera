@@ -31,7 +31,7 @@ c3DView::~c3DView()
 
 bool c3DView::Init(cRenderer &renderer)
 {
-	const Vector3 eyePos(0.f, 350.f, -300.f);
+	const Vector3 eyePos(0.f, 380.f, -300.f);
 	//const Vector3 eyePos(0.f, 350.f, 00.f);
 	const Vector3 lookAt(0, 0, 0);
 	m_camera.SetCamera(eyePos, lookAt, Vector3(0, 1, 0));
@@ -160,7 +160,7 @@ void c3DView::OnPreRender(const float deltaSeconds)
 
 void c3DView::Capture3D()
 {
-	const Vector3 eyePos(0.f, 350.f, 00.f);
+	const Vector3 eyePos(0.f, 380.f, 00.f);
 	const Vector3 lookAt(0, 0, 0);
 	cCamera3D camera("parallel camera");
 	camera.SetCamera(eyePos, lookAt, Vector3(0, 0, 1));
@@ -283,7 +283,7 @@ void c3DView::OnRender(const float deltaSeconds)
 
 		if (ImGui::Button("Camera Origin"))
 		{
-			const Vector3 eyePos(0.f, 350.f, -300.f);
+			const Vector3 eyePos(0.f, 380.f, -300.f);
 			const Vector3 lookAt(0, 0, 0);
 			m_camera.SetCamera(eyePos, lookAt, Vector3(0, 1, 0));
 		}

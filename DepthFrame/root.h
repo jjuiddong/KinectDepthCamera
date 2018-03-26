@@ -94,6 +94,7 @@ public:
 	bool m_isConnectBasler;
 	bool m_isAutoSaveCapture;
 	bool m_isAutoMeasure;
+	bool m_isPalete;
 
 	// Config
 	common::cConfig m_config;
