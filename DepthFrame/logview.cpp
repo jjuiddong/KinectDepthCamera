@@ -9,6 +9,7 @@ using namespace graphic;
 
 cLogView::cLogView(const string &name)
 	: framework::cDockWindow(name)
+	, m_isScroll(false)
 {
 	m_first = 0;
 	m_last = 0;
@@ -38,6 +39,13 @@ void cLogView::OnRender(const float deltaSeconds)
 		i = (i + 1) % m_logs.size();
 	}
 
+	if (m_isScroll)
+	{
+		ImGui::SetScrollHere();
+		m_isScroll = false;
+	}
+
+
 	ImGui::EndChild();
 	ImGui::PopStyleVar();
 }
@@ -53,6 +61,8 @@ void cLogView::AddLog(const string &str)
 		m_last = 0;
 		m_first = (m_first + 1) % m_logs.size();
 	}
+
+	m_isScroll = true;
 }
 
 

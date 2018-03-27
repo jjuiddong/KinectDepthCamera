@@ -30,11 +30,8 @@ cRoot::cRoot()
 	, m_pColorFrameReader(NULL)
 	, m_pInfraredFrameReader(NULL)
 	, m_isUpdate(false)
-	//, m_pDepthBuff(NULL)
 	, m_distribCount(0)
 	, m_areaCount(0)
-	//, m_areaMin(INT_MAX)
-	//, m_areaMax(0)
 	, m_areaFloorCnt(0)
 	, m_input(eInputType::FILE)
 	, m_Camera(NULL)
@@ -43,9 +40,8 @@ cRoot::cRoot()
 	, m_isConnectBasler(true)
 	, m_isAutoMeasure(false)
 	, m_isPalete(false)
+	, m_isConnectKinect(false)
 {
-	//m_pDepthBuff = new USHORT[g_kinectDepthWidth * g_kinectDepthHeight];
-
 	//m_depthThresholdMin = 0;
 	//m_depthThresholdMax = USHORT_MAX;
 	m_depthThresholdMin = 440;
@@ -67,9 +63,44 @@ cRoot::~cRoot()
 
 bool cRoot::Create()
 {
-	HRESULT hr;
+	if (m_config.Read("config_depthframe.txt"))
+	{
+		m_isConnectKinect = m_config.GetBool("kinect_connect", true);
+		m_isConnectBasler = m_config.GetBool("basler_connect", true);
+		m_inputFilePath = m_config.GetString("inputfilepath", "../Media/Depth");
+	}
 
-	hr = GetDefaultKinectSensor(&m_pKinectSensor);
+	if (m_isConnectKinect)
+	{
+		KinectSetup();
+	}
+
+	if (m_isConnectBasler)
+	{
+		try
+		{
+			CToFCamera::InitProducer();
+			m_Camera = new CToFCamera();
+			if (EXIT_SUCCESS == BaslerCameraSetup())
+			{
+				m_baslerSetupSuccess = true;
+			}
+		}
+		catch (GenICam::GenericException& e)
+		{
+			//cerr << "Exception occurred: " << endl << e.GetDescription() << endl;
+			//exitCode = EXIT_FAILURE;
+			return false;
+		}
+	}
+
+	return true;
+}
+
+
+bool cRoot::KinectSetup()
+{
+	HRESULT hr = GetDefaultKinectSensor(&m_pKinectSensor);
 	if (FAILED(hr))
 	{
 		return false;
@@ -121,30 +152,6 @@ bool cRoot::Create()
 	{
 		MessageBox(NULL, L"No ready Kinect found!", L"Error", MB_OK);
 		return false;
-	}
-
-	if (m_config.Read("config_depthframe.txt"))
-	{
-		m_isConnectBasler = m_config.GetBool("basler_connect", true);
-	}
-
-	if (m_isConnectBasler)
-	{
-		try
-		{
-			CToFCamera::InitProducer();
-			m_Camera = new CToFCamera();
-			if (EXIT_SUCCESS == BaslerCameraSetup())
-			{
-				m_baslerSetupSuccess = true;
-			}
-		}
-		catch (GenICam::GenericException& e)
-		{
-			//cerr << "Exception occurred: " << endl << e.GetDescription() << endl;
-			//exitCode = EXIT_FAILURE;
-			return false;
-		}
 	}
 
 	return true;
@@ -385,7 +392,6 @@ void cRoot::UpdateDepthImage(graphic::cRenderer &renderer)
 	hr = pDepthFrame->get_DepthMaxReliableDistance(&m_nDepthMaxDistance);
 
 	hr = pDepthFrame->AccessUnderlyingBuffer(&nBufferSize, &pBuffer);
-	//hr = pDepthFrame->CopyFrameDataToArray(nBufferSize, m_pDepthBuff);
 	if (FAILED(hr))
 		goto error;
 
@@ -408,8 +414,6 @@ void cRoot::Clear()
 		delete p;
 	}
 	m_areaBuff.clear();
-
-	//SAFE_DELETEA(m_pDepthBuff);
 
 	// done with depth frame reader
 	SAFE_RELEASE(m_pDepthFrameReader);
@@ -443,6 +447,8 @@ void cRoot::Clear()
 			CToFCamera::TerminateProducer();  // Won't throw any exceptions
 	}
 
+	m_config.SetValue("kinect_connect", m_isConnectKinect);
 	m_config.SetValue("basler_connect", m_isConnectBasler);
+	m_config.SetValue("inputfilepath", m_inputFilePath.c_str());
 	m_config.Write("config_depthframe.txt");
 }

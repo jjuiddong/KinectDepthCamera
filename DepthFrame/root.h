@@ -36,6 +36,7 @@ public:
 
 
 protected:
+	bool KinectSetup();
 	int BaslerCameraSetup();
 	void setupCamera();
 	void processData(const GrabResult& grabResult);
@@ -78,7 +79,7 @@ public:
 	struct sAreaFloor
 	{
 		int startIdx;
-		int maxIdx;
+		int maxIdx; // 가장 많이 분포한 높이 인덱스
 		int areaCnt;
 		int areaMin;
 		int areaMax;
@@ -87,6 +88,15 @@ public:
 	};
 	vector<sAreaFloor*> m_areaBuff;
 	int m_areaFloorCnt;
+
+	struct sBoxInfo {
+		common::Vector3 pos;
+		common::Vector3 volume;
+	};
+	vector<sBoxInfo> m_boxes;
+
+	// Kinect
+	bool m_isConnectKinect;
 
 	// Basler
 	bool m_baslerSetupSuccess;
@@ -97,5 +107,6 @@ public:
 	bool m_isPalete;
 
 	// Config
+	common::StrPath m_inputFilePath;
 	common::cConfig m_config;
 };

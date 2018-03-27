@@ -36,16 +36,11 @@ public:
 	// BoxVolume
 	struct sRectInfo {
 		int loop;
-		float h;
+		float lowerH;
+		float upperH;
 		bool duplicate;
 		cRectContour r;
 	};
 	vector<sRectInfo> m_rects;
 	vector<sRectInfo> m_removeRects;
-
-	struct sBoxInfo {
-		common::Vector3 pos;
-		common::Vector3 volume;
-	};
-	vector<sBoxInfo> m_boxes;
 };

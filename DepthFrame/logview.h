@@ -19,6 +19,7 @@ protected:
 	// circular queue
 	int m_first;
 	int m_last;
+	bool m_isScroll;
 	vector<common::Str128> m_logs;
 };
 

@@ -18,6 +18,7 @@
     <ClCompile Include="filterview.cpp" />
     <ClCompile Include="rectcontour.cpp" />
     <ClCompile Include="logview.cpp" />
+    <ClCompile Include="resultview.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="depthframe.h" />
@@ -37,5 +38,6 @@
     <ClInclude Include="filterview.h" />
     <ClInclude Include="rectcontour.h" />
     <ClInclude Include="logview.h" />
+    <ClInclude Include="resultview.h" />
   </ItemGroup>
 </Project>

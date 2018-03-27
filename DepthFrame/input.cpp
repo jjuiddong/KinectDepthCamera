@@ -19,6 +19,7 @@ cInputView::cInputView(const string &name)
 	, m_captureTime(false)
 	, m_isFileAnimation(false)
 	, m_aniIndex(0)
+	, m_selFileIdx(-1)
 {
 }
 
@@ -44,6 +45,11 @@ void cInputView::OnRender(const float deltaSeconds)
 	ImGui::RadioButton("Kinect", (int*)&g_root.m_input, cRoot::eInputType::KINECT);
 	ImGui::SameLine();
 	ImGui::RadioButton("Basler", (int*)&g_root.m_input, cRoot::eInputType::BASLER);
+
+	ImGui::Checkbox("Basler Connect", &g_root.m_isConnectBasler);
+	ImGui::SameLine();
+	ImGui::Checkbox("Kinect Connect", &g_root.m_isConnectKinect);
+	//ImGui::SameLine();
 	ImGui::Spacing();
 
 	ImGui::Text(g_root.m_baslerSetupSuccess? "BaslerCamera - Connect" : "BaslerCamera - Off");
@@ -63,11 +69,10 @@ void cInputView::OnRender(const float deltaSeconds)
 			m_isCaptureContinuos = true;
 	}
 
-	ImGui::Checkbox("Basler Connect", &g_root.m_isConnectBasler);
-	ImGui::SameLine();
 	ImGui::Checkbox("AutoSave", &g_root.m_isAutoSaveCapture);
 	ImGui::SameLine();
 	ImGui::Checkbox("AutoMeasure", &g_root.m_isAutoMeasure);
+	ImGui::SameLine();
 	ImGui::Checkbox("Palete", &g_root.m_isPalete);
 
 	if (m_isCaptureContinuos && g_root.m_baslerSetupSuccess)
@@ -77,6 +82,18 @@ void cInputView::OnRender(const float deltaSeconds)
 		{
 			m_captureTime = 0;
 			g_root.BaslerCapture();
+
+			if (g_root.m_isAutoMeasure)
+			{
+				g_root.m_sensorBuff.MeasureVolume(GetRenderer());
+			}
+
+			// Update FilterView, DepthView, DepthView2
+			((cViewer*)g_application)->m_3dView->Capture3D();
+			((cViewer*)g_application)->m_filterView->ProcessDepth();
+			((cViewer*)g_application)->m_depthView->ProcessDepth();
+			((cViewer*)g_application)->m_depthView2->ProcessDepth();
+
 		}
 	}
 	else if (m_isFileAnimation)
@@ -121,7 +138,7 @@ void cInputView::OnRender(const float deltaSeconds)
 		if (ImGui::Button("File Animation - Stop"))
 		{
 			m_isFileAnimation = false;
-			m_aniIndex = 0;
+			//m_aniIndex = 0;
 		}
 		ImGui::Text("%s", m_files[m_aniIndex].c_str());
 	}
@@ -130,7 +147,7 @@ void cInputView::OnRender(const float deltaSeconds)
 		if (ImGui::Button("File Animation - Play"))
 		{
 			m_isFileAnimation = true;
-			m_aniIndex = 0;
+			//m_aniIndex = 0;
 		}
 	}
 
@@ -139,30 +156,40 @@ void cInputView::OnRender(const float deltaSeconds)
 	ImGui::Separator();
 	ImGui::Spacing();
 
+	ImGui::PushID(10);
+	ImGui::InputText("", g_root.m_inputFilePath.m_str, g_root.m_inputFilePath.SIZE);
+	ImGui::PopID();
+	ImGui::SameLine();
+	if (ImGui::SmallButton("Read"))
+		UpdateFileList();
+
 	static ImGuiTextFilter filter;
 	filter.Draw("File Search");
+
+	ImGui::PushStyleVar(ImGuiStyleVar_ChildWindowRounding, 5.0f);
+	ImGui::BeginChild("Input File Window", ImVec2(0, m_rect.Height() - ImGui::GetCursorPos().y - 40), true);
 
 	ImGui::SetNextTreeNodeOpen(true, ImGuiSetCond_FirstUseEver);
 	if (ImGui::TreeNode((void*)0, "Input FileList"))
 	{
-		ImGui::SameLine();
-		if (ImGui::SmallButton("Refresh"))
-			UpdateFileList();
-
-		//ImGui::Separator();
-
-		static int selectIdx = -1;
+		//static int selectIdx = -1;
 		int i = 0;
 		bool isOpenPopup = false;
+
 
 		ImGui::SetNextTreeNodeOpen(true, ImGuiSetCond_FirstUseEver);
 		if (ImGui::TreeNode((void*)1, "*.ply, *.pcd files"))
 		{
 			ImGui::Columns(1, "modelcolumns5", false);
+			int cnt = 0;
 			for (auto &str : m_files)
 			{
+				++cnt;
+				if (cnt > 1000)
+					break;
+
 				const ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick
-					| ((i == selectIdx) ? ImGuiTreeNodeFlags_Selected : 0);
+					| ((i == m_selFileIdx) ? ImGuiTreeNodeFlags_Selected : 0);
 
 				StrPath fileName = str.GetFileName();
 				if (filter.PassFilter(fileName.c_str()))
@@ -172,42 +199,11 @@ void cInputView::OnRender(const float deltaSeconds)
 
 					if (ImGui::IsItemClicked() || ImGui::IsItemClicked(1))
 					{
-						selectIdx = i;
+						m_selFileIdx = i;
 						common::StrPath ansifileName = str.ansi();// change UTF8 -> UTF16
 						m_selectPath = ansifileName;
 
-						if (string(".ply") == ansifileName.GetFileExt())
-						{
-							g_root.m_sensorBuff.ReadPlyFile(
-								((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
-
-							if (g_root.m_isAutoMeasure)
-							{
-								g_root.m_sensorBuff.MeasureVolume(GetRenderer());
-							}
-
-							// Update FilterView, DepthView, DepthView2
-							((cViewer*)g_application)->m_3dView->Capture3D();
-							((cViewer*)g_application)->m_filterView->ProcessDepth();
-							((cViewer*)g_application)->m_depthView->ProcessDepth();
-							((cViewer*)g_application)->m_depthView2->ProcessDepth();
-						}
-						else if (string(".pcd") == ansifileName.GetFileExt())
-						{
-							g_root.m_sensorBuff.ReadDatFile(
-								((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
-						
-							if (g_root.m_isAutoMeasure)
-							{
-								g_root.m_sensorBuff.MeasureVolume(GetRenderer());
-							}
-
-							// Update FilterView, DepthView, DepthView2
-							((cViewer*)g_application)->m_3dView->Capture3D();
-							((cViewer*)g_application)->m_filterView->ProcessDepth();
-							((cViewer*)g_application)->m_depthView->ProcessDepth();
-							((cViewer*)g_application)->m_depthView2->ProcessDepth();
-						}
+						OpenFile(ansifileName);
 
 						// Popup Menu
 						if (ImGui::IsItemClicked(1))
@@ -241,6 +237,9 @@ void cInputView::OnRender(const float deltaSeconds)
 
 		ImGui::TreePop();
 	}
+
+	ImGui::EndChild();
+	ImGui::PopStyleVar();
 }
 
 
@@ -257,13 +256,86 @@ void cInputView::UpdateFileList()
 
 		vector<WStrPath> out;
 		out.reserve(256);
-		common::CollectFiles(exts, L"../media/Depth7", out); // test
+		//common::CollectFiles(exts, L"../media/Depth", out); // test
 		//common::CollectFiles(exts, L"../media/Depth6", out); // sun day
 		//common::CollectFiles(exts, L"../media/Depth4", out); // satur day
 		//common::CollectFiles(exts, L"../media/Depth2", out); // thurs day
+		//common::CollectFiles(exts, L"../media/Depth8", out); // 2018-03-26 data
+		common::CollectFiles(exts, g_root.m_inputFilePath.wstr().c_str(), out); // 2018-03-26 data		
 
 		m_files.reserve(256);
 		for (auto &str : out)
 			m_files.push_back(str.utf8());
 	}
 }
+
+
+bool cInputView::OpenFile(const StrPath &ansifileName)
+{
+	if (string(".ply") == ansifileName.GetFileExt())
+	{
+		g_root.m_sensorBuff.ReadPlyFile(
+			((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
+
+		if (g_root.m_isAutoMeasure)
+		{
+			g_root.m_sensorBuff.MeasureVolume(GetRenderer());
+		}
+
+		// Update FilterView, DepthView, DepthView2
+		((cViewer*)g_application)->m_3dView->Capture3D();
+		((cViewer*)g_application)->m_filterView->ProcessDepth();
+		((cViewer*)g_application)->m_depthView->ProcessDepth();
+		((cViewer*)g_application)->m_depthView2->ProcessDepth();
+	}
+	else if (string(".pcd") == ansifileName.GetFileExt())
+	{
+		g_root.m_sensorBuff.ReadDatFile(
+			((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
+
+		if (g_root.m_isAutoMeasure)
+		{
+			g_root.m_sensorBuff.MeasureVolume(GetRenderer());
+		}
+
+		// Update FilterView, DepthView, DepthView2
+		((cViewer*)g_application)->m_3dView->Capture3D();
+		((cViewer*)g_application)->m_filterView->ProcessDepth();
+		((cViewer*)g_application)->m_depthView->ProcessDepth();
+		((cViewer*)g_application)->m_depthView2->ProcessDepth();
+	}
+
+	return true;
+}
+
+
+void cInputView::OnEventProc(const sf::Event &evt)
+{
+	if (evt.type == sf::Event::KeyReleased)
+	{
+		switch (evt.key.code)
+		{
+		case sf::Keyboard::Key::Down:
+			++m_selFileIdx;
+			if ((int)m_files.size() <= m_selFileIdx)
+				m_selFileIdx = (int)m_files.size() - 1;
+
+			if (m_selFileIdx >= 0)
+				OpenFile(m_files[m_selFileIdx].ansi());
+			break;
+
+		case sf::Keyboard::Key::Up:
+			if (m_selFileIdx < 0)
+				break;
+
+			--m_selFileIdx;
+			if (m_selFileIdx < 0)
+				m_selFileIdx = m_files.empty()? -1 : 0;
+
+			if (m_selFileIdx >= 0)
+				OpenFile(m_files[m_selFileIdx].ansi());
+			break;
+		}
+	}
+}
+

@@ -453,9 +453,9 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 
 	for (auto &vtx : m_vertices)
 	{
-		if (abs(vtx.x) > 150.f)
+		if (abs(vtx.x) > 200.f)
 			continue;
-		if (abs(vtx.z) > 150.f)
+		if (abs(vtx.z) > 200.f)
 			continue;
 
 		const int h = (int)(vtx.y * 10.f);
@@ -609,9 +609,9 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 		{
 			for (auto &vtx : m_vertices)
 			{
-				if (abs(vtx.x) > 150.f)
+				if (abs(vtx.x) > 200.f)
 					continue;
-				if (abs(vtx.z) > 150.f)
+				if (abs(vtx.z) > 200.f)
 					continue;
 
 				const int mostHighIdx = maxAreaIdx;

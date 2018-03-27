@@ -175,6 +175,7 @@
     <ClCompile Include="logview.cpp" />
     <ClCompile Include="plyreader.cpp" />
     <ClCompile Include="rectcontour.cpp" />
+    <ClCompile Include="resultview.cpp" />
     <ClCompile Include="root.cpp" />
     <ClCompile Include="sensorbuffer.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -198,6 +199,7 @@
     <ClInclude Include="logview.h" />
     <ClInclude Include="plyreader.h" />
     <ClInclude Include="rectcontour.h" />
+    <ClInclude Include="resultview.h" />
     <ClInclude Include="root.h" />
     <ClInclude Include="sensorbuffer.h" />
     <ClInclude Include="stdafx.h" />

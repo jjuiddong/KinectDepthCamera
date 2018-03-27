@@ -12,6 +12,7 @@
 #include "input.h"
 #include "filterview.h"
 #include "logview.h"
+#include "resultview.h"
 
 
 using namespace graphic;
@@ -62,6 +63,9 @@ bool cViewer::OnInit()
 
 	m_gui.SetContext();
 
+	g_root.Create();
+
+
 	m_3dView = new c3DView("3DView");
 	m_3dView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, NULL);
 	bool result = m_3dView->Init(m_renderer);
@@ -100,11 +104,14 @@ bool cViewer::OnInit()
 	result = m_filterView->Init(m_renderer);
 	assert(result);
 
+	m_resultView = new cResultView("Result");
+	m_resultView->Create(eDockState::DOCKWINDOW, eDockSlot::TOP, this, m_inputView, 0.4f);
+	result = m_resultView->Init(m_renderer);
+	assert(result);
+
 	m_logView = new cLogView("Output Log");
-	m_logView->Create(eDockState::DOCKWINDOW, eDockSlot::BOTTOM, this, m_inputView, 0.3f);
+	m_logView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_resultView);
 
-
-	g_root.Create();
 
 	m_gui.SetContext();
 
@@ -123,12 +130,18 @@ bool cViewer::OnInit()
 	float col_text_hue = 0.0f / 255.0f;
 	float col_text_sat = 0.0f / 255.0f;
 	float col_text_val = 255.0f / 255.0f;
+
+	float col_btn_hue = 40.0f / 255.0f;
+	float col_btn_sat = 240.0f / 255.0f;
+	float col_btn_val = 120.0f / 255.0f;
+
 	float frameRounding = 0.0f;
 
 	ImVec4 col_text = ImColor::HSV(col_text_hue, col_text_sat, col_text_val);
 	ImVec4 col_main = ImColor::HSV(col_main_hue, col_main_sat, col_main_val);
 	ImVec4 col_area = ImColor::HSV(col_area_hue, col_area_sat, col_area_val);
 	ImVec4 col_back = ImColor::HSV(col_back_hue, col_back_sat, col_back_val);
+	ImVec4 col_btn = ImColor::HSV(col_btn_hue, col_btn_sat, col_btn_val);
 	float rounding = frameRounding;
 
 	ImGuiStyle& style = ImGui::GetStyle();
@@ -156,9 +169,9 @@ bool cViewer::OnInit()
 	style.Colors[ImGuiCol_CheckMark] = ImVec4(col_text.x, col_text.y, col_text.z, 0.80f);
 	style.Colors[ImGuiCol_SliderGrab] = ImVec4(col_main.x, col_main.y, col_main.z, 0.54f);
 	style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(col_main.x, col_main.y, col_main.z, 1.00f);
-	style.Colors[ImGuiCol_Button] = ImVec4(col_main.x, col_main.y, col_main.z, 0.44f);
-	style.Colors[ImGuiCol_ButtonHovered] = ImVec4(col_main.x, col_main.y, col_main.z, 0.86f);
-	style.Colors[ImGuiCol_ButtonActive] = ImVec4(col_main.x, col_main.y, col_main.z, 1.00f);
+	style.Colors[ImGuiCol_Button] = ImVec4(col_btn.x, col_btn.y, col_btn.z, 0.44f);
+	style.Colors[ImGuiCol_ButtonHovered] = ImVec4(col_btn.x, col_btn.y, col_btn.z, 0.86f);
+	style.Colors[ImGuiCol_ButtonActive] = ImVec4(col_btn.x, col_btn.y, col_btn.z, 1.00f);
 	style.Colors[ImGuiCol_Header] = ImVec4(col_main.x, col_main.y, col_main.z, 0.76f);
 	style.Colors[ImGuiCol_HeaderHovered] = ImVec4(col_main.x, col_main.y, col_main.z, 0.86f);
 	style.Colors[ImGuiCol_HeaderActive] = ImVec4(col_main.x, col_main.y, col_main.z, 1.00f);

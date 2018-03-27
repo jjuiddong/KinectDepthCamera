@@ -118,17 +118,18 @@ void cFilterView::OnRender(const float deltaSeconds)
 	bool isOpen = true;
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 	ImGui::SetNextWindowPos(pos);
-	ImGui::SetNextWindowSize(ImVec2(std::min(m_rect.Width() - 15.f, 500.f), 250));
-	if (ImGui::Begin("FilterView Info", &isOpen, ImVec2(std::min(m_rect.Width() - 15.f, 500.f), 250.f), windowAlpha, flags))
+	ImGui::SetNextWindowSize(ImVec2(std::min(m_rect.Width() - 15.f, 500.f), m_rect.Height()));
+	if (ImGui::Begin("FilterView Info", &isOpen, ImVec2(std::min(m_rect.Width() - 15.f, 500.f), m_rect.Height()), windowAlpha, flags))
 	{
 		ImGui::Spacing();
 		ImGui::Separator();
-		for (u_int i=0; i < m_boxes.size(); ++i)
+		for (u_int i = 0; i < g_root.m_boxes.size(); ++i)
 		{
-			auto &box = m_boxes[i];
-			ImGui::Text("Box-%d, X = %f", i + 1, box.volume.x);
-			ImGui::Text("Box-%d, Y = %f", i + 1, box.volume.z);
-			ImGui::Text("Box-%d, H = %f", i + 1, box.volume.y);
+			auto &box = g_root.m_boxes[i];
+			ImGui::Text("Box%d", i + 1);
+			ImGui::Text("\t X = %f", box.volume.x);
+			ImGui::Text("\t Y = %f", box.volume.z);
+			ImGui::Text("\t H = %f", box.volume.y);
 			ImGui::Spacing();
 			ImGui::Separator();
 		}
@@ -193,7 +194,8 @@ void cFilterView::ProcessDepth(INT64 nTime
 				{
 					sRectInfo info;
 					info.loop = loopCnt;
-					info.h = areaFloor->maxIdx * 0.1f;
+					info.lowerH = 0;
+					info.upperH = areaFloor->maxIdx * 0.1f;
 					info.r = r;
 					m_rects.push_back(info);
 				}
@@ -205,7 +207,7 @@ void cFilterView::ProcessDepth(INT64 nTime
 		}
 	}
 
-	// Box 중복 제거
+	// Box 중복인식 제거
 	if (!m_rects.empty())
 	{
 		set<int> rmIndices;
@@ -215,21 +217,38 @@ void cFilterView::ProcessDepth(INT64 nTime
 			{
 				if (m_rects[i].r.IsContain(m_rects[k].r))
 				{
-					m_rects[i].h = max(m_rects[i].h, m_rects[k].h);
-					m_rects[k].h = max(m_rects[i].h, m_rects[k].h);
-
 					const int a1 = m_rects[i].r.Width() * m_rects[i].r.Height();
 					const int a2 = m_rects[k].r.Width() * m_rects[k].r.Height();
-					m_rects[k].duplicate = ((float)a1 / (float)a2) < 1.1f; // 거의 같은 사이즈
+					const bool isDuplciate = abs(((float)a1 / (float)a2) - 1.f) < 0.1f; // 거의 같은 사이즈
+					m_rects[k].duplicate = isDuplciate;
 
-					if (a1 > a2)
+					// 중복 인식된 박스일 때, 더 낮은 높이의 박스를 제거한다.
+					if (isDuplciate)
 					{
-						rmIndices.insert(k);
+						//if (a1 > a2)
+						if (m_rects[i].upperH > m_rects[k].upperH)
+						{
+							rmIndices.insert(k);
+						}
+						else
+						{
+							rmIndices.insert(i);
+						}
 					}
 					else
 					{
-						rmIndices.insert(i);
+						// 두개의 박스가 위아래로 겹쳐져 있을 때,
+						// 박스바닥 높이를 계산한다.
+						if (m_rects[i].upperH > m_rects[k].upperH)
+						{
+							m_rects[i].lowerH = m_rects[k].upperH;
+						}
+						else
+						{
+							m_rects[k].lowerH = m_rects[i].upperH;
+						}
 					}
+
 				}
 			}
 		}
@@ -253,12 +272,16 @@ void cFilterView::ProcessDepth(INT64 nTime
 	}
 
 	// Display Detect Box
-	m_boxes.clear();
-	for (auto &info : m_rects)
+	g_root.m_boxes.clear();
+	char boxName[64];
+	for (u_int i=0; i < m_rects.size(); ++i)
 	{
+		auto &info = m_rects[i];
 		cRectContour &rect = info.r;
 		const Scalar color(255, 255, 255);
-		setLabel(m_dstImg, "BOX", rect.m_contours, Scalar(1, 1, 1));
+		
+		sprintf(boxName, "BOX%d", i + 1);
+		setLabel(m_dstImg, boxName, rect.m_contours, Scalar(1, 1, 1));
 		setLabel(m_dstImg, " 1", rect.At(0), color);
 		setLabel(m_dstImg, " 2", rect.At(1), color);
 		setLabel(m_dstImg, " 3", rect.At(2), color);
@@ -280,9 +303,9 @@ void cFilterView::ProcessDepth(INT64 nTime
 		const float scale = 50.f / 72.f;
 		const float offsetY = g_root.m_isPalete? -13.f : 2.5f;
 
-		sBoxInfo box;
+		cRoot::sBoxInfo box;
 		box.volume.x = (((v1 - v2).Length()) + ((v3 - v4).Length())) * 0.5f;
-		box.volume.y = info.h + offsetY;
+		box.volume.y = (info.upperH - info.lowerH) + offsetY;
 		box.volume.z = (((v2 - v3).Length()) + ((v4 - v1).Length())) * 0.5f;
 
 		box.volume.x *= scale;
@@ -292,7 +315,7 @@ void cFilterView::ProcessDepth(INT64 nTime
 		box.volume.x -= (float)info.loop*1.5f;
 		box.volume.z -= (float)info.loop*1.5f;
 
-		m_boxes.push_back(box);
+		g_root.m_boxes.push_back(box);
 	}
 
 	UpdateTexture();

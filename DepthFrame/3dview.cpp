@@ -616,10 +616,10 @@ void c3DView::OnEventProc(const sf::Event &evt)
 		case sf::Keyboard::Space:
 			break;
 
-		case sf::Keyboard::Left: m_camera.MoveRight(-0.5f); break;
-		case sf::Keyboard::Right: m_camera.MoveRight(0.5f); break;
-		case sf::Keyboard::Up: m_camera.MoveUp(0.5f); break;
-		case sf::Keyboard::Down: m_camera.MoveUp(-0.5f); break;
+		//case sf::Keyboard::Left: m_camera.MoveRight(-0.5f); break;
+		//case sf::Keyboard::Right: m_camera.MoveRight(0.5f); break;
+		//case sf::Keyboard::Up: m_camera.MoveUp(0.5f); break;
+		//case sf::Keyboard::Down: m_camera.MoveUp(-0.5f); break;
 		}
 		break;
 
