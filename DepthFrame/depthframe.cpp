@@ -105,7 +105,7 @@ bool cViewer::OnInit()
 	assert(result);
 
 	m_resultView = new cResultView("Result");
-	m_resultView->Create(eDockState::DOCKWINDOW, eDockSlot::TOP, this, m_inputView, 0.4f);
+	m_resultView->Create(eDockState::DOCKWINDOW, eDockSlot::TOP, this, m_inputView, 0.5f);
 	result = m_resultView->Init(m_renderer);
 	assert(result);
 

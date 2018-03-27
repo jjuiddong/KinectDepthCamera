@@ -100,16 +100,6 @@ void cDepthView::ProcessDepth(INT64 nTime
 				BYTE *p = dst + (i * map.RowPitch) + (k * 4);
 				//*(float*)p = max(0, (float)(depth - g_root.m_depthThresholdMin) / (g_root.m_depthThresholdMax - g_root.m_depthThresholdMin));
 				*(float*)p = std::max(0.f, (float)(depth - m_thresholdMin) / (float)(m_thresholdMax - m_thresholdMin));
-
-
-				//USHORT depth = pBuffer[i * nWidth + k];
-				//BYTE intensity = static_cast<BYTE>((depth >= nMinDepth) && (depth <= nMaxDepth) ? (depth % 256) : 0);
-
-				//BYTE *p = dst + (i * map.RowPitch) + (k * 4);
-				//*p = intensity;
-				//*(p + 1) = intensity;
-				//*(p + 2) = intensity;
-				//*(p + 3) = 0xFF;
 			}
 		}
 

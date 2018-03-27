@@ -180,8 +180,7 @@ bool cSensorBuffer::ReadPlyFile(cRenderer &renderer, const string &fileName)
 		for (u_int i = (u_int)cnt; i < m_vertices.size(); ++i)
 			m_vertices[i] = Vector3(0, 0, 0);
 	}
-
-
+	
 	return true;
 }
 
@@ -409,8 +408,49 @@ Vector3 cSensorBuffer::PickVertex(const Ray &ray)
 
 void cSensorBuffer::GeneratePlane(common::Vector3 pos[3])
 {
-	Plane plane(pos[0], pos[1], pos[2]);
-	m_plane = plane;
+
+	Matrix44 tm;
+	if (m_plane.N.IsEmpty())
+	{
+		Plane plane(pos[0], pos[1], pos[2]);
+		m_plane = plane;
+	}
+	else
+	{
+		// old plane
+		{
+			Quaternion q;
+			q.SetRotationArc(m_plane.N, Vector3(0, 1, 0));
+			tm *= q.GetMatrix();
+			Matrix44 T;
+			T.SetPosition(Vector3(0, m_plane.D, 0));
+			tm *= T;
+		}
+
+		tm.Inverse2();
+
+		common::Vector3 p[3];
+		p[0] = pos[0] * tm;
+		p[1] = pos[1] * tm;
+		p[2] = pos[2] * tm;
+		Plane plane(p[0], p[1], p[2]);
+
+
+		// new plane
+		//{
+		//	Quaternion q;
+		//	q.SetRotationArc(plane.N, Vector3(0, 1, 0));
+		//	tm *= q.GetMatrix();
+		//	//Matrix44 T;
+		//	//T.SetPosition(Vector3(0, plane.D, 0));
+		//	//tm *= T;
+		//}
+		//Vector3 N = Vector3(0, 1, 0) * tm.Inverse();
+		//Plane p(N.Normal(), 0);
+		m_plane = plane;
+
+	}
+	//m_plane = plane;
 }
 
 
@@ -469,7 +509,8 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 	// height distribute pulse
 	ZeroMemory(&g_root.m_hDistrib2, sizeof(g_root.m_hDistrib2));
 	{
-		const float minArea = 300.f;
+		//const float minArea = 300.f;
+		const float minArea = 150.f;
 		const float limitLowArea = 30.f;
 		int state = 0;
 		int startIdx = 0, endIdx = 0;
@@ -521,31 +562,6 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 		}
 	}
 
-
-	// height distribute differential - 2
-	//ZeroMemory(&g_root.m_hDistribDifferential, sizeof(g_root.m_hDistribDifferential));
-	//float oldD = 0;
-	//float oldArea = 0;
-	//for (int i = 0; i < ARRAYSIZE(g_root.m_hDistrib); ++i)
-	//{
-	//	if (i == 0)
-	//	{
-	//		g_root.m_hDistribDifferential.AddValue(0);
-	//		continue;
-	//	}
-
-	//	const float a = g_root.m_hDistrib[i];
-	//	const float d = g_root.m_hDistrib[i] - g_root.m_hDistrib[i - 1];
-	//	if ((d * oldD <= 0) && ((oldArea > 300) || (a > 300)))
-	//		g_root.m_hDistribDifferential.AddValue(a);
-	//	else
-	//		g_root.m_hDistribDifferential.AddValue(0);
-
-	//	oldD = d;
-	//	oldArea = a;
-	//}
-
-
 	// Generate Area Floor
 	u_int floor = 0;
 	int state = 0;
@@ -569,7 +585,7 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 		case 1:
 			if (g_root.m_hDistrib2[i] <= 0)
 			{
-				if ((maxAreaIdx==0) || (i - startIdx > 80)) // 범위가 너무크면 무시
+				if ((maxAreaIdx==0) || (startIdx == 0) || (i - startIdx > 400)) // 범위가 너무크면 무시
 				{
 					state = 0;
 				}
@@ -642,53 +658,6 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 		areaFloor->areaGraph.AddValue((float)areaFloor->areaCnt);
 	}
 	g_root.m_areaFloorCnt = floor;
-
-	// minimum height 10
-	//int mostHighIdx = 10;
-	//for (int i = 10; i < ARRAYSIZE(g_root.m_hDistrib); ++i)
-	//{
-	//	if (g_root.m_hDistrib[i] > g_root.m_hDistrib[mostHighIdx])
-	//	{
-	//		mostHighIdx = i;
-	//	}
-	//}
-
-	//g_root.m_areaCount = 0;
-	//cRenderer &renderer = GetRenderer();
-	//if (sVertex *dst = (sVertex*)m_vtxBuff2.Lock(renderer))
-	//{
-	//	for (auto &vtx : m_vertices)
-	//	{
-	//		if (abs(vtx.x) > 15.f)
-	//			continue;
-	//		if (abs(vtx.z) > 15.f)
-	//			continue;
-
-	//		const int h = (int)(vtx.y * 10.f);
-	//		if ((h >= 0) && (h < ARRAYSIZE(g_root.m_hDistrib)))
-	//		{
-	//			const bool ok = ((h - mostHighIdx) == 0)
-	//				|| (((h - mostHighIdx) > 0) && (abs(h - mostHighIdx) < g_root.m_heightErr[0]))
-	//				|| (((h - mostHighIdx) < 0) && (abs(h - mostHighIdx) < g_root.m_heightErr[1]));
-	//			
-	//			if (ok)
-	//			{
-	//				++g_root.m_areaCount;
-	//				dst->p = vtx + Vector3(0,0.01f,0);
-	//				++dst;
-	//			}
-	//		}
-	//	}
-
-	//	m_vtxBuff2.Unlock(renderer);
-	//}
-
-	//if (g_root.m_areaCount > g_root.m_areaMax)
-	//	g_root.m_areaMax = g_root.m_areaCount;
-	//if (g_root.m_areaCount < g_root.m_areaMin)
-	//	g_root.m_areaMin = g_root.m_areaCount;
-
-	//g_root.m_areaGraph.AddValue((float)g_root.m_areaCount);
 }
 
 

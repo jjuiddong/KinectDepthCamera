@@ -94,6 +94,7 @@ public:
 		common::Vector3 volume;
 	};
 	vector<sBoxInfo> m_boxes;
+	vector<sBoxInfo> m_boxesStored;
 
 	// Kinect
 	bool m_isConnectKinect;
@@ -105,6 +106,9 @@ public:
 	bool m_isAutoSaveCapture;
 	bool m_isAutoMeasure;
 	bool m_isPalete;
+
+	// Box3D
+	common::Vector3 m_box3DPos[4];
 
 	// Config
 	common::StrPath m_inputFilePath;

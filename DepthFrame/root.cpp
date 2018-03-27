@@ -319,11 +319,6 @@ void cRoot::processData(const GrabResult& grabResult)
 
 	m_sensorBuff.ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer(), reader);
 	
-	// Update DepthView, DepthView2
-	((cViewer*)g_application)->m_depthView->ProcessDepth();
-	((cViewer*)g_application)->m_depthView2->ProcessDepth();
-
-
 	// save *.pcd file
 	if (m_isAutoSaveCapture)
 	{

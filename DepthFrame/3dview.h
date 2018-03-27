@@ -23,6 +23,7 @@ public:
 
 protected:
 	void UpdateLookAt();
+	double CalcBasePlaneStandardDeviation();
 	void OnWheelMove(const float delta, const POINT mousePt);
 	void OnMouseMove(const POINT mousePt);
 	void OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt);
@@ -47,7 +48,6 @@ public:
 	};
 
 	eState::Enum m_state;
-	//bool m_isAutoProcess;
 	bool m_isGenPlane;
 	bool m_isGenVolumeCenter;
 	int m_genPlane;
@@ -56,7 +56,9 @@ public:
 	graphic::cDbgSphere m_sphere;
 	graphic::cGridLine m_planeGrid;
 	graphic::cDbgLine m_volumeCenterLine;
+	graphic::cDbgLine m_boxLine;
 	common::Vector3 m_pickPos;
+	double m_planeStandardDeviation;
 
 	// MouseMove Variable
 	POINT m_viewPos;

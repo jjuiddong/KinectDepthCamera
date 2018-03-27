@@ -18,9 +18,9 @@ c3DView::c3DView(const string &name)
 	, m_isGenVolumeCenter(false)
 	, m_state(eState::NORMAL)
 	, m_offset(Vector3(0,10,0))
-	//, m_isAutoProcess(false)
 	, m_showPointCloud(true)
 	, m_showBoxAreaPointCloud(true)
+	, m_planeStandardDeviation(0)
 {
 }
 
@@ -59,6 +59,7 @@ bool c3DView::Init(cRenderer &renderer)
 	m_planeGrid.Create(renderer, 100, 100, 10, 10);
 	m_sphere.Create(renderer, 1, 10, 10, cColor::WHITE);
 	m_volumeCenterLine.Create(renderer);
+	m_boxLine.Create(renderer);
 
 	return true;
 }
@@ -71,15 +72,6 @@ void c3DView::OnUpdate(const float deltaSeconds)
 
 void c3DView::OnPreRender(const float deltaSeconds)
 {
-	if (g_root.m_isUpdate)
-	{
-		//if (m_isAutoProcess)
-		//{
-		//	g_root.m_sensorBuff.ChangeSpace(GetRenderer());
-		//	g_root.m_sensorBuff.MeasureVolume(GetRenderer());
-		//}
-	}
-
 	cRenderer &renderer = GetRenderer();
 	cAutoCam cam(&m_camera);
 
@@ -109,6 +101,12 @@ void c3DView::OnPreRender(const float deltaSeconds)
 
 		if (m_isGenVolumeCenter)
 			m_volumeCenterLine.Render(renderer);
+
+		//for (int i = 0; i < 4; ++i)
+		//{
+		//	m_boxLine.SetLine(g_root.m_box3DPos[i], g_root.m_box3DPos[(i + 1) % 4], 1);
+		//	m_boxLine.Render(renderer);
+		//}
 
 		m_sphere.Render(renderer);
 
@@ -272,14 +270,14 @@ void c3DView::OnRender(const float deltaSeconds)
 	{
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
-		ImGui::Text("Input Type");
-		ImGui::SameLine();
-		ImGui::RadioButton("File", (int*)&g_root.m_input, cRoot::eInputType::FILE);
-		ImGui::SameLine();
-		ImGui::RadioButton("Kinect", (int*)&g_root.m_input, cRoot::eInputType::KINECT);
-		ImGui::SameLine();
-		ImGui::RadioButton("Basler", (int*)&g_root.m_input, cRoot::eInputType::BASLER);
-		ImGui::Spacing();
+		//ImGui::Text("Input Type");
+		//ImGui::SameLine();
+		//ImGui::RadioButton("File", (int*)&g_root.m_input, cRoot::eInputType::FILE);
+		//ImGui::SameLine();
+		//ImGui::RadioButton("Kinect", (int*)&g_root.m_input, cRoot::eInputType::KINECT);
+		//ImGui::SameLine();
+		//ImGui::RadioButton("Basler", (int*)&g_root.m_input, cRoot::eInputType::BASLER);
+		//ImGui::Spacing();
 
 		if (ImGui::Button("Camera Origin"))
 		{
@@ -308,12 +306,6 @@ void c3DView::OnRender(const float deltaSeconds)
 				, g_root.m_nTime
 				, &g_root.m_sensorBuff.m_depthBuff[0]
 				, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
-
-			//if (m_isAutoProcess)
-			//{
-			//	g_root.m_sensorBuff.ChangeSpace(renderer);
-			//	g_root.m_sensorBuff.MeasureVolume(renderer);
-			//}
 		}
 
 		ImGui::SameLine();
@@ -390,24 +382,67 @@ void c3DView::OnRender(const float deltaSeconds)
 			g_root.m_sensorBuff.ChangeSpace(GetRenderer());
 		}
 
-		//if (ImGui::Button("Capture"))
-		//{
-			//cRenderer &renderer = GetRenderer();
-			//m_renderTarget.m_texture->s;
-			//DirectX::SaveWICTextureToFile(renderer.GetDevContext(), m_renderTarget.m_texture
-			//	, GUID_ContainerFormatPng, L"test.png" );
-		//}
+		if (ImGui::Button("Standard Deviation"))
+		{
+			m_planeStandardDeviation = CalcBasePlaneStandardDeviation();
+		}
 
-		//if (ImGui::Button("Volume Measure"))
-		//{
-		//	m_isAutoProcess = true;
-		//	g_root.m_sensorBuff.MeasureVolume(GetRenderer());
-		//}
-
-		//ImGui::Checkbox("Auto Process", &m_isAutoProcess);
+		if (m_planeStandardDeviation != 0)
+		{
+			ImGui::Text("Standard Deviation = %f", m_planeStandardDeviation);
+		}
 
 		ImGui::End();
 	}
+}
+
+
+// 재귀 평균
+double CalcAverage(const int k, const double Avr, const double Xk)
+{
+	const double alpha = (double)(k - 1.f) / (double)k;
+	return alpha * Avr + (1.f - alpha) * Xk;
+}
+
+
+// 바닥의 표준편차를 구한다.
+double c3DView::CalcBasePlaneStandardDeviation()
+{
+	const float xLimitLower = -40.f;
+	const float xLimitUpper = 45.f;
+	const float zLimitLower = -42.5f;
+	const float zLimitUpper = 42.5f;
+
+	// 높이 평균 구하기
+	int k = 0;
+	double avr = 0;
+	for (auto &vtx : g_root.m_sensorBuff.m_vertices)
+	{
+		if ((xLimitLower < vtx.x)
+			&& (xLimitUpper > vtx.x)
+			&& (zLimitLower < vtx.z)
+			&& (zLimitUpper > vtx.z))
+		{
+			avr = CalcAverage(++k, avr, vtx.y);
+		}
+	}
+
+	// 표준 편차 구하기
+	k = 0;
+	double sd = 0;
+	for (auto &vtx : g_root.m_sensorBuff.m_vertices)
+	{
+		if ((xLimitLower < vtx.x)
+			&& (xLimitUpper > vtx.x)
+			&& (zLimitLower < vtx.z)
+			&& (zLimitUpper > vtx.z))
+		{
+			sd = CalcAverage(++k, sd, (vtx.y - avr) * (vtx.y - avr));
+		}
+	}
+	sd = sqrt(sd);
+
+	return sd;
 }
 
 

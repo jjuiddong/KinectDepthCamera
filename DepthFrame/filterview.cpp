@@ -294,14 +294,19 @@ void cFilterView::ProcessDepth(INT64 nTime
 		
 		rect.Draw(m_dstImg, color, 1);
 
+		for (int i = 0; i < 4; ++i)
+		{
+			g_root.m_box3DPos[i] = g_root.m_sensorBuff.m_vertices[rect.At(i).y * 640 + rect.At(i).x];
+		}
+
 		const Vector2 v1((float)rect.At(0).x, (float)rect.At(0).y);
 		const Vector2 v2((float)rect.At(1).x, (float)rect.At(1).y);
 		const Vector2 v3((float)rect.At(2).x, (float)rect.At(2).y);
 		const Vector2 v4((float)rect.At(3).x, (float)rect.At(3).y);
 		
 		//const float scale = 50.f / 110.f;
-		const float scale = 50.f / 72.f;
-		const float offsetY = g_root.m_isPalete? -13.f : 2.5f;
+		const float scale = 50.f / 73.2f;
+		const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete)? -13.f : 2.5f;
 
 		cRoot::sBoxInfo box;
 		box.volume.x = (((v1 - v2).Length()) + ((v3 - v4).Length())) * 0.5f;
