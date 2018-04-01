@@ -307,11 +307,18 @@ void cFilterView::ProcessDepth(INT64 nTime
 		//const float scale = 50.f / 110.f;
 		const float scale = 50.f / 73.2f;
 		const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete)? -13.f : 2.5f;
-
+		
+		// maximum value
 		cRoot::sBoxInfo box;
-		box.volume.x = (((v1 - v2).Length()) + ((v3 - v4).Length())) * 0.5f;
+		const float l1 = std::max((v1 - v2).Length(), (v3 - v4).Length());
+		const float l2 = std::max((v2 - v3).Length(), (v4 - v1).Length());
+		box.volume.x = std::max(l1, l2);
 		box.volume.y = (info.upperH - info.lowerH) + offsetY;
-		box.volume.z = (((v2 - v3).Length()) + ((v4 - v1).Length())) * 0.5f;
+		box.volume.z = std::min(l1, l2);
+
+		//box.volume.x = (((v1 - v2).Length()) + ((v3 - v4).Length())) * 0.5f;
+		//box.volume.y = (info.upperH - info.lowerH) + offsetY;
+		//box.volume.z = (((v2 - v3).Length()) + ((v4 - v1).Length())) * 0.5f;
 
 		box.volume.x *= scale;
 		box.volume.y *= 1.f;
