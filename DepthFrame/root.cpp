@@ -69,6 +69,10 @@ bool cRoot::Create()
 		m_isConnectBasler = m_config.GetBool("basler_connect", true);
 		m_inputFilePath = m_config.GetString("inputfilepath", "../Media/Depth");
 	}
+	else
+	{
+		m_inputFilePath = "../Media/Depth";
+	}
 
 	if (m_isConnectKinect)
 	{

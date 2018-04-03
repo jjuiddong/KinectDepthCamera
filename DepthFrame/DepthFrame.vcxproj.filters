@@ -3,41 +3,86 @@
   <ItemGroup>
     <ClCompile Include="depthframe.cpp" />
     <ClCompile Include="stdafx.cpp" />
-    <ClCompile Include="3dview.cpp" />
     <ClCompile Include="root.cpp" />
-    <ClCompile Include="depthview.cpp" />
-    <ClCompile Include="colorview.cpp" />
-    <ClCompile Include="infraredview.cpp" />
-    <ClCompile Include="depthview2.cpp" />
-    <ClCompile Include="analysisview.cpp" />
     <ClCompile Include="graphbuff.cpp" />
-    <ClCompile Include="input.cpp" />
     <ClCompile Include="plyreader.cpp" />
     <ClCompile Include="sensorbuffer.cpp" />
     <ClCompile Include="datreader.cpp" />
-    <ClCompile Include="filterview.cpp" />
     <ClCompile Include="rectcontour.cpp" />
-    <ClCompile Include="logview.cpp" />
-    <ClCompile Include="resultview.cpp" />
+    <ClCompile Include="3dview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="analysisview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="colorview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="depthview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="depthview2.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="filterview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="infraredview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="input.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="logview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="resultview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="depthframe.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="3dview.h" />
     <ClInclude Include="root.h" />
-    <ClInclude Include="depthview.h" />
-    <ClInclude Include="colorview.h" />
-    <ClInclude Include="infraredview.h" />
-    <ClInclude Include="depthview2.h" />
-    <ClInclude Include="analysisview.h" />
     <ClInclude Include="graphbuff.h" />
-    <ClInclude Include="input.h" />
     <ClInclude Include="plyreader.h" />
     <ClInclude Include="sensorbuffer.h" />
     <ClInclude Include="datreader.h" />
-    <ClInclude Include="filterview.h" />
     <ClInclude Include="rectcontour.h" />
-    <ClInclude Include="logview.h" />
-    <ClInclude Include="resultview.h" />
+    <ClInclude Include="3dview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="analysisview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="colorview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="depthview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="depthview2.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="filterview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="infraredview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="input.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="logview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="resultview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="view">
+      <UniqueIdentifier>{4f40d4cc-aa1e-4510-abee-c57b172295bd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

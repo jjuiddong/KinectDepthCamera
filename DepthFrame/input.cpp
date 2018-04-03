@@ -106,7 +106,7 @@ void cInputView::OnRender(const float deltaSeconds)
 
 			// Update FilterView, DepthView, DepthView2
 			((cViewer*)g_application)->m_depthView->ProcessDepth();
-			((cViewer*)g_application)->m_depthView2->ProcessDepth();
+			//((cViewer*)g_application)->m_depthView2->ProcessDepth();
 			((cViewer*)g_application)->m_3dView->Capture3D();
 			((cViewer*)g_application)->m_filterView->ProcessDepth();
 		}
@@ -141,7 +141,7 @@ void cInputView::OnRender(const float deltaSeconds)
 
 				// Update FilterView, DepthView, DepthView2
 				((cViewer*)g_application)->m_depthView->ProcessDepth();
-				((cViewer*)g_application)->m_depthView2->ProcessDepth();
+				//((cViewer*)g_application)->m_depthView2->ProcessDepth();
 				((cViewer*)g_application)->m_3dView->Capture3D();
 				((cViewer*)g_application)->m_filterView->ProcessDepth();
 			}
@@ -305,7 +305,7 @@ void cInputView::CalcDelayMeasure()
 	((cViewer*)g_application)->m_3dView->Capture3D();
 	((cViewer*)g_application)->m_filterView->ProcessDepth();
 	((cViewer*)g_application)->m_depthView->ProcessDepth();
-	((cViewer*)g_application)->m_depthView2->ProcessDepth();
+	//((cViewer*)g_application)->m_depthView2->ProcessDepth();
 	
 	// 측정된 정보를 따로 저장한다.
 	g_root.m_boxesStored = g_root.m_boxes;
@@ -362,7 +362,7 @@ bool cInputView::OpenFile(const StrPath &ansifileName)
 		((cViewer*)g_application)->m_3dView->Capture3D();
 		((cViewer*)g_application)->m_filterView->ProcessDepth();
 		((cViewer*)g_application)->m_depthView->ProcessDepth();
-		((cViewer*)g_application)->m_depthView2->ProcessDepth();
+		//((cViewer*)g_application)->m_depthView2->ProcessDepth();
 	}
 	else if (string(".pcd") == ansifileName.GetFileExt())
 	{
@@ -378,7 +378,7 @@ bool cInputView::OpenFile(const StrPath &ansifileName)
 		((cViewer*)g_application)->m_3dView->Capture3D();
 		((cViewer*)g_application)->m_filterView->ProcessDepth();
 		((cViewer*)g_application)->m_depthView->ProcessDepth();
-		((cViewer*)g_application)->m_depthView2->ProcessDepth();
+		//((cViewer*)g_application)->m_depthView2->ProcessDepth();
 	}
 
 	return true;
