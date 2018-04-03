@@ -1,11 +1,9 @@
 //
 // 2018-03-13, jjuiddong
+// Global class
 //
 #pragma once
 
-#include "graphbuff.h"
-#include "sensorbuffer.h"
-#include "datreader.h"
 #include <ConsumerImplHelper/ToFCamera.h>
 using namespace GenTLConsumerImplHelper;
 

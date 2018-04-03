@@ -21,7 +21,10 @@
 
 
 
-//#include "CFW1StateSaver.h"
+#include "graphbuff.h"
+#include "sensorbuffer.h"
+#include "plyreader.h"
+#include "datreader.h"
 #include "root.h"
 #include "logview.h"
 

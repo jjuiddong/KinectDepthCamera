@@ -1,8 +1,6 @@
 
 #include "stdafx.h"
 #include "sensorbuffer.h"
-#include "plyreader.h"
-#include "datreader.h"
 
 using namespace graphic;
 

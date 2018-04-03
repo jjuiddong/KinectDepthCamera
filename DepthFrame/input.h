@@ -20,6 +20,7 @@ public:
 protected:
 	void UpdateFileList();
 	bool OpenFile(const common::StrPath &ansifileName);
+	void UpdateDelayMeasure(const float deltaSeconds);
 	void CalcDelayMeasure();
 	void StoreMinimumDifferenceSensorBuffer();
 
@@ -45,7 +46,7 @@ public:
 	float m_aniTime;
 	int m_selFileIdx;
 
-	// Delay Measure
+	// Delay Measure (minimum difference error buffer)
 	float m_measureTime;
 	float m_minDifference;
 	vector<USHORT> m_depthBuff; // intensity

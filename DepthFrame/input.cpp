@@ -1,8 +1,6 @@
 
 #include "stdafx.h"
 #include "input.h"
-#include "plyreader.h"
-#include "datreader.h"
 #include "depthframe.h"
 #include "3dview.h"
 #include "depthview.h"
@@ -85,30 +83,7 @@ void cInputView::OnRender(const float deltaSeconds)
 		{
 			m_captureTime = 0;
 			g_root.BaslerCapture();
-
-			if (eState::DELAY_MEASURE == m_state)
-			{
-				m_measureTime += deltaSeconds;
-				if (m_measureTime > 1.f)
-				{
-					CalcDelayMeasure();
-				}
-				else
-				{
-					StoreMinimumDifferenceSensorBuffer();
-				}
-			}
-
-			if (g_root.m_isAutoMeasure)
-			{
-				g_root.m_sensorBuff.MeasureVolume(GetRenderer());
-			}
-
-			// Update FilterView, DepthView, DepthView2
-			((cViewer*)g_application)->m_depthView->ProcessDepth();
-			//((cViewer*)g_application)->m_depthView2->ProcessDepth();
-			((cViewer*)g_application)->m_3dView->Capture3D();
-			((cViewer*)g_application)->m_filterView->ProcessDepth();
+			UpdateDelayMeasure(deltaSeconds);
 		}
 	}
 	else if (m_isFileAnimation)
@@ -121,31 +96,8 @@ void cInputView::OnRender(const float deltaSeconds)
 				g_root.m_sensorBuff.ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
 					, m_files[m_aniIndex].ansi().c_str());
 
-				if (eState::DELAY_MEASURE == m_state)
-				{
-					m_measureTime += deltaSeconds;
-					if (m_measureTime > 1.f)
-					{
-						CalcDelayMeasure();
-					}
-					else
-					{
-						StoreMinimumDifferenceSensorBuffer();
-					}
-				}
-
-				if (g_root.m_isAutoMeasure)
-				{
-					g_root.m_sensorBuff.MeasureVolume(GetRenderer());
-				}
-
-				// Update FilterView, DepthView, DepthView2
-				((cViewer*)g_application)->m_depthView->ProcessDepth();
-				//((cViewer*)g_application)->m_depthView2->ProcessDepth();
-				((cViewer*)g_application)->m_3dView->Capture3D();
-				((cViewer*)g_application)->m_filterView->ProcessDepth();
+				UpdateDelayMeasure(deltaSeconds);
 			}
-
 		
 			m_aniIndex++;
 			m_aniTime = 0.f;
@@ -236,21 +188,6 @@ void cInputView::OnRender(const float deltaSeconds)
 			ImGui::TreePop();
 		}
 
-		////---------------------------------------------------------------------------
-		//// Popup Menu
-		//if (isOpenPopup)
-		//	ImGui::OpenPopup("select");
-
-		//ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.1f, 0.1f, 0.1f, 0.9f));
-		//if (ImGui::BeginPopup("select"))
-		//{
-		//	if (ImGui::Selectable("Add Model      "))
-		//		g_root.m_hierarchyWindow->AddModel();
-		//	ImGui::EndPopup();
-		//}
-		//ImGui::PopStyleColor();
-		////---------------------------------------------------------------------------
-
 		ImGui::TreePop();
 	}
 
@@ -259,8 +196,43 @@ void cInputView::OnRender(const float deltaSeconds)
 }
 
 
+// 1초간 지연 후, 가장 작은 오차를 가진 정보로 볼륨을 측정한다.
+void cInputView::UpdateDelayMeasure(const float deltaSeconds)
+{
+	bool isShowVolumeCalc = true;
+
+	if (eState::DELAY_MEASURE == m_state)
+	{
+		m_measureTime += deltaSeconds;
+		if (m_measureTime > 1.f)
+		{
+			CalcDelayMeasure();
+			isShowVolumeCalc = false; // already show
+		}
+		else
+		{
+			StoreMinimumDifferenceSensorBuffer();
+		}
+	}
+
+	if (isShowVolumeCalc)
+	{
+		if (g_root.m_isAutoMeasure)
+		{
+			g_root.m_sensorBuff.MeasureVolume(GetRenderer());
+		}
+
+		// Update FilterView, DepthView, DepthView2
+		((cViewer*)g_application)->m_depthView->ProcessDepth();
+		//((cViewer*)g_application)->m_depthView2->ProcessDepth();
+		((cViewer*)g_application)->m_3dView->Capture3D();
+		((cViewer*)g_application)->m_filterView->ProcessDepth();
+	}
+}
+
+
 // 데이타 변화율이 적은 정보를 저장한다.
-// 1초가 지난 후, 계산된다.
+// 1 초가 지난 후, 계산된다.
 void cInputView::StoreMinimumDifferenceSensorBuffer()
 {
 	if (m_minDifference > g_root.m_sensorBuff.m_diffAvrs.GetCurValue())

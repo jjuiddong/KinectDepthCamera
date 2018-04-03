@@ -7,8 +7,6 @@
 #pragma once
 
 
-#include "graphbuff.h"
-
 class cDatReader;
 
 class cSensorBuffer
