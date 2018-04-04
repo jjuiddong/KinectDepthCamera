@@ -307,24 +307,23 @@ bool cSensorBuffer::ProcessKinectDepthBuff(cRenderer &renderer
 			for (int k = 0; k < m_height; ++k)
 			{
 				const Vector3 p1 = GetVertex(k, i);
-				const Vector3 p2 = GetVertex(k - 1, i);
-				const Vector3 p3 = GetVertex(k, i - 1);
-				const Vector3 p4 = GetVertex(k + 1, i);
-				const Vector3 p5 = GetVertex(k, i + 1);
+				//const Vector3 p2 = GetVertex(k - 1, i);
+				//const Vector3 p3 = GetVertex(k, i - 1);
+				//const Vector3 p4 = GetVertex(k + 1, i);
+				//const Vector3 p5 = GetVertex(k, i + 1);
 
-				const float l1 = p1.Distance(p2);
-				const float l2 = p1.Distance(p3);
-				const float l3 = p1.Distance(p4);
-				const float l4 = p1.Distance(p5);
+				//const float l1 = p1.Distance(p2);
+				//const float l2 = p1.Distance(p3);
+				//const float l3 = p1.Distance(p4);
+				//const float l4 = p1.Distance(p5);
 
-				const float maxDist = g_root.m_depthDensity;
-				if ((l1 > maxDist)
-					|| (l2 > maxDist)
-					|| (l3 > maxDist)
-					|| (l4 > maxDist)
-					)
-					continue;
-
+				//const float maxDist = g_root.m_depthDensity;
+				//if ((l1 > maxDist)
+				//	|| (l2 > maxDist)
+				//	|| (l3 > maxDist)
+				//	|| (l4 > maxDist)
+				//	)
+				//	continue;
 
 				dst->p = p1;
 				m_vertices[cnt++] = p1;
@@ -483,6 +482,7 @@ void cSensorBuffer::ChangeSpace(cRenderer &renderer)
 }
 
 
+// 높이분포를 이용해서 면적분포 메쉬를 생성한다.
 void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 {
 	// Calculate Height Distribution
@@ -510,7 +510,7 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 		//const float minArea = 300.f;
 		const float minArea = 150.f;
 		const float limitLowArea = 30.f;
-		int state = 0;
+		int state = 0; // 0: check, rising pulse, 1: check down pulse, 2: calc low height
 		int startIdx = 0, endIdx = 0;
 		int maxArea = 0;
 		for (int i = 0; i < ARRAYSIZE(g_root.m_hDistrib); ++i)
@@ -554,7 +554,7 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 
 				for (int k = startIdx; k < endIdx; ++k)
 					g_root.m_hDistrib2[k] = 1;
-				g_root.m_hDistrib2[maxArea] = 2;
+				g_root.m_hDistrib2[maxArea] = 2; // 가장 분포가 큰 높이에는 2를 설정한다.
 				break;
 			}
 		}
@@ -562,14 +562,16 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 
 	// Generate Area Floor
 	u_int floor = 0;
-	int state = 0;
+	int state = 0; // 0: check rising pulse, 1: check down pulse, 2: collect area floor
 	int startIdx = 0;
+	int endIdx = 0;
 	int maxAreaIdx = 0;
 	for (int i = 0; i < ARRAYSIZE(g_root.m_hDistrib2); ++i)
 	{
 		switch (state)
 		{
 		case 0:
+			// 펄스 상승 체크
 			if (g_root.m_hDistrib2[i] > 0)
 			{
 				state = 1;
@@ -581,19 +583,21 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 			break;
 
 		case 1:
+			// 펄스 하강 체크
 			if (g_root.m_hDistrib2[i] <= 0)
 			{
 				if ((maxAreaIdx==0) || (startIdx == 0) || (i - startIdx > 400)) // 범위가 너무크면 무시
 				{
-					state = 0;
+					state = 0; // 무시되는 펄스 (첫 번째 펄스)
 				}
 				else
 				{
-					state = 2;
+					state = 2; // 면적으로 계산한다.
+					endIdx = i;
 				}
 			}
 			if (g_root.m_hDistrib2[i] > 1)
-				maxAreaIdx = i;
+				maxAreaIdx = i; // 가장 분포가 큰 높이 설정
 		}
 
 		if (state != 2)
@@ -612,10 +616,9 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 
 		cRoot::sAreaFloor *areaFloor = g_root.m_areaBuff[floor++];
 		areaFloor->startIdx = startIdx;
+		areaFloor->endIdx = endIdx;
 		areaFloor->maxIdx = maxAreaIdx;
 		areaFloor->areaCnt = 0;
-		areaFloor->areaMin = INT_MAX;
-		areaFloor->areaMax = 0;
 		ZeroMemory(&areaFloor->areaGraph, sizeof(areaFloor->areaGraph));
 
 		// Generate AreaFloor Vertex
@@ -623,19 +626,15 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 		{
 			for (auto &vtx : m_vertices)
 			{
-				if (abs(vtx.x) > 200.f)
+				if (abs(vtx.x) > 200.f) // x axis limit
 					continue;
-				if (abs(vtx.z) > 200.f)
+				if (abs(vtx.z) > 200.f) // y axis limit
 					continue;
 
-				const int mostHighIdx = maxAreaIdx;
 				const int h = (int)(vtx.y * 10.f);
 				if ((h >= 0) && (h < ARRAYSIZE(g_root.m_hDistrib)))
 				{
-					const bool ok = ((h - mostHighIdx) == 0)
-						|| (((h - mostHighIdx) > 0) && (abs(h - mostHighIdx) < g_root.m_heightErr[0]))
-						|| (((h - mostHighIdx) < 0) && (abs(h - mostHighIdx) < g_root.m_heightErr[1]));
-
+					const bool ok = (startIdx <= h) && (endIdx > h);
 					if (ok)
 					{
 						++areaFloor->areaCnt;
@@ -647,11 +646,6 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 
 			areaFloor->vtxBuff->Unlock(renderer);
 		}
-
-		if (areaFloor->areaCnt > areaFloor->areaMax)
-			areaFloor->areaMax = areaFloor->areaCnt;
-		if (areaFloor->areaCnt < areaFloor->areaMin)
-			areaFloor->areaMin = areaFloor->areaCnt;
 
 		areaFloor->areaGraph.AddValue((float)areaFloor->areaCnt);
 	}

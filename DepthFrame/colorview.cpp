@@ -34,8 +34,6 @@ void cColorView::OnRender(const float deltaSeconds)
 // Update Kinect ColorBuffer
 void cColorView::UpdateColorImage()
 {
-	if (!g_root.m_isUpdate)
-		return;
 	if (!g_root.m_pColorFrameReader)
 		return;
 

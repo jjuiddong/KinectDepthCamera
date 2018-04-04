@@ -31,7 +31,6 @@ protected:
 
 
 public:
-	common::Vector3 m_offset;
 	graphic::cGridLine m_ground;
 	graphic::cRenderTarget m_renderTarget;
 	graphic::cRenderTarget m_captureTarget;

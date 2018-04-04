@@ -7,35 +7,37 @@ using namespace framework;
 
 cInfraredView::cInfraredView(const string &name)
 	: framework::cDockWindow(name)
-	, m_infraredBuffer(NULL)
 {
 }
 
 cInfraredView::~cInfraredView()
 {
-	SAFE_DELETEA(m_infraredBuffer);
 }
 
 
 bool cInfraredView::Init(graphic::cRenderer &renderer)
 {
-	m_infraredTexture.Create(renderer, g_kinectInfraredWidth, g_kinectInfraredHeight, DXGI_FORMAT_R32_FLOAT);
+	m_infraredTexture.Create(renderer, g_baslerColorWidth, g_baslerColorHeight, DXGI_FORMAT_R32_FLOAT);
 	return true;
 }
 
 
 void cInfraredView::OnRender(const float deltaSeconds)
 {
-	UpdateInfraredImage();
+	//UpdateInfraredImage();
 	ImGui::Image(m_infraredTexture.m_texSRV, ImVec2(m_rect.Width() - 15, m_rect.Height() - 50));
-
 }
 
 
-void cInfraredView::UpdateInfraredImage()
+void cInfraredView::Process()
 {
-	if (!g_root.m_isUpdate)
-		return;
+	ProcessInfrared(g_root.m_nTime, &g_root.m_sensorBuff.m_depthBuff[0]
+		, g_root.m_sensorBuff.m_width, g_root.m_sensorBuff.m_height);
+}
+
+
+void cInfraredView::UpdateKinectInfraredImage()
+{
 	if (!g_root.m_pInfraredFrameReader)
 		return;
 
@@ -87,12 +89,12 @@ void cInfraredView::ProcessInfrared(INT64 nTime, const UINT16* pBuffer, int nWid
 	D3D11_MAPPED_SUBRESOURCE map;
 	if (BYTE *dst = (BYTE*)m_infraredTexture.Lock(renderer, map))
 	{
-		for (int i = 0; i < g_kinectInfraredHeight; ++i)
+		for (int i = 0; i < nHeight; ++i)
 		{
-			for (int k = 0; k < g_kinectInfraredWidth; ++k)
+			for (int k = 0; k < nWidth; ++k)
 			{
 				float *p = (float*)(dst + (i * map.RowPitch) + k * sizeof(float));
-				*p = (float)(pBuffer[i * g_kinectInfraredWidth + k]) / USHRT_MAX;
+				*p = (float)(pBuffer[i * nWidth + k]) / USHRT_MAX;
 			}
 		}
 

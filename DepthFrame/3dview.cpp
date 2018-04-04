@@ -17,7 +17,6 @@ c3DView::c3DView(const string &name)
 	, m_isGenPlane(false)
 	, m_isGenVolumeCenter(false)
 	, m_state(eState::NORMAL)
-	, m_offset(Vector3(0,10,0))
 	, m_showPointCloud(true)
 	, m_showBoxAreaPointCloud(true)
 	, m_planeStandardDeviation(0)
@@ -32,12 +31,9 @@ c3DView::~c3DView()
 bool c3DView::Init(cRenderer &renderer)
 {
 	const Vector3 eyePos(0.f, 380.f, -300.f);
-	//const Vector3 eyePos(0.f, 350.f, 00.f);
 	const Vector3 lookAt(0, 0, 0);
 	m_camera.SetCamera(eyePos, lookAt, Vector3(0, 1, 0));
 	m_camera.SetProjection(MATH_PI / 4.f, m_rect.Width() / m_rect.Height(), 1, 1000000.f);
-	//m_camera.SetProjectionOrthogonal(640, 480, 1, 10000.f);
-	//m_camera.SetProjectionOrthogonal(400, 400, 1, 10000.f);
 	m_camera.SetViewPort(m_rect.Width(), m_rect.Height());
 
 	sf::Vector2u size((u_int)m_rect.Width() - 15, (u_int)m_rect.Height() - 50);
@@ -141,7 +137,6 @@ void c3DView::OnPreRender(const float deltaSeconds)
 					color = colors[i].GetColor();
 				else
 					color = common::Vector4(1,1,1,1);
-					//color = common::Vector4(common::randfloatpositive(), common::randfloatpositive(), common::randfloatpositive(), 1);
 
 				XMVECTOR diffuse = XMLoadFloat4((XMFLOAT4*)&color);
 				renderer.m_cbMaterial.m_v->diffuse = diffuse;
@@ -286,8 +281,6 @@ void c3DView::OnRender(const float deltaSeconds)
 			m_camera.SetCamera(eyePos, lookAt, Vector3(0, 1, 0));
 		}
 		ImGui::SameLine();
-		ImGui::Checkbox("Update", &g_root.m_isUpdate);
-		ImGui::SameLine();
 		ImGui::Checkbox("Ground", &m_showGround);
 		ImGui::SameLine();
 		ImGui::Checkbox("Sensor Ground", &m_showSensorPlane);		
@@ -296,19 +289,16 @@ void c3DView::OnRender(const float deltaSeconds)
 		ImGui::SameLine();
 		ImGui::Checkbox("Box Aread Point Cloud", &m_showBoxAreaPointCloud);
 
-		ImGui::DragFloat("Density", &g_root.m_depthDensity, 0.1f, 0.f, 10.f);
+		//if (ImGui::Button("Process"))
+		//{
+		//	cRenderer &renderer = GetRenderer();
+		//	g_root.m_sensorBuff.ProcessKinectDepthBuff(renderer 
+		//		, g_root.m_nTime
+		//		, &g_root.m_sensorBuff.m_depthBuff[0]
+		//		, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
+		//}
+		//ImGui::SameLine();
 
-		if (ImGui::Button("Process"))
-		{
-			cRenderer &renderer = GetRenderer();
-
-			g_root.m_sensorBuff.ProcessKinectDepthBuff(renderer 
-				, g_root.m_nTime
-				, &g_root.m_sensorBuff.m_depthBuff[0]
-				, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
-		}
-
-		ImGui::SameLine();
 		if (ImGui::Button("Gen Plane"))
 		{
 			m_genPlane = 0;

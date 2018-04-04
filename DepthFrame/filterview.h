@@ -1,6 +1,6 @@
 //
 // 2018-03-24, jjuiddong
-// Depth View
+// Filter View
 //
 #pragma once
 
@@ -15,7 +15,7 @@ public:
 
 	bool Init(graphic::cRenderer &renderer);
 	virtual void OnRender(const float deltaSeconds) override;
-	void ProcessDepth();
+	void Process();
 
 
 protected:
@@ -29,8 +29,7 @@ protected:
 public:
 	cv::Mat m_binImg;
 	cv::Mat m_dstImg;
-	cv::Mat m_edges;
-	vector<vector<cv::Point> > m_contours;
+	vector<vector<cv::Point>> m_contours;
 	graphic::cTexture m_depthTexture;
 
 	// BoxVolume

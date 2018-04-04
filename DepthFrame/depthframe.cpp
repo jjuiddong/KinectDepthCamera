@@ -9,7 +9,7 @@
 #include "depthview2.h"
 #include "infraredview.h"
 #include "analysisview.h"
-#include "input.h"
+#include "inputview.h"
 #include "filterview.h"
 #include "logview.h"
 #include "resultview.h"
@@ -24,8 +24,8 @@ cRoot g_root;
 
 cViewer::cViewer()
 {
-	m_windowName = L"Depth Frame";
-	m_isLazyMode = true;
+	m_windowName = L"Volume Measure";
+	//m_isLazyMode = true;
 	//const RECT r = { 0, 0, 1024, 768 };
 	const RECT r = { 0, 0, 1280, 1024 };
 	m_windowRect = r;
@@ -76,28 +76,28 @@ bool cViewer::OnInit()
 	result = m_inputView->Init(m_renderer);
 	assert(result);
 
+	m_infraredView = new cInfraredView("Infrared View");
+	m_infraredView->Create(eDockState::DOCKWINDOW, eDockSlot::BOTTOM, this, m_3dView, 0.46f);
+	result = m_infraredView->Init(m_renderer);
+	assert(result);
+
 	m_depthView = new cDepthView("Depth View");
-	m_depthView->Create(eDockState::DOCKWINDOW, eDockSlot::BOTTOM, this, m_3dView, 0.46f);
+	m_depthView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_infraredView);
 	result = m_depthView->Init(m_renderer);
 	assert(result);
 
 	m_depthView2 = new cDepthView2("Depth2 View");
-	m_depthView2->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_depthView);
+	m_depthView2->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_infraredView);
 	result = m_depthView2->Init(m_renderer);
 	assert(result);
 
 	m_colorView = new cColorView("Color View");
-	m_colorView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_depthView);
+	m_colorView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_infraredView);
 	result = m_colorView->Init(m_renderer);
 	assert(result);
 
-	m_infraredView = new cInfraredView("Infrared View");
-	m_infraredView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_depthView);
-	result = m_infraredView->Init(m_renderer);
-	assert(result);
-
 	m_analysisView = new cAnalysisView("Analysis View");
-	m_analysisView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_depthView, 0.6f);
+	m_analysisView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_infraredView, 0.6f);
 
 	m_filterView = new cFilterView("Filter View");
 	m_filterView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_3dView);
@@ -200,7 +200,7 @@ void cViewer::OnUpdate(const float deltaSeconds)
 	__super::OnUpdate(deltaSeconds);
 	cAutoCam cam(&m_camera);
 	GetMainCamera().Update(deltaSeconds);
-	g_root.Update(m_renderer, deltaSeconds);
+	//g_root.Update(m_renderer, deltaSeconds);
 }
 
 

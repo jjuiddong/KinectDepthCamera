@@ -13,14 +13,14 @@ public:
 
 	bool Init(graphic::cRenderer &renderer);
 	virtual void OnRender(const float deltaSeconds) override;
+	void Process();
 
 
 protected:
-	void UpdateInfraredImage();
+	void UpdateKinectInfraredImage();
 	void ProcessInfrared(INT64 nTime, const UINT16* pBuffer, int nWidth, int nHeight);
 
 
 public:
-	UINT16 * m_infraredBuffer;
 	graphic::cTexture m_infraredTexture;
 };

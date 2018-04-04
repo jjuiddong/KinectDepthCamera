@@ -30,6 +30,8 @@ public:
 	bool Create();
 	void Update(graphic::cRenderer &renderer, const float deltaSeconds);
 	bool BaslerCapture();
+	bool KinectCapture();
+	void MeasureVolume(const bool isUpdateSensor=false);
 	void Clear();
 
 
@@ -42,21 +44,9 @@ protected:
 
 
 public:
-	struct eInputType {
-		enum Enum {
-			FILE, KINECT, BASLER
-		};
-	};
+	struct eInputType { enum Enum { FILE, KINECT, BASLER }; };
 
 	eInputType::Enum m_input;
-	bool m_isUpdate;
-
-	// Kinect
-	IKinectSensor *m_pKinectSensor;
-	IDepthFrameReader *m_pDepthFrameReader;
-	IColorFrameReader *m_pColorFrameReader;
-	IInfraredFrameReader *m_pInfraredFrameReader;
-	//
 
 	cSensorBuffer m_sensorBuff;
 
@@ -66,7 +56,6 @@ public:
 	USHORT m_nDepthMaxDistance;
 	int m_depthThresholdMin;
 	int m_depthThresholdMax;
-	float m_depthDensity;
 	int m_distribCount;
 	int m_areaCount;
 	int m_heightErr[2]; // Upper, Lower
@@ -77,10 +66,9 @@ public:
 	struct sAreaFloor
 	{
 		int startIdx;
+		int endIdx;
 		int maxIdx; // 가장 많이 분포한 높이 인덱스
 		int areaCnt;
-		int areaMin;
-		int areaMax;
 		sGraph<100> areaGraph;
 		graphic::cVertexBuffer *vtxBuff;
 	};
@@ -96,11 +84,18 @@ public:
 
 	// Kinect
 	bool m_isConnectKinect;
+	bool m_kinectSetupSuccess;
+	IKinectSensor *m_pKinectSensor;
+	IDepthFrameReader *m_pDepthFrameReader;
+	IColorFrameReader *m_pColorFrameReader;
+	IInfraredFrameReader *m_pInfraredFrameReader;
 
 	// Basler
-	bool m_baslerSetupSuccess;
-	CToFCamera *m_Camera;
 	bool m_isConnectBasler;
+	CToFCamera *m_Camera;
+	bool m_baslerSetupSuccess;
+
+	// Option
 	bool m_isAutoSaveCapture;
 	bool m_isAutoMeasure;
 	bool m_isPalete;

@@ -4,7 +4,6 @@
     <ClCompile Include="depthframe.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="root.cpp" />
-    <ClCompile Include="graphbuff.cpp" />
     <ClCompile Include="plyreader.cpp" />
     <ClCompile Include="sensorbuffer.cpp" />
     <ClCompile Include="datreader.cpp" />
@@ -30,13 +29,14 @@
     <ClCompile Include="infraredview.cpp">
       <Filter>view</Filter>
     </ClCompile>
-    <ClCompile Include="input.cpp">
-      <Filter>view</Filter>
-    </ClCompile>
     <ClCompile Include="logview.cpp">
       <Filter>view</Filter>
     </ClCompile>
     <ClCompile Include="resultview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="cvutil.cpp" />
+    <ClCompile Include="inputview.cpp">
       <Filter>view</Filter>
     </ClCompile>
   </ItemGroup>
@@ -70,13 +70,14 @@
     <ClInclude Include="infraredview.h">
       <Filter>view</Filter>
     </ClInclude>
-    <ClInclude Include="input.h">
-      <Filter>view</Filter>
-    </ClInclude>
     <ClInclude Include="logview.h">
       <Filter>view</Filter>
     </ClInclude>
     <ClInclude Include="resultview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="cvutil.h" />
+    <ClInclude Include="inputview.h">
       <Filter>view</Filter>
     </ClInclude>
   </ItemGroup>

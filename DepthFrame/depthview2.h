@@ -13,7 +13,7 @@ public:
 
 	bool Init(graphic::cRenderer &renderer);
 	virtual void OnRender(const float deltaSeconds) override;
-	void ProcessDepth();
+	void Process();
 
 
 protected:

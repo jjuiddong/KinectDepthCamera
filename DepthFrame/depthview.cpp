@@ -19,22 +19,13 @@ cDepthView::~cDepthView()
 
 bool cDepthView::Init(graphic::cRenderer &renderer)
 {
-	//m_depthTexture.Create(renderer, g_baslerDepthWidth, g_baslerDepthHeight);
 	m_depthTexture.Create(renderer, g_baslerDepthWidth, g_baslerDepthHeight, DXGI_FORMAT_R32_FLOAT);
-
 	return true;
 }
 
 
 void cDepthView::OnRender(const float deltaSeconds)
 {
-	if (g_root.m_isUpdate)
-	{
-		ProcessDepth(g_root.m_nTime, &g_root.m_sensorBuff.m_depthBuff[0]
-			, g_root.m_sensorBuff.m_width, g_root.m_sensorBuff.m_height
-			, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
-	}
-
 	ImVec2 pos = ImGui::GetCursorScreenPos();
 	ImGui::Image(m_depthTexture.m_texSRV, ImVec2(m_rect.Width() - 15, m_rect.Height() - 50));
 
@@ -67,7 +58,7 @@ void cDepthView::OnRender(const float deltaSeconds)
 }
 
 
-void cDepthView::ProcessDepth()
+void cDepthView::Process()
 {
 	ProcessDepth(g_root.m_nTime, &g_root.m_sensorBuff.m_depthBuff[0]
 		, g_root.m_sensorBuff.m_width, g_root.m_sensorBuff.m_height

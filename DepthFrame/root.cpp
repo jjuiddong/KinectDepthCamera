@@ -8,6 +8,8 @@
 #include "depthframe.h"
 #include "depthview.h"
 #include "depthview2.h"
+#include "infraredview.h"
+#include "filterview.h"
 
 
 /* Allocator class used by the CToFCamera class for allocating memory buffers
@@ -29,7 +31,6 @@ cRoot::cRoot()
 	, m_pDepthFrameReader(NULL)
 	, m_pColorFrameReader(NULL)
 	, m_pInfraredFrameReader(NULL)
-	, m_isUpdate(false)
 	, m_distribCount(0)
 	, m_areaCount(0)
 	, m_areaFloorCnt(0)
@@ -41,12 +42,12 @@ cRoot::cRoot()
 	, m_isAutoMeasure(false)
 	, m_isPalete(false)
 	, m_isConnectKinect(false)
+	, m_kinectSetupSuccess(false)
 {
 	//m_depthThresholdMin = 0;
 	//m_depthThresholdMax = USHORT_MAX;
 	m_depthThresholdMin = 440;
 	m_depthThresholdMax = 945;
-	m_depthDensity = 1.5f;
 	m_heightErr[0] = 80;
 	m_heightErr[1] = 30;
 
@@ -76,7 +77,7 @@ bool cRoot::Create()
 
 	if (m_isConnectKinect)
 	{
-		KinectSetup();
+		m_kinectSetupSuccess = KinectSetup();
 	}
 
 	if (m_isConnectBasler)
@@ -92,6 +93,9 @@ bool cRoot::Create()
 		}
 		catch (GenICam::GenericException& e)
 		{
+			common::Str128 msg = "Exception occurred: ";
+			msg += e.GetDescription();
+			::MessageBoxA(NULL, msg.c_str(), "Error", MB_OK);
 			//cerr << "Exception occurred: " << endl << e.GetDescription() << endl;
 			//exitCode = EXIT_FAILURE;
 			return false;
@@ -204,12 +208,19 @@ int cRoot::BaslerCameraSetup()
 	catch (const GenICam::GenericException& e)
 	{
 		//cerr << "Exception occurred: " << e.GetDescription() << endl;
+		common::Str128 msg = "Exception occurred: ";
+		msg += e.GetDescription();
+
 		// After successfully opening the camera, the IsConnected method can be used 
 		// to check if the device is still connected.
 		if (m_Camera->IsOpen() && !m_Camera->IsConnected())
 		{
 			//cerr << "Camera has been removed." << endl;
+			msg += "Camera has been removed.";
 		}
+
+		::MessageBoxA(NULL, msg.c_str(), "Error", MB_OK);
+
 		return EXIT_FAILURE;
 	}
 
@@ -288,16 +299,50 @@ bool cRoot::BaslerCapture()
 	catch (const GenICam::GenericException& e)
 	{
 		//cerr << "Exception occurred: " << e.GetDescription() << endl;
+		common::Str128 msg = "Exception occurred: ";
+		msg += e.GetDescription();
+
 		// After successfully opening the camera, the IsConnected method can be used 
 		// to check if the device is still connected.
 		if (m_Camera->IsOpen() && !m_Camera->IsConnected())
 		{
 			//cerr << "Camera has been removed." << endl;
+			msg += "Camera has been removed.";
 		}
+
+		::MessageBoxA(NULL, msg.c_str(), "Error", MB_OK);
 		return false;
 	}
 
 	return true;
+}
+
+
+bool cRoot::KinectCapture()
+{
+	// nothing~ now
+	return true;
+}
+
+
+void cRoot::MeasureVolume(
+	const bool isUpdateSensor //=false
+)
+{
+	m_areaFloorCnt = 0;
+
+	if (m_isAutoMeasure || isUpdateSensor)
+	{
+		graphic::cRenderer &renderer = ((cViewer*)g_application)->m_3dView->GetRenderer();
+		m_sensorBuff.MeasureVolume(renderer);
+	}
+
+	// Update FilterView, DepthView, DepthView2
+	((cViewer*)g_application)->m_3dView->Capture3D();
+	((cViewer*)g_application)->m_filterView->Process();
+	((cViewer*)g_application)->m_infraredView->Process();
+	//((cViewer*)g_application)->m_depthView->Process();
+	//((cViewer*)g_application)->m_depthView2->Process();
 }
 
 
@@ -347,8 +392,6 @@ void cRoot::Update(graphic::cRenderer &renderer, const float deltaSeconds)
 
 void cRoot::UpdateDepthImage(graphic::cRenderer &renderer)
 {
-	if (!m_isUpdate)
-		return;
 	if (!m_pDepthFrameReader)
 		return;
 

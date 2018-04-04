@@ -164,14 +164,14 @@
   <ItemGroup>
     <ClCompile Include="analysisview.cpp" />
     <ClCompile Include="colorview.cpp" />
+    <ClCompile Include="cvutil.cpp" />
     <ClCompile Include="datreader.cpp" />
     <ClCompile Include="depthframe.cpp" />
     <ClCompile Include="depthview.cpp" />
     <ClCompile Include="depthview2.cpp" />
     <ClCompile Include="filterview.cpp" />
-    <ClCompile Include="graphbuff.cpp" />
     <ClCompile Include="infraredview.cpp" />
-    <ClCompile Include="input.cpp" />
+    <ClCompile Include="inputview.cpp" />
     <ClCompile Include="logview.cpp" />
     <ClCompile Include="plyreader.cpp" />
     <ClCompile Include="rectcontour.cpp" />
@@ -188,6 +188,7 @@
     <ClInclude Include="3dview.h" />
     <ClInclude Include="analysisview.h" />
     <ClInclude Include="colorview.h" />
+    <ClInclude Include="cvutil.h" />
     <ClInclude Include="datreader.h" />
     <ClInclude Include="depthframe.h" />
     <ClInclude Include="depthview.h" />
@@ -195,7 +196,7 @@
     <ClInclude Include="filterview.h" />
     <ClInclude Include="graphbuff.h" />
     <ClInclude Include="infraredview.h" />
-    <ClInclude Include="input.h" />
+    <ClInclude Include="inputview.h" />
     <ClInclude Include="logview.h" />
     <ClInclude Include="plyreader.h" />
     <ClInclude Include="rectcontour.h" />

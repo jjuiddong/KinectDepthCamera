@@ -2,7 +2,7 @@
 #include "stdafx.h"
 #include "resultview.h"
 #include "depthframe.h"
-#include "input.h"
+#include "inputview.h"
 
 using namespace common;
 using namespace graphic;
@@ -34,10 +34,10 @@ void cResultView::OnRender(const float deltaSeconds)
 	ImGui::PushFont(m_owner->m_fontBig);
 
 	const bool isSecondColumn = !g_root.m_boxesStored.empty();
-	const float w = isSecondColumn? (m_rect.Width() / 2.f) : 0;
+	const float w = isSecondColumn? (m_rect.Width() / 2.f) - 5 : 0;
 
 	ImGui::PushStyleVar(ImGuiStyleVar_ChildWindowRounding, 5.0f);
-	ImGui::BeginChild("Sub2", ImVec2(w, m_rect.Height() - 85), true);
+	ImGui::BeginChild("Sub2", ImVec2(w, m_rect.Height() - 45), true);
 
 	if (ImGui::Button(u8"길이 측정"))
 	{
@@ -75,9 +75,11 @@ void cResultView::OnRender(const float deltaSeconds)
 
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));
 		ImGui::PushStyleVar(ImGuiStyleVar_ChildWindowRounding, 5.0f);
-		ImGui::BeginChild("Sub3", ImVec2(w, m_rect.Height() - 85), true);
+		ImGui::BeginChild("Sub3", ImVec2(w, m_rect.Height() - 45), true);
 
 		ImGui::Text(u8"측정 결과");
+		ImGui::Spacing();
+		ImGui::Spacing();
 
 		ImGui::Spacing();
 		ImGui::Spacing();

@@ -1,6 +1,6 @@
 //
 // 2018-03-19, jjuiddong
-// Input
+// Input View
 //
 #pragma once
 
@@ -23,9 +23,9 @@ protected:
 	void UpdateDelayMeasure(const float deltaSeconds);
 	void CalcDelayMeasure();
 	void StoreMinimumDifferenceSensorBuffer();
+	void RenderFileList();
 
-
-
+	
 public:
 	struct eState {
 		enum Enum { 
@@ -34,9 +34,6 @@ public:
 		};
 	};
 	eState::Enum m_state;
-	common::StrPath m_selectPath; // UTF-16
-	vector<common::StrPath> m_files; // UTF-8 encoding
-	vector<common::StrPath> m_files2; // UTF-8 encoding (only filename)
 	bool m_isCaptureContinuos;
 	float m_captureTime;
 
@@ -52,4 +49,15 @@ public:
 	vector<USHORT> m_depthBuff; // intensity
 	vector<USHORT> m_depthBuff2; // confidence
 	vector<common::Vector3> m_vertices;
+
+	// Files
+	enum {
+		MAX_FILEPAGE = 100
+	};
+	int m_filePages;
+	int m_comboFileIdx;
+	common::Str256 m_comboFileStr;
+	common::StrPath m_selectPath; // UTF-16
+	vector<common::StrPath> m_files; // UTF-8 encoding
+	vector<common::StrPath> m_files2; // UTF-8 encoding (only filename)
 };
