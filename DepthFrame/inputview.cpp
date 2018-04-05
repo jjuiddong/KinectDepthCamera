@@ -204,7 +204,7 @@ void cInputView::RenderFileList()
 			if (fileSize <= idx)
 				break;
 
-			auto &fileName = m_files[idx];
+			auto &fileName = m_files2[idx];
 
 			const ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick
 				| ((idx == m_selFileIdx) ? ImGuiTreeNodeFlags_Selected : 0);
@@ -215,7 +215,7 @@ void cInputView::RenderFileList()
 			if (ImGui::IsItemClicked() || ImGui::IsItemClicked(1))
 			{
 				m_selFileIdx = idx;
-				common::StrPath ansifileName = fileName.ansi();// change UTF8 -> UTF16
+				common::StrPath ansifileName = m_files[idx].ansi();// change UTF8 -> UTF16
 				m_selectPath = ansifileName;
 
 				OpenFile(ansifileName);
