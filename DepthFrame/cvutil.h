@@ -17,3 +17,8 @@ void setLabel(cv::Mat& im, const std::string &label
 void setLabel(cv::Mat& im, const std::string &label
 	, const cv::Point& pos, const cv::Scalar &color = cv::Scalar(0, 0, 0));
 
+void DrawLines(cv::Mat &dst, const vector<cv::Point> &lines, const cv::Scalar &color = cv::Scalar(0, 0, 0),
+	const int thickness = 1, const bool isLoop = true);
+
+void DrawLines(cv::Mat &dst, const cv::Point lines[4], const cv::Scalar &color = cv::Scalar(0, 0, 0),
+	const int thickness = 1, const bool isLoop = true);

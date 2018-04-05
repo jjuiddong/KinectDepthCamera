@@ -19,9 +19,7 @@ public:
 
 
 protected:
-	void ProcessDepth(INT64 nTime
-		, const common::Vector3 *pBuffer
-		, int nWidth, int nHeight, USHORT nMinDepth, USHORT nMaxDepth);
+	void ProcessDepth();
 	void UpdateTexture();
 	bool FindBox(cv::Mat &img, OUT vector<cRectContour> &out);
 

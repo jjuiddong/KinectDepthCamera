@@ -82,3 +82,28 @@ void setLabel(cv::Mat& im, const std::string &label, const cv::Point& pos
 	cv::putText(im, label, pos, fontface, scale, color, thickness, 8);
 }
 
+
+// 선을 그린다.
+void DrawLines(Mat &dst, const vector<cv::Point> &lines, const cv::Scalar &color, const int thickness,
+	const bool isLoop)
+{
+	if (lines.size() < 2)
+		return;
+
+	for (u_int i = 0; i < lines.size() - 1; ++i)
+		line(dst, lines[i], lines[i + 1], color, thickness);
+
+	if (isLoop)
+		line(dst, lines[lines.size() - 1], lines[0], color, thickness);
+}
+
+
+void DrawLines(cv::Mat &dst, const cv::Point lines[4], const cv::Scalar &color, const int thickness,
+	const bool isLoop)
+{
+	for (u_int i = 0; i < 3; ++i)
+		line(dst, lines[i], lines[i + 1], color, thickness);
+
+	if (isLoop)
+		line(dst, lines[3], lines[0], color, thickness);
+}

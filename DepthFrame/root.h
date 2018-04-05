@@ -20,6 +20,9 @@ static const int g_baslerDepthHeight = 480;
 static const int g_baslerColorWidth = 640;
 static const int g_baslerColorHeight = 480;
 
+static const float g_capture3DWidth = 640.f * 1.f;
+static const float g_capture3DHeight = 480.f * 1.f;
+
 
 class cRoot
 {
@@ -101,7 +104,7 @@ public:
 	bool m_isPalete;
 
 	// Box3D
-	common::Vector3 m_box3DPos[4];
+	common::Vector3 m_box3DPos[8];
 
 	// Config
 	common::StrPath m_inputFilePath;

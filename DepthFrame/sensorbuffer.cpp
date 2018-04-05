@@ -11,7 +11,7 @@ cSensorBuffer::cSensorBuffer()
 	, m_plane(Vector3(0, 0, 0), 0)
 {
 	ZeroMemory(&m_diffAvrs, sizeof(m_diffAvrs));
-	m_srcImg = cv::Mat(480, 640, CV_32FC1);
+	m_srcImg = cv::Mat((int)g_capture3DHeight, (int)g_capture3DWidth, CV_32FC1);
 }
 
 cSensorBuffer::~cSensorBuffer()
@@ -40,6 +40,40 @@ void cSensorBuffer::Render(graphic::cRenderer &renderer
 	m_vtxBuff.Bind(renderer);
 	renderer.GetDevContext()->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
 	renderer.GetDevContext()->DrawInstanced(m_pointCloudCount, 1, 0, 0);
+}
+
+
+// Tessellation 으로 Point Cloud를 출력한다.
+// 해상도를 높이기 위해서, X-Z평면으로 Quad를 펼쳐서 Point를 확대해서 출력한다.
+void cSensorBuffer::RenderTessellation(graphic::cRenderer &renderer
+	, const XMMATRIX &parentTm //= graphic::XMIdentity
+)
+{
+	if (!m_shader.m_effect)
+	{
+		if (!m_shader.Create(renderer, "../media/shader11/tess-pos.fxo", "Unlit", eVertexType::POSITION))
+			return;
+	}
+
+	cShader11 *shader = &m_shader;
+	assert(shader);
+	shader->SetTechnique("Unlit");
+	shader->Begin();
+	shader->BeginPass(renderer, 0);
+
+	renderer.m_cbPerFrame.m_v->mWorld = XMMatrixTranspose(parentTm);
+	renderer.m_cbPerFrame.Update(renderer);
+	XMVECTOR diffuse = XMLoadFloat4((XMFLOAT4*)&common::Vector4(.7f, .7f, .7f, 1.f));
+	renderer.m_cbMaterial.m_v->diffuse = diffuse;
+	renderer.m_cbMaterial.Update(renderer, 2);
+	renderer.m_cbTessellation.m_v->size = Vector2(1, 1) * 0.56f * 2.f;// 3.f;
+	renderer.m_cbTessellation.Update(renderer, 6);
+
+	m_vtxBuff.Bind(renderer);
+	//renderer.GetDevContext()->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
+	//renderer.GetDevContext()->DrawInstanced(m_pointCloudCount, 1, 0, 0);
+	renderer.GetDevContext()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST);
+	renderer.GetDevContext()->Draw(m_pointCloudCount, 0);
 }
 
 

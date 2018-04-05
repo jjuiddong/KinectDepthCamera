@@ -1,6 +1,7 @@
 
 #include "stdafx.h"
 #include "rectcontour.h"
+#include "cvutil.h"
 
 
 using namespace common;
@@ -322,40 +323,6 @@ void cRectContour::Normalize()
 	//OrderedContours(keys, m_contours);
 	//CalcWidthHeightVector();
 }
-
-
-void DrawLines(cv::Mat &dst, const vector<cv::Point> &lines, const cv::Scalar &color = cv::Scalar(0, 0, 0),
-	const int thickness = 1, const bool isLoop = true);
-void DrawLines(cv::Mat &dst, const cv::Point lines[4], const cv::Scalar &color = cv::Scalar(0, 0, 0),
-	const int thickness = 1, const bool isLoop = true);
-
-
-// 선을 그린다.
-void DrawLines(Mat &dst, const vector<cv::Point> &lines, const cv::Scalar &color, const int thickness,
-	const bool isLoop)
-{
-	if (lines.size() < 2)
-		return;
-
-	for (u_int i = 0; i < lines.size() - 1; ++i)
-		line(dst, lines[i], lines[i + 1], color, thickness);
-
-	if (isLoop)
-		line(dst, lines[lines.size() - 1], lines[0], color, thickness);
-}
-
-
-void DrawLines(cv::Mat &dst, const cv::Point lines[4], const cv::Scalar &color, const int thickness,
-	const bool isLoop)
-{
-	for (u_int i = 0; i < 3; ++i)
-		line(dst, lines[i], lines[i + 1], color, thickness);
-
-	if (isLoop)
-		line(dst, lines[3], lines[0], color, thickness);
-}
-
-
 
 
 // 박스 출력.

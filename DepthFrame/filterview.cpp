@@ -8,7 +8,6 @@ using namespace graphic;
 using namespace framework;
 using namespace cv;
 
-
 cFilterView::cFilterView(const string &name)
 	: framework::cDockWindow(name)
 {
@@ -21,7 +20,7 @@ cFilterView::~cFilterView()
 
 bool cFilterView::Init(graphic::cRenderer &renderer)
 {
-	m_depthTexture.Create(renderer, g_baslerDepthWidth, g_baslerDepthHeight, DXGI_FORMAT_R32G32B32A32_FLOAT);
+	m_depthTexture.Create(renderer, (int)g_capture3DWidth, (int)g_capture3DHeight, DXGI_FORMAT_R32G32B32A32_FLOAT);
 
 	return true;
 }
@@ -60,27 +59,20 @@ void cFilterView::OnRender(const float deltaSeconds)
 
 void cFilterView::Process()
 {
-	ProcessDepth(g_root.m_nTime, &g_root.m_sensorBuff.m_vertices[0]
-		, g_root.m_sensorBuff.m_width, g_root.m_sensorBuff.m_height
-		, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
+	ProcessDepth();
 }
 
 
-void cFilterView::ProcessDepth(INT64 nTime
-	, const Vector3 *pBuffer
-	, int nWidth
-	, int nHeight
-	, USHORT nMinDepth
-	, USHORT nMaxDepth)
+void cFilterView::ProcessDepth()
 {
-	if ((nWidth != m_depthTexture.Width()) || (nHeight != m_depthTexture.Height()))
-	{
-		m_depthTexture.Create(GetRenderer(), nWidth, nHeight, DXGI_FORMAT_R32G32B32_FLOAT);
-	}
-
 	m_rects.clear();
 	m_removeRects.clear();
 	cv::Mat &srcImg = g_root.m_sensorBuff.m_srcImg;
+
+	if ((srcImg.cols != m_depthTexture.Width()) || (srcImg.rows != m_depthTexture.Height()))
+	{
+		m_depthTexture.Create(GetRenderer(), srcImg.cols, srcImg.rows, DXGI_FORMAT_R32G32B32_FLOAT);
+	}
 
 	Mat grayscaleMat;
 	srcImg.convertTo(grayscaleMat, CV_16UC1, 500.0f);
@@ -190,7 +182,10 @@ void cFilterView::ProcessDepth(INT64 nTime
 		rect.Draw(m_dstImg, color, 1);
 	}
 
-	// Display Detect Box
+	// Display Detect Box (for debugging)
+	if (!m_rects.empty() && !m_binImg.empty())
+		cvtColor(m_binImg, m_binImg, cv::COLOR_GRAY2RGB);
+
 	g_root.m_boxes.clear();
 	char boxName[64];
 	for (u_int i=0; i < m_rects.size(); ++i)
@@ -212,10 +207,13 @@ void cFilterView::ProcessDepth(INT64 nTime
 		cv::circle(m_dstImg, rect.At(3), 5, color);
 		
 		rect.Draw(m_dstImg, color, 1);
+		rect.Draw(m_binImg, Scalar(255,0,0), 1); // for debugging
 
 		for (int i = 0; i < 4; ++i)
 		{
-			g_root.m_box3DPos[i] = g_root.m_sensorBuff.m_vertices[rect.At(i).y * 640 + rect.At(i).x];
+			//const Vector3 pos((rect.At(i).x - 320) / 1.5f, info.upperH, (480 - rect.At(i).y - 240) / 1.5f);
+			g_root.m_box3DPos[i] = Vector3((rect.At(i).x - 320) / 1.5f, info.upperH, (480 - rect.At(i).y - 240) / 1.5f);;
+			g_root.m_box3DPos[i+4] = Vector3((rect.At(i).x - 320) / 1.5f, info.lowerH, (480 - rect.At(i).y - 240) / 1.5f);;
 		}
 
 		const Vector2 v1((float)rect.At(0).x, (float)rect.At(0).y);
@@ -243,8 +241,8 @@ void cFilterView::ProcessDepth(INT64 nTime
 		box.volume.y *= 1.f;
 		box.volume.z *= scale;
 
-		box.volume.x -= (float)info.loop*1.5f;
-		box.volume.z -= (float)info.loop*1.5f;
+		box.volume.x -= (float)info.loop*1.4f;
+		box.volume.z -= (float)info.loop*1.4f;
 
 		g_root.m_boxes.push_back(box);
 	}
@@ -341,8 +339,8 @@ bool cFilterView::FindBox(cv::Mat &img, OUT vector<cRectContour> &out)
 // Mat -> DX11 Texture
 void cFilterView::UpdateTexture()
 {
-	const int nWidth = g_baslerDepthWidth;
-	const int nHeight = g_baslerDepthHeight;
+	const int nWidth = m_depthTexture.Width();
+	const int nHeight = m_depthTexture.Height();
 
 	BYTE *src = (BYTE*)m_dstImg.data;
 	cRenderer &renderer = GetRenderer();

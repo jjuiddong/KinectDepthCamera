@@ -17,6 +17,8 @@ public:
 
 	void Render(graphic::cRenderer &renderer, const char *techniqName = "Unlit"
 		, const XMMATRIX &parentTm = graphic::XMIdentity);
+	void RenderTessellation(graphic::cRenderer &renderer 
+		, const XMMATRIX &parentTm = graphic::XMIdentity);
 
 	bool ReadKinectSensor(graphic::cRenderer &renderer
 		, INT64 nTime
@@ -49,12 +51,13 @@ public:
 	int m_pointCloudCount;
 	vector<USHORT> m_depthBuff; // intensity
 	vector<USHORT> m_depthBuff2; // confidence
-	vector<common::Vector3> m_vertices;
+	vector<common::Vector3> m_vertices; // perspectiv vertex array
 	vector<graphic::cColor> m_colors;
 	cv::Mat m_srcImg;
 	common::Plane m_plane;
 	common::Vector3 m_volumeCenter;
 	graphic::cVertexBuffer m_vtxBuff;
+	graphic::cShader11 m_shader;
 
 	// Analysis
 	sGraph<50000> m_analysis1;
