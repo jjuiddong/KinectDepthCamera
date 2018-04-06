@@ -20,6 +20,7 @@ c3DView::c3DView(const string &name)
 	, m_showPointCloud(true)
 	, m_showBoxAreaPointCloud(true)
 	, m_planeStandardDeviation(0)
+	, m_showBoxVolume(false)
 {
 }
 
@@ -30,8 +31,8 @@ c3DView::~c3DView()
 
 bool c3DView::Init(cRenderer &renderer)
 {
-	const Vector3 eyePos(0.f, 380.f, -300.f);
-	const Vector3 lookAt(0, 0, 0);
+	const Vector3 eyePos = g_root.m_3dEyePos;// (0.f, 380.f, -300.f);
+	const Vector3 lookAt = g_root.m_3dLookAt;// (0, 0, 0);
 	m_camera.SetCamera(eyePos, lookAt, Vector3(0, 1, 0));
 	m_camera.SetProjection(MATH_PI / 4.f, m_rect.Width() / m_rect.Height(), 1, 1000000.f);
 	m_camera.SetViewPort(m_rect.Width(), m_rect.Height());
@@ -63,6 +64,7 @@ bool c3DView::Init(cRenderer &renderer)
 
 void c3DView::OnUpdate(const float deltaSeconds)
 {
+	m_camera.SetCamera(g_root.m_3dEyePos, g_root.m_3dLookAt, Vector3(0, 1, 0));
 }
 
 
@@ -105,35 +107,8 @@ void c3DView::OnPreRender(const float deltaSeconds)
 		//	m_boxLine.Render(renderer);
 		//}
 
-		m_boxLine.SetLine(g_root.m_box3DPos[0], g_root.m_box3DPos[1], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(g_root.m_box3DPos[1], g_root.m_box3DPos[2], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(g_root.m_box3DPos[2], g_root.m_box3DPos[3], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(g_root.m_box3DPos[3], g_root.m_box3DPos[0], 0.1f);
-		m_boxLine.Render(renderer);
-
-		m_boxLine.SetLine(g_root.m_box3DPos[4], g_root.m_box3DPos[5], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(g_root.m_box3DPos[5], g_root.m_box3DPos[6], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(g_root.m_box3DPos[6], g_root.m_box3DPos[7], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(g_root.m_box3DPos[7], g_root.m_box3DPos[4], 0.1f);
-		m_boxLine.Render(renderer);
-
-		m_boxLine.SetLine(g_root.m_box3DPos[0], g_root.m_box3DPos[4], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(g_root.m_box3DPos[1], g_root.m_box3DPos[5], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(g_root.m_box3DPos[2], g_root.m_box3DPos[6], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(g_root.m_box3DPos[3], g_root.m_box3DPos[7], 0.1f);
-		m_boxLine.Render(renderer);
-
-
-
+		if (m_showBoxVolume)
+			RenderBoxVolume3D(renderer);
 
 		m_sphere.Render(renderer);
 
@@ -157,21 +132,21 @@ void c3DView::OnPreRender(const float deltaSeconds)
 			renderer.m_cbPerFrame.Update(renderer);
 			renderer.m_cbMaterial.Update(renderer, 2);
 
-			cColor colors[] = {
-				cColor::YELLOW, cColor::RED, cColor::GREEN, cColor::BLUE
-			};
+			//cColor colors[] = {
+			//	cColor::YELLOW, cColor::RED, cColor::GREEN, cColor::BLUE
+			//};
 
-			for (int i=0; i < g_root.m_areaFloorCnt; ++i)			
+			for (int i=0; i < g_root.m_areaFloorCnt; ++i)		
 			{
 				auto &areaFloor = g_root.m_areaBuff[i];
 
-				common::Vector4 color;
-				if (i < ARRAYSIZE(colors))
-					color = colors[i].GetColor();
-				else
-					color = common::Vector4(1,1,1,1);
+				//common::Vector4 color;
+				//if (i < ARRAYSIZE(colors))
+				//	color = colors[i].GetColor();
+				//else
+				//	color = common::Vector4(1,1,1,1);
 
-				XMVECTOR diffuse = XMLoadFloat4((XMFLOAT4*)&color);
+				XMVECTOR diffuse = XMLoadFloat4((XMFLOAT4*)&areaFloor->color.GetColor());
 				renderer.m_cbMaterial.m_v->diffuse = diffuse;
 				renderer.m_cbMaterial.Update(renderer, 2);
 				areaFloor->vtxBuff->Bind(renderer);
@@ -218,7 +193,7 @@ void c3DView::Capture3D()
 		tfm.scale = Vector3(1.5f, 1, 1.5f);
 		//tfm.scale = Vector3(3.f, 1, 3.f);
 		//tfm.scale = Vector3(2.f, 1, 2.f);
-		g_root.m_sensorBuff.Render(renderer, "Heightmap", tfm.GetMatrixXM());
+		g_root.m_sensorBuff.Render(renderer, "Heightmap", false, tfm.GetMatrixXM());
 		//g_root.m_sensorBuff.RenderTessellation(renderer, tfm.GetMatrixXM());
 	}
 	m_captureTarget.End(renderer);
@@ -249,6 +224,42 @@ void c3DView::Capture3D()
 			renderer.GetDevContext()->Unmap(pStaging.Get(), 0);
 		}
 	}
+}
+
+
+void c3DView::RenderBoxVolume3D(graphic::cRenderer &renderer)
+{
+	for (auto &box : g_root.m_boxes)
+	{
+		m_boxLine.SetColor(box.color);
+		m_boxLine.SetLine(box.box3d[0], box.box3d[1], 0.1f);
+		m_boxLine.Render(renderer);
+		m_boxLine.SetLine(box.box3d[1], box.box3d[2], 0.1f);
+		m_boxLine.Render(renderer);
+		m_boxLine.SetLine(box.box3d[2], box.box3d[3], 0.1f);
+		m_boxLine.Render(renderer);
+		m_boxLine.SetLine(box.box3d[3], box.box3d[0], 0.1f);
+		m_boxLine.Render(renderer);
+
+		m_boxLine.SetLine(box.box3d[4], box.box3d[5], 0.1f);
+		m_boxLine.Render(renderer);
+		m_boxLine.SetLine(box.box3d[5], box.box3d[6], 0.1f);
+		m_boxLine.Render(renderer);
+		m_boxLine.SetLine(box.box3d[6], box.box3d[7], 0.1f);
+		m_boxLine.Render(renderer);
+		m_boxLine.SetLine(box.box3d[7], box.box3d[4], 0.1f);
+		m_boxLine.Render(renderer);
+
+		m_boxLine.SetLine(box.box3d[0], box.box3d[4], 0.1f);
+		m_boxLine.Render(renderer);
+		m_boxLine.SetLine(box.box3d[1], box.box3d[5], 0.1f);
+		m_boxLine.Render(renderer);
+		m_boxLine.SetLine(box.box3d[2], box.box3d[6], 0.1f);
+		m_boxLine.Render(renderer);
+		m_boxLine.SetLine(box.box3d[3], box.box3d[7], 0.1f);
+		m_boxLine.Render(renderer);
+	}
+
 }
 
 
@@ -283,6 +294,9 @@ void c3DView::OnRender(const float deltaSeconds)
 			const Vector3 eyePos(0.f, 380.f, -300.f);
 			const Vector3 lookAt(0, 0, 0);
 			m_camera.SetCamera(eyePos, lookAt, Vector3(0, 1, 0));
+
+			g_root.m_3dEyePos = m_camera.GetEyePos();
+			g_root.m_3dLookAt = m_camera.GetLookAt();
 		}
 		ImGui::SameLine();
 		ImGui::Checkbox("Ground", &m_showGround);
@@ -292,6 +306,8 @@ void c3DView::OnRender(const float deltaSeconds)
 		ImGui::Checkbox("Point Cloud", &m_showPointCloud);
 		ImGui::SameLine();
 		ImGui::Checkbox("Box Aread Point Cloud", &m_showBoxAreaPointCloud);
+		ImGui::SameLine();
+		ImGui::Checkbox("Box Volume", &m_showBoxVolume);
 
 		//if (ImGui::Button("Process"))
 		//{
@@ -492,6 +508,9 @@ void c3DView::OnWheelMove(const float delta, const POINT mousePt)
 		zoomLen = (len / 3.f);
 
 	GetMainCamera().Zoom(ray.dir, (delta < 0) ? -zoomLen : zoomLen);
+
+	g_root.m_3dEyePos = GetMainCamera().GetEyePos();
+	g_root.m_3dLookAt = GetMainCamera().GetLookAt();
 }
 
 
@@ -500,6 +519,7 @@ void c3DView::OnMouseMove(const POINT mousePt)
 {
 	const POINT delta = { mousePt.x - m_mousePos.x, mousePt.y - m_mousePos.y };
 	m_mousePos = mousePt;
+	bool isUpdateCam = false;
 
 	if (m_mouseDown[0])
 	{
@@ -512,17 +532,26 @@ void c3DView::OnMouseMove(const POINT mousePt)
 
 		GetMainCamera().MoveRight(-delta.x * m_rotateLen * 0.001f);
 		GetMainCamera().MoveFrontHorizontal(delta.y * m_rotateLen * 0.001f);
+		isUpdateCam = true;
 	}
 	else if (m_mouseDown[1])
 	{
 		m_camera.Yaw2(delta.x * 0.005f, Vector3(0, 1, 0));
 		m_camera.Pitch2(delta.y * 0.005f, Vector3(0, 1, 0));
+		isUpdateCam = true;
 	}
 	else if (m_mouseDown[2])
 	{
 		const float len = GetMainCamera().GetDistance();
 		GetMainCamera().MoveRight(-delta.x * len * 0.001f);
 		GetMainCamera().MoveUp(delta.y * len * 0.001f);
+		isUpdateCam = true;
+	}
+
+	if (isUpdateCam)
+	{
+		g_root.m_3dEyePos = GetMainCamera().GetEyePos();
+		g_root.m_3dLookAt = GetMainCamera().GetLookAt();
 	}
 }
 

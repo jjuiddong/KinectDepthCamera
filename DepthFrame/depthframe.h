@@ -14,6 +14,7 @@ class cInputView;
 class cFilterView;
 class cLogView;
 class cResultView;
+class cBoxView;
 
 class cViewer : public framework::cGameMain2
 {
@@ -38,4 +39,5 @@ public:
 	cFilterView *m_filterView;
 	cLogView *m_logView;
 	cResultView *m_resultView;
+	cBoxView *m_boxView;
 };

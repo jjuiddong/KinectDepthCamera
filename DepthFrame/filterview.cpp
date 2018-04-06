@@ -3,10 +3,10 @@
 #include "filterview.h"
 #include "cvutil.h"
 
-
 using namespace graphic;
 using namespace framework;
 using namespace cv;
+
 
 cFilterView::cFilterView(const string &name)
 	: framework::cDockWindow(name)
@@ -65,7 +65,7 @@ void cFilterView::Process()
 
 void cFilterView::ProcessDepth()
 {
-	m_rects.clear();
+	m_contours.clear();
 	m_removeRects.clear();
 	cv::Mat &srcImg = g_root.m_sensorBuff.m_srcImg;
 
@@ -80,99 +80,54 @@ void cFilterView::ProcessDepth()
 	cvtColor(m_dstImg, m_dstImg, cv::COLOR_GRAY2RGB);
 
 	const Mat element = cv::getStructuringElement(MORPH_RECT, Size(3, 3));
-	for (int k = 0; k < g_root.m_areaFloorCnt; ++k)
+	for (int i = 0; i < g_root.m_areaFloorCnt; ++i)
 	{
-		cRoot::sAreaFloor *areaFloor = g_root.m_areaBuff[k];
+		cRoot::sAreaFloor *areaFloor = g_root.m_areaBuff[i];
 
 		float threshold = areaFloor->startIdx * 0.1f;
 
 		cv::threshold(grayscaleMat, m_binImg, threshold, 255, cv::THRESH_BINARY);
 		m_binImg.convertTo(m_binImg, CV_8UC1);
 
-		int loopCnt = 0;
 		cv::erode(m_binImg, m_binImg, element);
 		cv::dilate(m_binImg, m_binImg, element);
 		cv::erode(m_binImg, m_binImg, element);
 		cv::dilate(m_binImg, m_binImg, element);
 		cv::dilate(m_binImg, m_binImg, element);
 
-		while (loopCnt < 8)
+		bool isFindBox = false;
+		for (int vtxCnt = 4; !isFindBox && (vtxCnt < 9); ++vtxCnt)
 		{
-			vector<cRectContour> out;
-			if (FindBox(m_binImg, out))
+			int loopCnt = 0;
+			cv::Mat binImg = m_binImg.clone();
+			while (!isFindBox && (loopCnt < 8))
 			{
-				for (auto &r : out)
+				vector<cContour> out;
+				if (FindBox(binImg, vtxCnt, out))
 				{
-					sRectInfo info;
-					info.loop = loopCnt;
-					info.lowerH = 0;
-					info.upperH = areaFloor->maxIdx * 0.1f;
-					info.r = r;
-					m_rects.push_back(info);
-				}
-				break;
-			}
+					for (auto &contour : out)
+					{
+						isFindBox = true;
 
-			cv::dilate(m_binImg, m_binImg, element);
-			++loopCnt;
+						sContourInfo info;
+						info.loop = loopCnt;
+						info.lowerH = 0;
+						info.upperH = areaFloor->maxIdx * 0.1f;
+						//info.r = r;
+						info.contour = contour;
+						info.color = areaFloor->color;
+						m_contours.push_back(info);
+					}
+					break;
+				}
+
+				cv::dilate(binImg, binImg, element);
+				++loopCnt;
+			}
 		}
 	}
 
-	// Box 중복인식 제거
-	if (!m_rects.empty())
-	{
-		set<int> rmIndices;
-		for (u_int i = 0; i < m_rects.size()-1; ++i)
-		{
-			for (u_int k = i+1; k < m_rects.size(); ++k)
-			{
-				if (m_rects[i].r.IsContain(m_rects[k].r))
-				{
-					const int a1 = m_rects[i].r.Width() * m_rects[i].r.Height();
-					const int a2 = m_rects[k].r.Width() * m_rects[k].r.Height();
-					const bool isDuplciate = abs(((float)a1 / (float)a2) - 1.f) < 0.1f; // 거의 같은 사이즈
-					m_rects[k].duplicate = isDuplciate;
-
-					// 중복 인식된 박스일 때, 더 낮은 높이의 박스를 제거한다.
-					if (isDuplciate)
-					{
-						//if (a1 > a2)
-						if (m_rects[i].upperH > m_rects[k].upperH)
-						{
-							rmIndices.insert(k);
-						}
-						else
-						{
-							rmIndices.insert(i);
-						}
-					}
-					else
-					{
-						// 두개의 박스가 위아래로 겹쳐져 있을 때,
-						// 박스바닥 높이를 계산한다.
-						if (m_rects[i].upperH > m_rects[k].upperH)
-						{
-							m_rects[i].lowerH = m_rects[k].upperH;
-						}
-						else
-						{
-							m_rects[k].lowerH = m_rects[i].upperH;
-						}
-					}
-
-				}
-			}
-		}
-
-		// 높은 인덱스부터 제거한다.
-		for (auto it = rmIndices.rbegin(); it != rmIndices.rend(); ++it)
-		{
-			if (!m_rects[*it].duplicate) // 비슷한 크기의 박스는 표시하지 않는다. 중복 인식된 박스
-				m_removeRects.push_back(m_rects[*it]);
-
-			common::popvector(m_rects, *it);
-		}
-	}
+	RemoveDuplicateContour(m_contours);
 
 	// display remove rect
 	for (auto &info : m_removeRects)
@@ -183,67 +138,74 @@ void cFilterView::ProcessDepth()
 	}
 
 	// Display Detect Box (for debugging)
-	if (!m_rects.empty() && !m_binImg.empty())
+	if (!m_contours.empty() && !m_binImg.empty())
 		cvtColor(m_binImg, m_binImg, cv::COLOR_GRAY2RGB);
 
 	g_root.m_boxes.clear();
-	char boxName[64];
-	for (u_int i=0; i < m_rects.size(); ++i)
+	for (u_int i=0; i < m_contours.size(); ++i)
 	{
-		auto &info = m_rects[i];
-		cRectContour &rect = info.r;
+		auto &info = m_contours[i];
 		const Scalar color(255, 255, 255);
+		const Vector3 color2 = info.color.GetColor() * 255;
+		info.contour.Draw(m_dstImg, cv::Scalar(color2.x, color2.y, color2.z));
 		
+		char boxName[64];
 		sprintf(boxName, "BOX%d", i + 1);
-		setLabel(m_dstImg, boxName, rect.m_contours, Scalar(1, 1, 1));
-		setLabel(m_dstImg, " 1", rect.At(0), color);
-		setLabel(m_dstImg, " 2", rect.At(1), color);
-		setLabel(m_dstImg, " 3", rect.At(2), color);
-		setLabel(m_dstImg, " 4", rect.At(3), color);
+		setLabel(m_dstImg, boxName, info.contour.m_data, Scalar(1, 1, 1));
+		//setLabel(m_dstImg, " 1", rect.At(0), color);
+		//setLabel(m_dstImg, " 2", rect.At(1), color);
+		//setLabel(m_dstImg, " 3", rect.At(2), color);
+		//setLabel(m_dstImg, " 4", rect.At(3), color);
 
-		cv::circle(m_dstImg, rect.At(0), 5, color);
-		cv::circle(m_dstImg, rect.At(1), 5, color);
-		cv::circle(m_dstImg, rect.At(2), 5, color);
-		cv::circle(m_dstImg, rect.At(3), 5, color);
+		//cv::circle(m_dstImg, rect.At(0), 5, color);
+		//cv::circle(m_dstImg, rect.At(1), 5, color);
+		//cv::circle(m_dstImg, rect.At(2), 5, color);
+		//cv::circle(m_dstImg, rect.At(3), 5, color);
 		
-		rect.Draw(m_dstImg, color, 1);
-		rect.Draw(m_binImg, Scalar(255,0,0), 1); // for debugging
+		//rect.Draw(m_dstImg, color, 1);
+		//rect.Draw(m_binImg, Scalar(255,0,0), 1); // for debugging
 
-		for (int i = 0; i < 4; ++i)
+		cRoot::sBoxInfo box;
+
+		if (info.contour.Size() == 4)
 		{
-			//const Vector3 pos((rect.At(i).x - 320) / 1.5f, info.upperH, (480 - rect.At(i).y - 240) / 1.5f);
-			g_root.m_box3DPos[i] = Vector3((rect.At(i).x - 320) / 1.5f, info.upperH, (480 - rect.At(i).y - 240) / 1.5f);;
-			g_root.m_box3DPos[i+4] = Vector3((rect.At(i).x - 320) / 1.5f, info.lowerH, (480 - rect.At(i).y - 240) / 1.5f);;
+			const Vector2 v1((float)info.contour[0].x, (float)info.contour[0].y);
+			const Vector2 v2((float)info.contour[1].x, (float)info.contour[1].y);
+			const Vector2 v3((float)info.contour[2].x, (float)info.contour[2].y);
+			const Vector2 v4((float)info.contour[3].x, (float)info.contour[3].y);
+		
+			//const float scale = 50.f / 110.f;
+			const float scale = 50.f / 73.2f;
+			const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete)? -13.f : 2.5f;
+		
+			// maximum value
+			const float l1 = std::max((v1 - v2).Length(), (v3 - v4).Length());
+			const float l2 = std::max((v2 - v3).Length(), (v4 - v1).Length());
+			box.volume.x = std::max(l1, l2);
+			box.volume.y = (info.upperH - info.lowerH) + offsetY;
+			box.volume.z = std::min(l1, l2);
+
+			// average value
+			//box.volume.x = (((v1 - v2).Length()) + ((v3 - v4).Length())) * 0.5f;
+			//box.volume.y = (info.upperH - info.lowerH) + offsetY;
+			//box.volume.z = (((v2 - v3).Length()) + ((v4 - v1).Length())) * 0.5f;
+
+			box.volume.x *= scale;
+			box.volume.y *= 1.f;
+			box.volume.z *= scale;
+
+			box.volume.x -= (float)info.loop*1.4f;
+			box.volume.z -= (float)info.loop*1.4f;
 		}
 
-		const Vector2 v1((float)rect.At(0).x, (float)rect.At(0).y);
-		const Vector2 v2((float)rect.At(1).x, (float)rect.At(1).y);
-		const Vector2 v3((float)rect.At(2).x, (float)rect.At(2).y);
-		const Vector2 v4((float)rect.At(3).x, (float)rect.At(3).y);
-		
-		//const float scale = 50.f / 110.f;
-		const float scale = 50.f / 73.2f;
-		const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete)? -13.f : 2.5f;
-		
-		// maximum value
-		cRoot::sBoxInfo box;
-		const float l1 = std::max((v1 - v2).Length(), (v3 - v4).Length());
-		const float l2 = std::max((v2 - v3).Length(), (v4 - v1).Length());
-		box.volume.x = std::max(l1, l2);
-		box.volume.y = (info.upperH - info.lowerH) + offsetY;
-		box.volume.z = std::min(l1, l2);
+		for (u_int i = 0; i < info.contour.Size(); ++i)
+		{
+			box.box3d[i] = Vector3((info.contour[i].x - 320) / 1.5f, info.upperH, (480 - info.contour[i].y - 240) / 1.5f);
+			box.box3d[i + info.contour.Size()] = Vector3((info.contour[i].x - 320) / 1.5f, info.lowerH, (480 - info.contour[i].y - 240) / 1.5f);
+		}
 
-		//box.volume.x = (((v1 - v2).Length()) + ((v3 - v4).Length())) * 0.5f;
-		//box.volume.y = (info.upperH - info.lowerH) + offsetY;
-		//box.volume.z = (((v2 - v3).Length()) + ((v4 - v1).Length())) * 0.5f;
-
-		box.volume.x *= scale;
-		box.volume.y *= 1.f;
-		box.volume.z *= scale;
-
-		box.volume.x -= (float)info.loop*1.4f;
-		box.volume.z -= (float)info.loop*1.4f;
-
+		box.color = info.color;
+		box.pointCnt = info.contour.Size();
 		g_root.m_boxes.push_back(box);
 	}
 
@@ -251,27 +213,34 @@ void cFilterView::ProcessDepth()
 }
 
 
-bool cFilterView::FindBox(cv::Mat &img, OUT vector<cRectContour> &out)
+// 꼭지점갯수가 vtxCnt와 같을 때, 박스를 검출한다.
+bool cFilterView::FindBox(cv::Mat &img
+	, const u_int vtxCnt
+	, OUT vector<cContour> &out)
 {
-	findContours(img, m_contours, CV_RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+	vector<vector<cv::Point>> contours;
+	findContours(img, contours, CV_RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
 	int m_minArea = 200;
-	double m_minCos = -0.4f;
+	double m_minCos = -0.4f; // 직각 체크
 	double m_maxCos = 0.4f;
 
 	vector<cRectContour> rects;
 	std::vector<cv::Point> approx;
-	for (u_int i = 0; i < m_contours.size(); i++)
+	for (u_int i = 0; i < contours.size(); i++)
 	{
 		// Approximate contour with accuracy proportional
 		// to the contour perimeter
-		cv::approxPolyDP(cv::Mat(m_contours[i]), approx, cv::arcLength(cv::Mat(m_contours[i]), true)*0.02f, true);
+		cv::approxPolyDP(cv::Mat(contours[i]), approx, cv::arcLength(cv::Mat(contours[i]), true)*0.02f, true);
 
 		// Skip small or non-convex objects 
-		if (std::fabs(cv::contourArea(m_contours[i])) < m_minArea || !cv::isContourConvex(approx))
+		const bool isConvex = cv::isContourConvex(approx);
+		//if (std::fabs(cv::contourArea(contours[i])) < m_minArea || !isConvex)
+		if (std::fabs(cv::contourArea(contours[i])) < m_minArea)
 			continue;
 
-		if (approx.size() == 4)
+		//if (approx.size() == 4)
+		if (approx.size() <= vtxCnt)
 		{
 			// Number of vertices of polygonal curve
 			const int vtc = approx.size();
@@ -290,29 +259,23 @@ bool cFilterView::FindBox(cv::Mat &img, OUT vector<cRectContour> &out)
 
 			// Use the degrees obtained above and the number of vertices
 			// to determine the shape of the contour
-			if ((vtc == 4) && (mincos >= m_minCos) && (maxcos <= m_maxCos))
+			if (
+				//(vtc == 4) && 
+				(mincos >= m_minCos) && (maxcos <= m_maxCos))
 			{
-				vector<cv::Point> rectPoint(4);
-				rectPoint[0] = approx[0];
-				rectPoint[1] = approx[1];
-				rectPoint[2] = approx[2];
-				rectPoint[3] = approx[3];
-				cRectContour rect;
-				rect.Init(rectPoint);
-				out.push_back(rect);
+				//vector<cv::Point> rectPoint(4);
+				//rectPoint[0] = approx[0];
+				//rectPoint[1] = approx[1];
+				//rectPoint[2] = approx[2];
+				//rectPoint[3] = approx[3];
+				//cRectContour rect;
+				//rect.Init(rectPoint);
+				//out.push_back(rect);
 
-				//setLabel(m_dstImg, "BOX", m_contours[i], Scalar(1, 1, 1));
-				//setLabel(m_dstImg, " 1", approx[0], Scalar(255, 255, 255));
-				//setLabel(m_dstImg, " 2", approx[1], Scalar(255, 255, 255));
-				//setLabel(m_dstImg, " 3", approx[2], Scalar(255, 255, 255));
-				//setLabel(m_dstImg, " 4", approx[3], Scalar(255, 255, 255));
-
-				//cv::circle(m_dstImg, approx[0], 5, Scalar(255, 255, 255));
-				//cv::circle(m_dstImg, approx[1], 5, Scalar(255, 255, 255));
-				//cv::circle(m_dstImg, approx[2], 5, Scalar(255, 255, 255));
-				//cv::circle(m_dstImg, approx[3], 5, Scalar(255, 255, 255));
-
-				//rect.Draw(m_dstImg, Scalar(255, 255, 255), 1);
+				cContour contour;
+				contour.Init(approx);
+				contour.Draw(m_dstImg, Scalar(0, 255, 0), 1);
+				out.push_back(contour);
 
 				AddLog("Detect Box");
 				AddLog(common::format("pos1 = %d, %d", approx[0].x, approx[0].y));
@@ -333,6 +296,66 @@ bool cFilterView::FindBox(cv::Mat &img, OUT vector<cRectContour> &out)
 	}
 
 	return !out.empty();
+}
+
+
+void cFilterView::RemoveDuplicateContour(vector<sContourInfo> &contours)
+{
+	// Box 중복인식 제거
+	if (!contours.empty())
+	{
+		set<int> rmIndices;
+		for (u_int i = 0; i < contours.size() - 1; ++i)
+		{
+			for (u_int k = i + 1; k < contours.size(); ++k)
+			{
+				if (contours[i].contour.IsContain(contours[k].contour))
+				{
+					const int a1 = contours[i].contour.Area(); // contours[i].r.Width() * contours[i].r.Height();
+					const int a2 = contours[k].contour.Area(); // contours[k].r.Width() * contours[k].r.Height();
+					const bool isDuplciate = abs(((float)a1 / (float)a2) - 1.f) < 0.1f; // 거의 같은 사이즈
+					contours[k].duplicate = isDuplciate;
+
+					// 중복 인식된 박스일 때, 더 낮은 높이의 박스를 제거한다.
+					if (isDuplciate)
+					{
+						//if (a1 > a2)
+						if (contours[i].upperH > contours[k].upperH)
+						{
+							rmIndices.insert(k);
+						}
+						else
+						{
+							rmIndices.insert(i);
+						}
+					}
+					else
+					{
+						// 두개의 박스가 위아래로 겹쳐져 있을 때,
+						// 박스바닥 높이를 계산한다.
+						if (contours[i].upperH > contours[k].upperH)
+						{
+							contours[i].lowerH = contours[k].upperH;
+						}
+						else
+						{
+							contours[k].lowerH = contours[i].upperH;
+						}
+					}
+
+				}
+			}
+		}
+
+		// 높은 인덱스부터 제거한다.
+		for (auto it = rmIndices.rbegin(); it != rmIndices.rend(); ++it)
+		{
+			if (!contours[*it].duplicate) // 비슷한 크기의 박스는 표시하지 않는다. 중복 인식된 박스
+				m_removeRects.push_back(contours[*it]);
+
+			common::popvector(contours, *it);
+		}
+	}
 }
 
 

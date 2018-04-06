@@ -22,6 +22,7 @@ cSensorBuffer::~cSensorBuffer()
 
 void cSensorBuffer::Render(graphic::cRenderer &renderer
 	, const char *techniqName //= "Unlit"
+	, const bool isAphablend //= false
 	, const XMMATRIX &parentTm //= XMIdentity
 )
 {
@@ -33,13 +34,24 @@ void cSensorBuffer::Render(graphic::cRenderer &renderer
 
 	renderer.m_cbPerFrame.m_v->mWorld = XMMatrixTranspose(parentTm);
 	renderer.m_cbPerFrame.Update(renderer);
-	XMVECTOR diffuse = XMLoadFloat4((XMFLOAT4*)&common::Vector4(.7f, .7f, .7f, 1.f));
+	XMVECTOR diffuse = XMLoadFloat4((XMFLOAT4*)&common::Vector4(.7f, .7f, .7f, isAphablend? .4f : 1.f));
 	renderer.m_cbMaterial.m_v->diffuse = diffuse;
 	renderer.m_cbMaterial.Update(renderer, 2);
 
 	m_vtxBuff.Bind(renderer);
 	renderer.GetDevContext()->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
-	renderer.GetDevContext()->DrawInstanced(m_pointCloudCount, 1, 0, 0);
+
+	if (isAphablend)
+	{
+		CommonStates states(renderer.GetDevice());
+		renderer.GetDevContext()->OMSetBlendState(states.NonPremultiplied(), 0, 0xffffffff);
+		renderer.GetDevContext()->DrawInstanced(m_pointCloudCount, 1, 0, 0);
+		renderer.GetDevContext()->OMSetBlendState(NULL, 0, 0xffffffff);
+	}
+	else
+	{
+		renderer.GetDevContext()->DrawInstanced(m_pointCloudCount, 1, 0, 0);
+	}
 }
 
 
@@ -70,8 +82,6 @@ void cSensorBuffer::RenderTessellation(graphic::cRenderer &renderer
 	renderer.m_cbTessellation.Update(renderer, 6);
 
 	m_vtxBuff.Bind(renderer);
-	//renderer.GetDevContext()->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
-	//renderer.GetDevContext()->DrawInstanced(m_pointCloudCount, 1, 0, 0);
 	renderer.GetDevContext()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST);
 	renderer.GetDevContext()->Draw(m_pointCloudCount, 0);
 }
@@ -595,6 +605,8 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 	}
 
 	// Generate Area Floor
+	const cColor colors[] = { cColor::YELLOW, cColor::RED, cColor::GREEN, cColor::BLUE };
+
 	u_int floor = 0;
 	int state = 0; // 0: check rising pulse, 1: check down pulse, 2: collect area floor
 	int startIdx = 0;
@@ -653,6 +665,11 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 		areaFloor->endIdx = endIdx;
 		areaFloor->maxIdx = maxAreaIdx;
 		areaFloor->areaCnt = 0;
+		if ((floor - 1) < ARRAYSIZE(colors))
+			areaFloor->color = colors[floor - 1].GetColor();
+		else
+			areaFloor->color = common::Vector4(1, 1, 1, 1);
+
 		ZeroMemory(&areaFloor->areaGraph, sizeof(areaFloor->areaGraph));
 
 		// Generate AreaFloor Vertex

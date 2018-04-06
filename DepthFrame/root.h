@@ -51,6 +51,9 @@ public:
 
 	eInputType::Enum m_input;
 
+	//graphic::cCamera3D m_3dCamera;
+	common::Vector3 m_3dEyePos;
+	common::Vector3 m_3dLookAt;
 	cSensorBuffer m_sensorBuff;
 
 	// Update Every Time
@@ -72,6 +75,7 @@ public:
 		int endIdx;
 		int maxIdx; // 가장 많이 분포한 높이 인덱스
 		int areaCnt;
+		graphic::cColor color;
 		sGraph<100> areaGraph;
 		graphic::cVertexBuffer *vtxBuff;
 	};
@@ -81,6 +85,9 @@ public:
 	struct sBoxInfo {
 		common::Vector3 pos;
 		common::Vector3 volume;
+		common::Vector3 box3d[8*2];
+		u_int pointCnt;
+		graphic::cColor color;
 	};
 	vector<sBoxInfo> m_boxes;
 	vector<sBoxInfo> m_boxesStored;
@@ -102,9 +109,6 @@ public:
 	bool m_isAutoSaveCapture;
 	bool m_isAutoMeasure;
 	bool m_isPalete;
-
-	// Box3D
-	common::Vector3 m_box3DPos[8];
 
 	// Config
 	common::StrPath m_inputFilePath;

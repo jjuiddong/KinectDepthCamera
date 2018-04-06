@@ -13,6 +13,7 @@
 #include "filterview.h"
 #include "logview.h"
 #include "resultview.h"
+#include "boxview.h"
 
 
 using namespace graphic;
@@ -63,8 +64,7 @@ bool cViewer::OnInit()
 
 	m_gui.SetContext();
 
-	g_root.Create();
-
+	g_root.Create(); // 가장 먼저 호출
 
 	m_3dView = new c3DView("3DView");
 	m_3dView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, NULL);
@@ -99,8 +99,13 @@ bool cViewer::OnInit()
 	m_analysisView = new cAnalysisView("Analysis View");
 	m_analysisView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_infraredView, 0.6f);
 
+	m_boxView = new cBoxView("Box View");
+	m_boxView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_3dView);
+	result = m_boxView->Init(m_renderer);
+	assert(result);
+
 	m_filterView = new cFilterView("Filter View");
-	m_filterView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_3dView);
+	m_filterView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_boxView);
 	result = m_filterView->Init(m_renderer);
 	assert(result);
 
@@ -200,7 +205,6 @@ void cViewer::OnUpdate(const float deltaSeconds)
 	__super::OnUpdate(deltaSeconds);
 	cAutoCam cam(&m_camera);
 	GetMainCamera().Update(deltaSeconds);
-	//g_root.Update(m_renderer, deltaSeconds);
 }
 
 

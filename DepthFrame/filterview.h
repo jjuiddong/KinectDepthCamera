@@ -19,25 +19,27 @@ public:
 
 
 protected:
+	// BoxVolume
+	struct sContourInfo {
+		int loop;
+		float lowerH;
+		float upperH;
+		bool duplicate;
+		graphic::cColor color;
+		cRectContour r;
+		cContour contour;
+	};
+
 	void ProcessDepth();
 	void UpdateTexture();
-	bool FindBox(cv::Mat &img, OUT vector<cRectContour> &out);
+	bool FindBox(cv::Mat &img, const u_int vtxCnt, OUT vector<cContour> &out);
+	void RemoveDuplicateContour(vector<sContourInfo> &contours);
 
 
 public:
 	cv::Mat m_binImg;
 	cv::Mat m_dstImg;
-	vector<vector<cv::Point>> m_contours;
 	graphic::cTexture m_depthTexture;
-
-	// BoxVolume
-	struct sRectInfo {
-		int loop;
-		float lowerH;
-		float upperH;
-		bool duplicate;
-		cRectContour r;
-	};
-	vector<sRectInfo> m_rects;
-	vector<sRectInfo> m_removeRects;
+	vector<sContourInfo> m_contours;
+	vector<sContourInfo> m_removeRects;
 };

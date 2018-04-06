@@ -15,7 +15,9 @@ public:
 	cSensorBuffer();
 	virtual ~cSensorBuffer();
 
-	void Render(graphic::cRenderer &renderer, const char *techniqName = "Unlit"
+	void Render(graphic::cRenderer &renderer
+		, const char *techniqName = "Unlit"
+		, const bool isAphablend = false
 		, const XMMATRIX &parentTm = graphic::XMIdentity);
 	void RenderTessellation(graphic::cRenderer &renderer 
 		, const XMMATRIX &parentTm = graphic::XMIdentity);

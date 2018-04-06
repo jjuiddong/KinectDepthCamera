@@ -39,6 +39,13 @@
     <ClCompile Include="inputview.cpp">
       <Filter>view</Filter>
     </ClCompile>
+    <ClCompile Include="boxview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="contour.cpp" />
+    <ClCompile Include="clipper.cpp">
+      <Filter>external</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="depthframe.h" />
@@ -80,10 +87,20 @@
     <ClInclude Include="inputview.h">
       <Filter>view</Filter>
     </ClInclude>
+    <ClInclude Include="boxview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="contour.h" />
+    <ClInclude Include="clipper.hpp">
+      <Filter>external</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="view">
       <UniqueIdentifier>{4f40d4cc-aa1e-4510-abee-c57b172295bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external">
+      <UniqueIdentifier>{ba0d210e-57bd-422c-890d-dba270c74e6a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

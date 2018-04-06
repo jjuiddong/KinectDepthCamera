@@ -102,6 +102,9 @@ bool cRoot::Create()
 		}
 	}
 
+	m_3dEyePos = common::Vector3(0.f, 380.f, -300.f);
+	m_3dLookAt = common::Vector3(0, 0, 0);
+
 	return true;
 }
 

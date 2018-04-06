@@ -1,15 +1,15 @@
 //
 // 2018-03-13, jjuiddong
-// 3D View
+// Box View
 //
 #pragma once
 
 
-class c3DView : public framework::cDockWindow
+class cBoxView : public framework::cDockWindow
 {
 public:
-	c3DView(const string &name);
-	virtual ~c3DView();
+	cBoxView(const string &name);
+	virtual ~cBoxView();
 
 	bool Init(graphic::cRenderer &renderer);
 	virtual void OnUpdate(const float deltaSeconds) override;
@@ -18,13 +18,12 @@ public:
 	virtual void OnResizeEnd(const framework::eDockResize::Enum type, const common::sRectf &rect) override;
 	virtual void OnEventProc(const sf::Event &evt) override;
 	virtual void OnResetDevice() override;
-	void Capture3D();
 
 
 protected:
-	void UpdateLookAt();
-	double CalcBasePlaneStandardDeviation();
 	void RenderBoxVolume3D(graphic::cRenderer &renderer);
+
+	void UpdateLookAt();
 	void OnWheelMove(const float delta, const POINT mousePt);
 	void OnMouseMove(const POINT mousePt);
 	void OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt);
@@ -32,34 +31,12 @@ protected:
 
 
 public:
-	graphic::cGridLine m_ground;
-	graphic::cRenderTarget m_renderTarget;
-	graphic::cRenderTarget m_captureTarget;
 	bool m_showGround;
-	bool m_showWireframe;
-	bool m_showSensorPlane;
 	bool m_showPointCloud;
-	bool m_showBoxAreaPointCloud;
-	bool m_showBoxVolume;
 
-	struct eState {
-		enum Enum {
-			NORMAL, PLANE, PICKPOS, VCENTER
-		};
-	};
-
-	eState::Enum m_state;
-	bool m_isGenPlane;
-	bool m_isGenVolumeCenter;
-	int m_genPlane;
-	common::Vector3 m_planePos[3];
-
-	graphic::cDbgSphere m_sphere;
-	graphic::cGridLine m_planeGrid;
-	graphic::cDbgLine m_volumeCenterLine;
+	graphic::cGridLine m_ground;
 	graphic::cDbgLine m_boxLine;
-	common::Vector3 m_pickPos;
-	double m_planeStandardDeviation;
+	graphic::cRenderTarget m_renderTarget;
 
 	// MouseMove Variable
 	POINT m_viewPos;
