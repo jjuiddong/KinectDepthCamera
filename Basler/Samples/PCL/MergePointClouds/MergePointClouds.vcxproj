@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -23,23 +23,24 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>PointCloudLibrarySample</RootNamespace>
     <ProjectName>MergePointClouds</ProjectName>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -82,7 +83,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ProgramFiles)\pcl 1.8.0\lib;$(ProgramFiles)\PCL 1.8.0\3rdParty\Boost\lib;$(ProgramFiles)\PCL 1.8.0\3rdParty\VTK\lib;$(BASLER_TOF_LIB)\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>pcl_common_debug.lib;pcl_visualization_debug.lib;pcl_filters_debug.lib;vtkCommonColor-7.0-gd.lib;vtkCommonCore-7.0-gd.lib;vtkCommonSystem-7.0-gd.lib;vtkCommonComputationalGeometry-7.0-gd.lib;vtkCommonDataModel-7.0-gd.lib;vtkCommonExecutionModel-7.0-gd.lib;vtkCommonMath-7.0-gd.lib;vtkCommonMisc-7.0-gd.lib;vtkCommonTransforms-7.0-gd.lib;vtksys-7.0-gd.lib;vtkRenderingCore-7.0-gd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>pcl_common_debug.lib;pcl_visualization_debug.lib;pcl_filters_debug.lib;vtkCommonColor-8.0-gd.lib;vtkCommonCore-8.0-gd.lib;vtkCommonSystem-8.0-gd.lib;vtkCommonComputationalGeometry-8.0-gd.lib;vtkCommonDataModel-8.0-gd.lib;vtkCommonExecutionModel-8.0-gd.lib;vtkCommonMath-8.0-gd.lib;vtkCommonMisc-8.0-gd.lib;vtkCommonTransforms-8.0-gd.lib;vtksys-8.0-gd.lib;vtkRenderingCore-8.0-gd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -114,7 +115,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ProgramFiles)\pcl 1.8.0\lib;$(ProgramFiles)\PCL 1.8.0\3rdParty\Boost\lib;$(ProgramFiles)\PCL 1.8.0\3rdParty\VTK\lib;$(BASLER_TOF_LIB)\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>pcl_common_release.lib;pcl_visualization_release.lib;pcl_filters_release.lib;vtkCommonColor-7.0.lib;vtkCommonCore-7.0.lib;vtkCommonSystem-7.0.lib;vtkCommonComputationalGeometry-7.0.lib;vtkCommonDataModel-7.0.lib;vtkCommonExecutionModel-7.0.lib;vtkCommonMath-7.0.lib;vtkCommonMisc-7.0.lib;vtkCommonTransforms-7.0.lib;vtksys-7.0.lib;vtkRenderingCore-7.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>pcl_common_release.lib;pcl_visualization_release.lib;pcl_filters_release.lib;vtkCommonColor-8.0.lib;vtkCommonCore-8.0.lib;vtkCommonSystem-8.0.lib;vtkCommonComputationalGeometry-8.0.lib;vtkCommonDataModel-8.0.lib;vtkCommonExecutionModel-8.0.lib;vtkCommonMath-8.0.lib;vtkCommonMisc-8.0.lib;vtkCommonTransforms-8.0.lib;vtksys-8.0.lib;vtkRenderingCore-8.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

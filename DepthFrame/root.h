@@ -4,8 +4,9 @@
 //
 #pragma once
 
-#include <ConsumerImplHelper/ToFCamera.h>
-using namespace GenTLConsumerImplHelper;
+//#include <ConsumerImplHelper/ToFCamera.h>
+//using namespace GenTLConsumerImplHelper;
+#include "basler.h"
 
 // Kinect V2
 static const int g_kinectDepthWidth = 512;
@@ -40,9 +41,9 @@ public:
 
 protected:
 	bool KinectSetup();
-	int BaslerCameraSetup();
-	void setupCamera();
-	void processData(const GrabResult& grabResult);
+	//int BaslerCameraSetup();
+	//void setupCamera();
+	//void processData(const GrabResult& grabResult);
 	void UpdateDepthImage(graphic::cRenderer &renderer);
 
 
@@ -83,6 +84,8 @@ public:
 	int m_areaFloorCnt;
 
 	struct sBoxInfo {
+		float minVolume;
+		float maxVolume;
 		common::Vector3 pos;
 		common::Vector3 volume;
 		common::Vector3 box3d[8*2];
@@ -102,7 +105,7 @@ public:
 
 	// Basler
 	bool m_isConnectBasler;
-	CToFCamera *m_Camera;
+	cBaslerCamera m_balserCam;
 	bool m_baslerSetupSuccess;
 
 	// Option

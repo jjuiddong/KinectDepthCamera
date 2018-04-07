@@ -55,10 +55,16 @@ void cResultView::OnRender(const float deltaSeconds)
 
 		// 소수 첫 번째 자리에서 반올림
 		// 긴쪽이 가로, 짧은 쪽이 세로
+		const int l1 = std::max((int)(box.volume.x + 0.5f), (int)(box.volume.z + 0.5f));
+		const int l2 = std::min((int)(box.volume.x + 0.5f), (int)(box.volume.z + 0.5f));
+		const int l3 = (int)(box.volume.y + 0.5f);
+
 		ImGui::Text("Box%d", i + 1);
-		ImGui::Text(u8"\t 가로 = %d", std::max((int)(box.volume.x + 0.5f), (int)(box.volume.z + 0.5f)));
-		ImGui::Text(u8"\t 세로 = %d", std::min((int)(box.volume.x + 0.5f), (int)(box.volume.z + 0.5f)));
-		ImGui::Text(u8"\t 높이 = %d", (int)(box.volume.y + 0.5f));
+		ImGui::Text(u8"\t 가로 = %d", l1);
+		ImGui::Text(u8"\t 세로 = %d", l2);
+		ImGui::Text(u8"\t 높이 = %d", l3);
+		ImGui::Text(u8"\t V/W = %.1f", box.minVolume / 6000.f);
+		//ImGui::Text(u8"\t V/W = %.1f", (box.volume.x * box.volume.y * box.volume.z) / 6000.f);
 		ImGui::Spacing();
 		ImGui::Separator();
 	}
@@ -92,10 +98,16 @@ void cResultView::OnRender(const float deltaSeconds)
 
 			// 소수 첫 번째 자리에서 반올림
 			// 긴쪽이 가로, 짧은 쪽이 세로
+			const int l1 = std::max((int)(box.volume.x + 0.5f), (int)(box.volume.z + 0.5f));
+			const int l2 = std::min((int)(box.volume.x + 0.5f), (int)(box.volume.z + 0.5f));
+			const int l3 = (int)(box.volume.y + 0.5f);
+
 			ImGui::Text("Box%d", i + 1);
-			ImGui::Text(u8"\t 가로 = %d", std::max((int)(box.volume.x + 0.5f), (int)(box.volume.z + 0.5f)));
-			ImGui::Text(u8"\t 세로 = %d", std::min((int)(box.volume.x + 0.5f), (int)(box.volume.z + 0.5f)));
-			ImGui::Text(u8"\t 높이 = %d", (int)(box.volume.y + 0.5f));
+			ImGui::Text(u8"\t 가로 = %d", l1);
+			ImGui::Text(u8"\t 세로 = %d", l2);
+			ImGui::Text(u8"\t 높이 = %d", l3);
+			ImGui::Text(u8"\t V/W = %.1f", box.minVolume / 6000.f);
+			//ImGui::Text(u8"\t V/W = %.1f", (box.volume.x * box.volume.y * box.volume.z) / 6000.f);
 			ImGui::Spacing();
 			ImGui::Separator();
 		}

@@ -21,6 +21,8 @@ public:
 protected:
 	// BoxVolume
 	struct sContourInfo {
+		bool used; // use internal
+		int level;
 		int loop;
 		float lowerH;
 		float upperH;

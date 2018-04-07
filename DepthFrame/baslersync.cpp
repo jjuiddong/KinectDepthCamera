@@ -1,6 +1,6 @@
 
 #include "stdafx.h"
-#include "basler.h"
+#include "baslersync.h"
 #include "3dview.h"
 #include "depthframe.h"
 
@@ -19,26 +19,27 @@ public:
 
 
 
-cBaslerCamera::cBaslerCamera()
+cBaslerCameraSync::cBaslerCameraSync()
 	: m_Camera(NULL)
 	, m_isSetupSuccess(false)
 {
 }
 
-cBaslerCamera::~cBaslerCamera()
+cBaslerCameraSync::~cBaslerCameraSync()
 {
 	Clear();
 }
 
 
-bool cBaslerCamera::Init()
+bool cBaslerCameraSync::Init()
 {
 	m_isSetupSuccess = false;
 
 	try
 	{
 		CToFCamera::InitProducer();
-		m_Camera = new CToFCamera();
+		//m_Camera = new CToFCamera();
+
 		if (EXIT_SUCCESS == BaslerCameraSetup())
 		{
 			//m_baslerSetupSuccess = true;
@@ -59,7 +60,7 @@ bool cBaslerCamera::Init()
 }
 
 
-int cBaslerCamera::BaslerCameraSetup()
+int cBaslerCameraSync::BaslerCameraSetup()
 {
 	const size_t nBuffers = 3;  // Number of buffers to be used for grabbing.
 	const size_t nImagesToGrab = 10; // Number of images to grab.
@@ -122,35 +123,90 @@ int cBaslerCamera::BaslerCameraSetup()
 
 
 
-void cBaslerCamera::setupCamera()
+void cBaslerCameraSync::setupCamera()
 {
-	m_Camera->OpenFirstCamera();
-	//cout << "Connected to camera " << m_Camera->GetCameraInfo().strDisplayName << endl;
+	//m_Camera->OpenFirstCamera();
+	////cout << "Connected to camera " << m_Camera->GetCameraInfo().strDisplayName << endl;
 
-	// Enable 3D (point cloud) data, intensity data, and confidence data 
-	GenApi::CEnumerationPtr ptrComponentSelector = m_Camera->GetParameter("ComponentSelector");
-	GenApi::CBooleanPtr ptrComponentEnable = m_Camera->GetParameter("ComponentEnable");
-	GenApi::CEnumerationPtr ptrPixelFormat = m_Camera->GetParameter("PixelFormat");
+	//// Enable 3D (point cloud) data, intensity data, and confidence data 
+	//GenApi::CEnumerationPtr ptrComponentSelector = m_Camera->GetParameter("ComponentSelector");
+	//GenApi::CBooleanPtr ptrComponentEnable = m_Camera->GetParameter("ComponentEnable");
+	//GenApi::CEnumerationPtr ptrPixelFormat = m_Camera->GetParameter("PixelFormat");
 
-	// Enable range data
-	ptrComponentSelector->FromString("Range");
-	ptrComponentEnable->SetValue(true);
-	// Range information can be sent either as a 16-bit grey value image or as 3D coordinates (point cloud). For this sample, we want to acquire 3D coordinates.
-	// Note: To change the format of an image component, the Component Selector must first be set to the component
-	// you want to configure (see above).
-	// To use 16-bit integer depth information, choose "Mono16" instead of "Coord3D_ABC32f".
-	ptrPixelFormat->FromString("Coord3D_ABC32f");
+	//// Enable range data
+	//ptrComponentSelector->FromString("Range");
+	//ptrComponentEnable->SetValue(true);
+	//// Range information can be sent either as a 16-bit grey value image or as 3D coordinates (point cloud). For this sample, we want to acquire 3D coordinates.
+	//// Note: To change the format of an image component, the Component Selector must first be set to the component
+	//// you want to configure (see above).
+	//// To use 16-bit integer depth information, choose "Mono16" instead of "Coord3D_ABC32f".
+	//ptrPixelFormat->FromString("Coord3D_ABC32f");
 
-	ptrComponentSelector->FromString("Intensity");
-	ptrComponentEnable->SetValue(true);
+	//ptrComponentSelector->FromString("Intensity");
+	//ptrComponentEnable->SetValue(true);
 
-	ptrComponentSelector->FromString("Confidence");
-	ptrComponentEnable->SetValue(true);
+	//ptrComponentSelector->FromString("Confidence");
+	//ptrComponentEnable->SetValue(true);
+
+
+
+	//cout << "Searching for cameras ... " << endl << endl;
+	m_CameraList = CToFCamera::EnumerateCameras();
+	//cout << "found " << m_CameraList.size() << " ToF cameras " << endl << endl;
+
+	// Store number of cameras.
+	m_NumCams = (int)m_CameraList.size();
+	size_t camIdx = 0;
+
+	// Initialize array with master/slave info.
+	for (size_t i = 0; i < MAX_CAMS; i++)
+	{
+		m_IsMaster[i] = false;
+	}
+
+	CameraList::const_iterator iterator;
+
+	// Iterate over list of cameras.
+	for (iterator = m_CameraList.begin(); iterator != m_CameraList.end(); ++iterator) {
+		CameraInfo cInfo = *iterator;
+		//cout << "Configuring Camera " << camIdx << " : " << cInfo.strDisplayName << "." << endl;
+
+		// Create shared pointer to ToF camera.
+		std::shared_ptr<CToFCamera> cam(new CToFCamera());
+
+		// Store shared pointer for later use.
+		m_Cameras.push_back(cam);
+
+		// Open camera with camera info.
+		cam->Open(cInfo);
+
+		//
+		// Configure camera for synchronous free run.
+		// Do not yet configure trigger delays.
+		//
+
+		// Enable IEEE1588.
+		CBooleanPtr ptrIEEE1588Enable = cam->GetParameter("GevIEEE1588");
+		ptrIEEE1588Enable->SetValue(true);
+
+		// Enable trigger.
+		GenApi::CEnumerationPtr ptrTriggerMode = cam->GetParameter("TriggerMode");
+
+		// Set trigger mode to "on".
+		ptrTriggerMode->FromString("On");
+
+		// Configure the sync timer as trigger source.
+		GenApi::CEnumerationPtr ptrTriggerSource = cam->GetParameter("TriggerSource");
+		ptrTriggerSource->FromString("SyncTimer");
+
+		// Proceed to next camera.
+		camIdx++;
+	}
 }
 
 
 
-bool cBaslerCamera::Capture()
+bool cBaslerCameraSync::Capture()
 {
 	RETV(!m_isSetupSuccess, false);
 
@@ -212,7 +268,7 @@ bool cBaslerCamera::Capture()
 }
 
 
-void cBaslerCamera::processData(const GrabResult& grabResult)
+void cBaslerCameraSync::processData(const GrabResult& grabResult)
 {
 	BufferParts parts;
 	m_Camera->GetBufferParts(grabResult, parts);
@@ -250,7 +306,7 @@ void cBaslerCamera::processData(const GrabResult& grabResult)
 }
 
 
-void cBaslerCamera::Clear()
+void cBaslerCameraSync::Clear()
 {
 	if (m_isSetupSuccess && m_Camera)
 	{

@@ -119,8 +119,8 @@ void cBoxView::OnRender(const float deltaSeconds)
 	bool isOpen = true;
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 	ImGui::SetNextWindowPos(pos);
-	ImGui::SetNextWindowSize(ImVec2(std::min(m_viewRect.Width(), 300.f), std::min(m_viewRect.Height(), 500.f)));
-	if (ImGui::Begin("Box Volume", &isOpen, ImVec2(m_viewRect.Width(), 300.f), windowAlpha, flags))
+	ImGui::SetNextWindowSize(ImVec2(std::min(m_viewRect.Width(), 300.f), std::max(m_viewRect.Height(), 800.f)));
+	if (ImGui::Begin("Box Volume", &isOpen, ImVec2(std::min(m_viewRect.Width(), 300.f), std::max(m_viewRect.Height(), 800.f)), windowAlpha, flags))
 	{
 		if (ImGui::Button("Camera Origin"))
 		{
@@ -146,6 +146,8 @@ void cBoxView::OnRender(const float deltaSeconds)
 			ImGui::Text("\t X = %f", box.volume.x);
 			ImGui::Text("\t Y = %f", box.volume.z);
 			ImGui::Text("\t H = %f", box.volume.y);
+			ImGui::Text("\t V/W = %f", box.minVolume / 6000.f);
+			ImGui::Text("\t V/W = %f", box.maxVolume / 6000.f);
 			ImGui::Spacing();
 			ImGui::Separator();
 		}

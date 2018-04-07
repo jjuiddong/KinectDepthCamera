@@ -36,8 +36,8 @@ void cFilterView::OnRender(const float deltaSeconds)
 	bool isOpen = true;
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 	ImGui::SetNextWindowPos(pos);
-	ImGui::SetNextWindowSize(ImVec2(std::min(m_rect.Width() - 15.f, 500.f), m_rect.Height()));
-	if (ImGui::Begin("FilterView Info", &isOpen, ImVec2(std::min(m_rect.Width() - 15.f, 500.f), m_rect.Height()), windowAlpha, flags))
+	ImGui::SetNextWindowSize(ImVec2(std::min(m_rect.Width() - 15.f, 800.f), m_rect.Height()));
+	if (ImGui::Begin("FilterView Info", &isOpen, ImVec2(std::min(m_rect.Width() - 15.f, 800.f), m_rect.Height()), windowAlpha, flags))
 	{
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -48,6 +48,7 @@ void cFilterView::OnRender(const float deltaSeconds)
 			ImGui::Text("\t X = %f", box.volume.x);
 			ImGui::Text("\t Y = %f", box.volume.z);
 			ImGui::Text("\t H = %f", box.volume.y);
+			ImGui::Text("\t V/W = %f", box.minVolume / 6000.f);
 			ImGui::Spacing();
 			ImGui::Separator();
 		}
@@ -107,18 +108,18 @@ void cFilterView::ProcessDepth()
 				{
 					for (auto &contour : out)
 					{
-						isFindBox = true;
+						//isFindBox = true;
 
 						sContourInfo info;
+						info.level = vtxCnt;
 						info.loop = loopCnt;
 						info.lowerH = 0;
 						info.upperH = areaFloor->maxIdx * 0.1f;
-						//info.r = r;
 						info.contour = contour;
 						info.color = areaFloor->color;
 						m_contours.push_back(info);
 					}
-					break;
+					//break;
 				}
 
 				cv::dilate(binImg, binImg, element);
@@ -165,6 +166,10 @@ void cFilterView::ProcessDepth()
 		//rect.Draw(m_dstImg, color, 1);
 		//rect.Draw(m_binImg, Scalar(255,0,0), 1); // for debugging
 
+		//const float scale = 50.f / 110.f;
+		const float scale = 50.f / 73.2f;
+		const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete) ? -13.f : 2.5f;
+
 		cRoot::sBoxInfo box;
 
 		if (info.contour.Size() == 4)
@@ -173,10 +178,6 @@ void cFilterView::ProcessDepth()
 			const Vector2 v2((float)info.contour[1].x, (float)info.contour[1].y);
 			const Vector2 v3((float)info.contour[2].x, (float)info.contour[2].y);
 			const Vector2 v4((float)info.contour[3].x, (float)info.contour[3].y);
-		
-			//const float scale = 50.f / 110.f;
-			const float scale = 50.f / 73.2f;
-			const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete)? -13.f : 2.5f;
 		
 			// maximum value
 			const float l1 = std::max((v1 - v2).Length(), (v3 - v4).Length());
@@ -196,6 +197,18 @@ void cFilterView::ProcessDepth()
 
 			box.volume.x -= (float)info.loop*1.4f;
 			box.volume.z -= (float)info.loop*1.4f;
+
+			box.minVolume = box.volume.x * box.volume.y * box.volume.z;
+			box.maxVolume = box.minVolume;
+		}
+		else
+		{
+			box.volume.x *= 0;
+			box.volume.y = (info.upperH - info.lowerH) + offsetY;
+			box.volume.z *= 0;
+
+			box.minVolume = (float)info.contour.Area() * scale * scale * box.volume.y;
+			box.maxVolume = box.minVolume;
 		}
 
 		for (u_int i = 0; i < info.contour.Size(); ++i)
@@ -302,60 +315,112 @@ bool cFilterView::FindBox(cv::Mat &img
 void cFilterView::RemoveDuplicateContour(vector<sContourInfo> &contours)
 {
 	// Box 중복인식 제거
-	if (!contours.empty())
-	{
-		set<int> rmIndices;
-		for (u_int i = 0; i < contours.size() - 1; ++i)
-		{
-			for (u_int k = i + 1; k < contours.size(); ++k)
-			{
-				if (contours[i].contour.IsContain(contours[k].contour))
-				{
-					const int a1 = contours[i].contour.Area(); // contours[i].r.Width() * contours[i].r.Height();
-					const int a2 = contours[k].contour.Area(); // contours[k].r.Width() * contours[k].r.Height();
-					const bool isDuplciate = abs(((float)a1 / (float)a2) - 1.f) < 0.1f; // 거의 같은 사이즈
-					contours[k].duplicate = isDuplciate;
+	if (contours.empty())
+		return;
 
-					// 중복 인식된 박스일 때, 더 낮은 높이의 박스를 제거한다.
-					if (isDuplciate)
+	for (auto &contour : contours)
+		contour.used = true;
+
+	for (u_int i = 0; i < contours.size() - 1; ++i)
+	{
+		sContourInfo &contour1 = contours[i];
+		if (!contour1.used)
+			continue;
+
+		for (u_int k = i + 1; k < contours.size(); ++k)
+		{
+			sContourInfo &contour2 = contours[k];
+			if (!contour2.used)
+				continue;
+
+			if (contour1.contour.IsContain(contour2.contour))
+			{
+				const int a1 = contour1.contour.Area();
+				const int a2 = contour2.contour.Area();
+				const bool isDuplciate = abs(((float)a1 / (float)a2) - 1.f) < 0.1f; // 거의 같은 사이즈
+				contour2.duplicate = isDuplciate;
+
+				// 중복 인식된 박스일 때, 더 낮은 높이의 박스를 제거한다.
+				// 높이가 거의 같다면, 더 적은 loop로 발견된 박스를 남기고, 나머지를 제거한다.
+				if (isDuplciate)
+				{
+					if (contour1.upperH == contour2.upperH)
 					{
-						//if (a1 > a2)
-						if (contours[i].upperH > contours[k].upperH)
+						// 더 적은 loop로 발견된 박스를 남기고, 나머지를 제거한다.
+						if ( (contour1.level < contour2.level)
+							|| ((contour1.level == contour2.level) && (contour1.loop < contour2.loop)))
 						{
-							rmIndices.insert(k);
+							contour2.used = false;
 						}
 						else
 						{
-							rmIndices.insert(i);
+							contour1.used = false;
 						}
 					}
 					else
 					{
-						// 두개의 박스가 위아래로 겹쳐져 있을 때,
-						// 박스바닥 높이를 계산한다.
-						if (contours[i].upperH > contours[k].upperH)
+						// 더 낮은 높이의 박스를 제거한다.
+						if (contour1.upperH > contour2.upperH)
 						{
-							contours[i].lowerH = contours[k].upperH;
+							contour2.used = false;
 						}
 						else
 						{
-							contours[k].lowerH = contours[i].upperH;
+							contour1.used = false;
 						}
 					}
-
 				}
 			}
 		}
+	}
 
-		// 높은 인덱스부터 제거한다.
-		for (auto it = rmIndices.rbegin(); it != rmIndices.rend(); ++it)
+
+	for (u_int i = 0; i < contours.size() - 1; ++i)
+	{
+		sContourInfo &contour1 = contours[i];
+		if (!contour1.used)
+			continue;
+
+		for (u_int k = i + 1; k < contours.size(); ++k)
 		{
-			if (!contours[*it].duplicate) // 비슷한 크기의 박스는 표시하지 않는다. 중복 인식된 박스
-				m_removeRects.push_back(contours[*it]);
+			sContourInfo &contour2 = contours[k];
+			if (!contour2.used)
+				continue;
 
-			common::popvector(contours, *it);
+			if (contour1.contour.IsContain(contour2.contour))
+			{
+				const int a1 = contour1.contour.Area();
+				const int a2 = contour2.contour.Area();
+
+				// 두개의 박스가 위아래로 겹쳐져 있을 때,
+				// 박스바닥 높이를 계산한다.
+				// 면적이 큰 박스가 아래에 있는 것으로 가정한다.
+				if (a1 < a2)
+				{
+					contour1.lowerH = contour2.upperH;
+				}
+				else
+				{
+					contour2.lowerH = contour1.upperH;
+				}
+
+				// 박스 높이가 너무 작으면 제거한다.
+				if (abs(contour1.upperH - contour1.lowerH) < 5)
+					contour1.used = false;
+				if (abs(contour2.upperH - contour2.lowerH) < 5)
+					contour2.used = false;
+			}
 		}
 	}
+
+
+	vector<sContourInfo> temp;
+	for (auto &contour : contours)
+		if (contour.used)
+			temp.push_back(contour);
+
+	contours.clear();
+	contours = temp;
 }
 
 

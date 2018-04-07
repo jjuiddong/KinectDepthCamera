@@ -1,6 +1,6 @@
 //
 // 2018-04-07, jjuiddong
-// Basler Camera
+// Basler Multi Camera Sync
 //
 #pragma once
 
@@ -9,11 +9,11 @@
 using namespace GenTLConsumerImplHelper;
 
 
-class cBaslerCamera
+class cBaslerCameraSync
 {
 public:
-	cBaslerCamera();
-	virtual ~cBaslerCamera();
+	cBaslerCameraSync();
+	virtual ~cBaslerCameraSync();
 
 	bool Init();
 	bool Capture();
@@ -27,6 +27,12 @@ protected:
 
 
 public:
+	enum { MAX_CAMS = 10 };
+
 	bool m_isSetupSuccess;
 	CToFCamera * m_Camera;
+	CameraList m_CameraList;
+	vector<std::shared_ptr<CToFCamera>> m_Cameras;
+	size_t m_NumCams;
+	bool m_IsMaster[MAX_CAMS];
 };

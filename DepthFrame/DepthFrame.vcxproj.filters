@@ -46,6 +46,8 @@
     <ClCompile Include="clipper.cpp">
       <Filter>external</Filter>
     </ClCompile>
+    <ClCompile Include="basler.cpp" />
+    <ClCompile Include="baslersync.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="depthframe.h" />
@@ -94,6 +96,8 @@
     <ClInclude Include="clipper.hpp">
       <Filter>external</Filter>
     </ClInclude>
+    <ClInclude Include="basler.h" />
+    <ClInclude Include="baslersync.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="view">

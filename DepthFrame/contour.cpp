@@ -54,5 +54,5 @@ bool cContour::IsContain(const cContour &contour)
 
 u_int cContour::Area()
 {
-	return (u_int)cv::contourArea(m_data);
+	return (u_int)abs(cv::contourArea(m_data));
 }
