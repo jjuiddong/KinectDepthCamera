@@ -18,6 +18,8 @@ public:
 	bool Init();
 	bool Capture();
 	void Clear();
+	bool IsConnect() const;
+	void setTriggerDelays() {}
 
 
 protected:
@@ -30,3 +32,6 @@ public:
 	bool m_isSetupSuccess;
 	CToFCamera * m_Camera;
 };
+
+
+inline bool cBaslerCamera::IsConnect() const { return m_isSetupSuccess;  }

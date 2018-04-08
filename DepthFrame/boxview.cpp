@@ -71,7 +71,7 @@ void cBoxView::OnPreRender(const float deltaSeconds)
 		{
 			CommonStates states(renderer.GetDevice());
 			renderer.GetDevContext()->OMSetBlendState(states.NonPremultiplied(), 0, 0xffffffff);
-			g_root.m_sensorBuff.Render(renderer, "Unlit", true);
+			g_root.m_sensorBuff[1].Render(renderer, "Unlit", true);
 			renderer.GetDevContext()->OMSetBlendState(states.Opaque(), 0, 0xffffffff);
 		}
 	}

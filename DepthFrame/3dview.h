@@ -18,12 +18,12 @@ public:
 	virtual void OnResizeEnd(const framework::eDockResize::Enum type, const common::sRectf &rect) override;
 	virtual void OnEventProc(const sf::Event &evt) override;
 	virtual void OnResetDevice() override;
-	void Capture3D();
+	void Capture3D(const size_t camIdx=0);
 
 
 protected:
 	void UpdateLookAt();
-	double CalcBasePlaneStandardDeviation();
+	double CalcBasePlaneStandardDeviation(const size_t camIdx = 0);
 	void RenderBoxVolume3D(graphic::cRenderer &renderer);
 	void OnWheelMove(const float delta, const POINT mousePt);
 	void OnMouseMove(const POINT mousePt);

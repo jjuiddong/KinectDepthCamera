@@ -232,7 +232,7 @@ void cBaslerCamera::processData(const GrabResult& grabResult)
 	memcpy(&reader.m_intensity[0], pIntensity, sizeof(unsigned short) * 640 * 480);
 	memcpy(&reader.m_confidence[0], pConfidence, sizeof(unsigned short) * 640 * 480);
 
-	g_root.m_sensorBuff.ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer(), reader);
+	g_root.m_sensorBuff[0].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer(), reader);
 
 	// save *.pcd file
 	if (g_root.m_isAutoSaveCapture)

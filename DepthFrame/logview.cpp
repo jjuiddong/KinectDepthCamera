@@ -69,4 +69,5 @@ void cLogView::AddLog(const string &str)
 void AddLog(const string &str)
 {
 	((cViewer*)g_application)->m_logView->AddLog(str);
+	common::dbg::Print(str);
 }

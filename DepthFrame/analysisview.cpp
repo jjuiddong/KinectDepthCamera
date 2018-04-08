@@ -19,16 +19,15 @@ cAnalysisView::~cAnalysisView()
 
 void cAnalysisView::OnRender(const float deltaSeconds)
 {
-	ImGui::DragInt2("Height Error Upper, Lower", g_root.m_heightErr, 1, 0, 200);
 	if (ImGui::Button("Volume Measure"))
 	{
-		g_root.MeasureVolume(true);
+		g_root.MeasureVolume(1, true);
 	}
 
 	ImGui::SameLine();
 	if (ImGui::Button("Analysis Depth"))
 	{
-		g_root.m_sensorBuff.AnalysisDepth();
+		g_root.m_sensorBuff[0].AnalysisDepth();
 	}
 
 	ImGui::Spacing();
@@ -77,9 +76,9 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 	// Diff Average
 	{
 		ImGui::Text("Height Different Average");
-		ImGui::PlotLines("Height Different Average", g_root.m_sensorBuff.m_diffAvrs.values
-			, g_root.m_sensorBuff.m_diffAvrs.size
-			, g_root.m_sensorBuff.m_diffAvrs.idx, "", 0, .5f, ImVec2(0, 100));
+		ImGui::PlotLines("Height Different Average", g_root.m_sensorBuff[0].m_diffAvrs.values
+			, g_root.m_sensorBuff[0].m_diffAvrs.size
+			, g_root.m_sensorBuff[0].m_diffAvrs.idx, "", 0, .5f, ImVec2(0, 100));
 	}
 
 

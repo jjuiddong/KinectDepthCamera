@@ -116,7 +116,8 @@ bool cViewer::OnInit()
 
 	m_logView = new cLogView("Output Log");
 	m_logView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_resultView);
-
+	
+	g_root.InitSensor();
 
 	m_gui.SetContext();
 

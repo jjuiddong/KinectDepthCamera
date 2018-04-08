@@ -58,17 +58,20 @@ void cFilterView::OnRender(const float deltaSeconds)
 }
 
 
-void cFilterView::Process()
+void cFilterView::Process(
+	const size_t camIdx //=0
+)
 {
-	ProcessDepth();
+	ProcessDepth(camIdx);
 }
 
 
-void cFilterView::ProcessDepth()
+void cFilterView::ProcessDepth(const size_t camIdx //=0
+)
 {
 	m_contours.clear();
 	m_removeRects.clear();
-	cv::Mat &srcImg = g_root.m_sensorBuff.m_srcImg;
+	cv::Mat &srcImg = g_root.m_sensorBuff[camIdx].m_srcImg;
 
 	if ((srcImg.cols != m_depthTexture.Width()) || (srcImg.rows != m_depthTexture.Height()))
 	{

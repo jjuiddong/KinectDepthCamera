@@ -4,9 +4,10 @@
 //
 #pragma once
 
-//#include <ConsumerImplHelper/ToFCamera.h>
-//using namespace GenTLConsumerImplHelper;
 #include "basler.h"
+#include "baslersync.h"
+#include "kinectv2.h"
+
 
 // Kinect V2
 static const int g_kinectDepthWidth = 512;
@@ -32,40 +33,25 @@ public:
 	virtual ~cRoot();
 
 	bool Create();
+	bool InitSensor();
 	void Update(graphic::cRenderer &renderer, const float deltaSeconds);
 	bool BaslerCapture();
 	bool KinectCapture();
-	void MeasureVolume(const bool isUpdateSensor=false);
+	void MeasureVolume(const size_t camIdx=0, const bool isUpdateSensor=false);
 	void Clear();
-
-
-protected:
-	bool KinectSetup();
-	//int BaslerCameraSetup();
-	//void setupCamera();
-	//void processData(const GrabResult& grabResult);
-	void UpdateDepthImage(graphic::cRenderer &renderer);
 
 
 public:
 	struct eInputType { enum Enum { FILE, KINECT, BASLER }; };
 
 	eInputType::Enum m_input;
-
-	//graphic::cCamera3D m_3dCamera;
 	common::Vector3 m_3dEyePos;
 	common::Vector3 m_3dLookAt;
-	cSensorBuffer m_sensorBuff;
+	cSensorBuffer m_sensorBuff[2];
 
 	// Update Every Time
-	INT64 m_nTime;
-	USHORT m_nDepthMinReliableDistance;
-	USHORT m_nDepthMaxDistance;
-	int m_depthThresholdMin;
-	int m_depthThresholdMax;
 	int m_distribCount;
 	int m_areaCount;
-	int m_heightErr[2]; // Upper, Lower
 	float m_hDistrib[2000]; // 0 ~ 2000 분포, 0.1cm 단위
 	float m_hDistrib2[2000]; // height distribution pulse
 	sGraph<2000> m_hDistribDifferential; // 2 differential
@@ -97,16 +83,12 @@ public:
 
 	// Kinect
 	bool m_isConnectKinect;
-	bool m_kinectSetupSuccess;
-	IKinectSensor *m_pKinectSensor;
-	IDepthFrameReader *m_pDepthFrameReader;
-	IColorFrameReader *m_pColorFrameReader;
-	IInfraredFrameReader *m_pInfraredFrameReader;
+	cKinect m_kinect;
 
 	// Basler
-	bool m_isConnectBasler;
-	cBaslerCamera m_balserCam;
-	bool m_baslerSetupSuccess;
+	bool m_isTryConnectBasler;
+	cBaslerCameraSync m_balserCam;
+	//cBaslerCamera m_balserCam;
 
 	// Option
 	bool m_isAutoSaveCapture;

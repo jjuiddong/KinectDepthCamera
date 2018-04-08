@@ -48,9 +48,8 @@ void cDepthView::OnRender(const float deltaSeconds)
 
 		if (isUpdate)
 		{
-			ProcessDepth(g_root.m_nTime, &g_root.m_sensorBuff.m_depthBuff[0]
-				, g_root.m_sensorBuff.m_width, g_root.m_sensorBuff.m_height
-				, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
+			ProcessDepth(&g_root.m_sensorBuff[0].m_depthBuff[0]
+				, g_root.m_sensorBuff[0].m_width, g_root.m_sensorBuff[0].m_height);
 		}
 
 		ImGui::End();
@@ -58,20 +57,15 @@ void cDepthView::OnRender(const float deltaSeconds)
 }
 
 
-void cDepthView::Process()
+void cDepthView::Process(const size_t camIdx //=0
+)
 {
-	ProcessDepth(g_root.m_nTime, &g_root.m_sensorBuff.m_depthBuff[0]
-		, g_root.m_sensorBuff.m_width, g_root.m_sensorBuff.m_height
-		, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
+	ProcessDepth(&g_root.m_sensorBuff[camIdx].m_depthBuff[0]
+		, g_root.m_sensorBuff[camIdx].m_width, g_root.m_sensorBuff[camIdx].m_height);
 }
 
 
-void cDepthView::ProcessDepth(INT64 nTime
-	, const UINT16* pBuffer
-	, int nWidth
-	, int nHeight
-	, USHORT nMinDepth
-	, USHORT nMaxDepth)
+void cDepthView::ProcessDepth( const UINT16* pBuffer, int nWidth, int nHeight )
 {
 	if ((nWidth != m_depthTexture.Width()) || (nHeight != m_depthTexture.Height()))
 	{
@@ -89,7 +83,6 @@ void cDepthView::ProcessDepth(INT64 nTime
 			{
 				USHORT depth = pBuffer[i * nWidth + k];
 				BYTE *p = dst + (i * map.RowPitch) + (k * 4);
-				//*(float*)p = max(0, (float)(depth - g_root.m_depthThresholdMin) / (g_root.m_depthThresholdMax - g_root.m_depthThresholdMin));
 				*(float*)p = std::max(0.f, (float)(depth - m_thresholdMin) / (float)(m_thresholdMax - m_thresholdMin));
 			}
 		}

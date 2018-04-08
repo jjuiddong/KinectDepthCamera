@@ -48,6 +48,7 @@
     </ClCompile>
     <ClCompile Include="basler.cpp" />
     <ClCompile Include="baslersync.cpp" />
+    <ClCompile Include="kinectv2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="depthframe.h" />
@@ -99,6 +100,7 @@
     <ClInclude Include="basler.h" />
     <ClInclude Include="baslersync.h" />
     <ClInclude Include="StopWatch.h" />
+    <ClInclude Include="kinectv2.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="view">

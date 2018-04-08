@@ -13,12 +13,12 @@ public:
 
 	bool Init(graphic::cRenderer &renderer);
 	virtual void OnRender(const float deltaSeconds) override;
-	void Process();
+	void Process(const size_t camIdx = 0);
 
 
 protected:
 	void UpdateKinectInfraredImage();
-	void ProcessInfrared(INT64 nTime, const UINT16* pBuffer, int nWidth, int nHeight);
+	void ProcessInfrared(const UINT16* pBuffer, int nWidth, int nHeight);
 
 
 public:

@@ -14,7 +14,8 @@ using namespace framework;
 cInputView::cInputView(const string &name)
 	: framework::cDockWindow(name)
 	, m_isCaptureContinuos(false)
-	, m_captureTime(false)
+	, m_captureTime(0)
+	, m_triggerDelayTime(0)
 	, m_isFileAnimation(false)
 	, m_aniIndex(0)
 	, m_selFileIdx(-1)
@@ -55,12 +56,12 @@ void cInputView::OnRender(const float deltaSeconds)
 
 	case cRoot::eInputType::KINECT:
 	{
-		ImGui::Text(g_root.m_kinectSetupSuccess ? "Kinect Camera - Connect" : "Kinect Camera - Off");
+		ImGui::Text(g_root.m_kinect.IsConnect() ? "Kinect Camera - Connect" : "Kinect Camera - Off");
 		ImGui::Checkbox("Kinect Connect Auto", &g_root.m_isConnectKinect);
 
 		if (ImGui::Button("Capture Kinect Camera"))
 		{
-			if (g_root.m_kinectSetupSuccess)
+			if (g_root.m_kinect.IsConnect())
 				g_root.KinectCapture();
 		}
 
@@ -79,11 +80,11 @@ void cInputView::OnRender(const float deltaSeconds)
 
 	case cRoot::eInputType::BASLER:
 	{
-		ImGui::Text(g_root.m_baslerSetupSuccess ? "Basler Camera - Connect" : "Basler Camera - Off");
-		ImGui::Checkbox("Basler Connect Auto", &g_root.m_isConnectBasler);
+		ImGui::Text(g_root.m_balserCam.IsConnect() ? "Basler Camera - Connect" : "Basler Camera - Off");
+		ImGui::Checkbox("Basler Connect Auto", &g_root.m_isTryConnectBasler);
 
 		if (ImGui::Button("Capture Balser Camera"))
-			if (g_root.m_baslerSetupSuccess)
+			if (g_root.m_balserCam.IsConnect())
 				g_root.BaslerCapture();
 
 		if (m_isCaptureContinuos)
@@ -95,6 +96,11 @@ void cInputView::OnRender(const float deltaSeconds)
 		{
 			if (ImGui::Button("Capture Continuous Basler Camera - On"))
 				m_isCaptureContinuos = true;
+		}
+
+		if (ImGui::Button("Trigger Delay"))
+		{
+			g_root.m_balserCam.setTriggerDelays();
 		}
 	}
 	break;
@@ -109,9 +115,10 @@ void cInputView::OnRender(const float deltaSeconds)
 	ImGui::SameLine();
 	ImGui::Checkbox("Palete", &g_root.m_isPalete);
 
-	if (m_isCaptureContinuos && (g_root.m_baslerSetupSuccess || g_root.m_kinectSetupSuccess))
+	if (m_isCaptureContinuos && (g_root.m_balserCam.IsConnect() || g_root.m_kinect.IsConnect()))
 	{
 		m_captureTime += deltaSeconds;
+		m_triggerDelayTime += deltaSeconds;
 		if (m_captureTime > 0.1f)
 		{
 			if (g_root.BaslerCapture())
@@ -121,6 +128,12 @@ void cInputView::OnRender(const float deltaSeconds)
 
 			m_captureTime = 0;
 		}
+		if (m_triggerDelayTime > 1.f)
+		{
+			g_root.m_balserCam.setTriggerDelays();
+			m_triggerDelayTime = 0;
+		}
+
 	}
 	else if (m_isFileAnimation)
 	{
@@ -129,7 +142,7 @@ void cInputView::OnRender(const float deltaSeconds)
 		{
 			if (m_files.size() > (u_int)m_aniIndex)
 			{
-				if (g_root.m_sensorBuff.ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
+				if (g_root.m_sensorBuff[0].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
 					, m_files[m_aniIndex].ansi().c_str()))
 					UpdateDelayMeasure(m_aniTime);
 				else
@@ -263,22 +276,24 @@ void cInputView::UpdateDelayMeasure(const float deltaSeconds)
 
 // 데이타 변화율이 적은 정보를 저장한다.
 // 1 초가 지난 후, 계산된다.
-void cInputView::StoreMinimumDifferenceSensorBuffer()
+void cInputView::StoreMinimumDifferenceSensorBuffer(
+	const size_t camIdx //=0 
+	)
 {
-	if (m_minDifference > g_root.m_sensorBuff.m_diffAvrs.GetCurValue())
+	if (m_minDifference > g_root.m_sensorBuff[camIdx].m_diffAvrs.GetCurValue())
 	{
-		if (g_root.m_sensorBuff.m_vertices.size() != m_vertices.size())
+		if (g_root.m_sensorBuff[camIdx].m_vertices.size() != m_vertices.size())
 		{
-			m_vertices.resize(g_root.m_sensorBuff.m_vertices.size());
-			m_depthBuff.resize(g_root.m_sensorBuff.m_depthBuff.size());
-			m_depthBuff2.resize(g_root.m_sensorBuff.m_depthBuff2.size());
+			m_vertices.resize(g_root.m_sensorBuff[camIdx].m_vertices.size());
+			m_depthBuff.resize(g_root.m_sensorBuff[camIdx].m_depthBuff.size());
+			m_depthBuff2.resize(g_root.m_sensorBuff[camIdx].m_depthBuff2.size());
 		}
 
-		memcpy(&m_vertices[0], &g_root.m_sensorBuff.m_vertices[0], m_vertices.size() * sizeof(m_vertices[0]));
-		memcpy(&m_depthBuff[0], &g_root.m_sensorBuff.m_depthBuff[0], m_depthBuff.size() * sizeof(m_depthBuff[0]));
-		memcpy(&m_depthBuff2[0], &g_root.m_sensorBuff.m_depthBuff2[0], m_depthBuff2.size() * sizeof(m_depthBuff2[0]));
+		memcpy(&m_vertices[0], &g_root.m_sensorBuff[camIdx].m_vertices[0], m_vertices.size() * sizeof(m_vertices[0]));
+		memcpy(&m_depthBuff[0], &g_root.m_sensorBuff[camIdx].m_depthBuff[0], m_depthBuff.size() * sizeof(m_depthBuff[0]));
+		memcpy(&m_depthBuff2[0], &g_root.m_sensorBuff[camIdx].m_depthBuff2[0], m_depthBuff2.size() * sizeof(m_depthBuff2[0]));
 
-		m_minDifference = g_root.m_sensorBuff.m_diffAvrs.GetCurValue();
+		m_minDifference = g_root.m_sensorBuff[camIdx].m_diffAvrs.GetCurValue();
 	}
 }
 
@@ -295,11 +310,12 @@ void cInputView::DelayMeasure()
 
 
 // 1초간 정보를 받아서, 가장 적은 오차가 있는 정보로 계산한다.
-void cInputView::CalcDelayMeasure()
+void cInputView::CalcDelayMeasure(const size_t camIdx // =0
+)
 {
-	memcpy(&g_root.m_sensorBuff.m_vertices[0], &m_vertices[0], m_vertices.size() * sizeof(m_vertices[0]));
-	memcpy(&g_root.m_sensorBuff.m_depthBuff[0], &m_depthBuff[0], m_depthBuff.size() * sizeof(m_depthBuff[0]));
-	memcpy(&g_root.m_sensorBuff.m_depthBuff2[0], &m_depthBuff2[0], m_depthBuff2.size() * sizeof(m_depthBuff2[0]));
+	memcpy(&g_root.m_sensorBuff[camIdx].m_vertices[0], &m_vertices[0], m_vertices.size() * sizeof(m_vertices[0]));
+	memcpy(&g_root.m_sensorBuff[camIdx].m_depthBuff[0], &m_depthBuff[0], m_depthBuff.size() * sizeof(m_depthBuff[0]));
+	memcpy(&g_root.m_sensorBuff[camIdx].m_depthBuff2[0], &m_depthBuff2[0], m_depthBuff2.size() * sizeof(m_depthBuff2[0]));
 
 	g_root.MeasureVolume();
 	
@@ -372,18 +388,20 @@ void cInputView::UpdateFileList()
 }
 
 
-bool cInputView::OpenFile(const StrPath &ansifileName)
+bool cInputView::OpenFile(const StrPath &ansifileName
+	, const size_t camIdx //=0
+)
 {
 	if (string(".ply") == ansifileName.GetFileExt())
 	{
-		g_root.m_sensorBuff.ReadPlyFile(
+		g_root.m_sensorBuff[camIdx].ReadPlyFile(
 			((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
 
 		g_root.MeasureVolume();
 	}
 	else if (string(".pcd") == ansifileName.GetFileExt())
 	{
-		g_root.m_sensorBuff.ReadDatFile(
+		g_root.m_sensorBuff[camIdx].ReadDatFile(
 			((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
 
 		g_root.MeasureVolume();

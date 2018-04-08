@@ -38,8 +38,6 @@ void cDepthView2::OnRender(const float deltaSeconds)
 	ImGui::SetNextWindowSize(ImVec2(std::min(m_rect.Width()-15.f, 500.f), 250));
 	if (ImGui::Begin("DepthView2 Info", &isOpen, ImVec2(std::min(m_rect.Width()-15.f, 500.f), 250.f), windowAlpha, flags))
 	{
-		//ImGui::DragInt("Depth Threshold Min", &g_root.m_depthThresholdMin, 10, 0, USHORT_MAX);
-		//ImGui::DragInt("Depth Threshold Max", &g_root.m_depthThresholdMax, 10, 1, USHORT_MAX);
 		bool isUpdate = false;
 		if (ImGui::DragInt("Threshold Min", &m_thresholdMin, 100, 0, USHORT_MAX))
 			isUpdate = true;
@@ -51,9 +49,8 @@ void cDepthView2::OnRender(const float deltaSeconds)
 
 		if (isUpdate)
 		{
-			ProcessDepth(g_root.m_nTime, &g_root.m_sensorBuff.m_depthBuff2[0]
-				, g_root.m_sensorBuff.m_width, g_root.m_sensorBuff.m_height
-				, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
+			ProcessDepth(&g_root.m_sensorBuff[0].m_depthBuff2[0]
+				, g_root.m_sensorBuff[0].m_width, g_root.m_sensorBuff[0].m_height);
 		}
 
 		ImGui::End();
@@ -61,20 +58,17 @@ void cDepthView2::OnRender(const float deltaSeconds)
 }
 
 
-void cDepthView2::Process()
+void cDepthView2::Process(const size_t camIdx //=0
+)
 {
-	ProcessDepth(g_root.m_nTime, &g_root.m_sensorBuff.m_depthBuff2[0]
-		, g_root.m_sensorBuff.m_width, g_root.m_sensorBuff.m_height
-		, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
+	ProcessDepth(&g_root.m_sensorBuff[camIdx].m_depthBuff2[0]
+		, g_root.m_sensorBuff[camIdx].m_width, g_root.m_sensorBuff[camIdx].m_height);
 }
 
 
-void cDepthView2::ProcessDepth(INT64 nTime
-	, const UINT16* pBuffer
+void cDepthView2::ProcessDepth( const UINT16* pBuffer
 	, int nWidth
-	, int nHeight
-	, USHORT nMinDepth
-	, USHORT nMaxDepth)
+	, int nHeight)
 {
 	// Make sure we've received valid data
 	if ((nWidth != m_depthTexture.Width()) || (nHeight != m_depthTexture.Height()))

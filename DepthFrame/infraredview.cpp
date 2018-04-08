@@ -29,20 +29,21 @@ void cInfraredView::OnRender(const float deltaSeconds)
 }
 
 
-void cInfraredView::Process()
+void cInfraredView::Process(const size_t camIdx //=0
+)
 {
-	ProcessInfrared(g_root.m_nTime, &g_root.m_sensorBuff.m_depthBuff[0]
-		, g_root.m_sensorBuff.m_width, g_root.m_sensorBuff.m_height);
+	ProcessInfrared(&g_root.m_sensorBuff[camIdx].m_depthBuff[0]
+		, g_root.m_sensorBuff[camIdx].m_width, g_root.m_sensorBuff[camIdx].m_height);
 }
 
 
 void cInfraredView::UpdateKinectInfraredImage()
 {
-	if (!g_root.m_pInfraredFrameReader)
+	if (!g_root.m_kinect.IsConnect())
 		return;
 
 	IInfraredFrame* pInfraredFrame = NULL;
-	HRESULT hr = g_root.m_pInfraredFrameReader->AcquireLatestFrame(&pInfraredFrame);
+	HRESULT hr = g_root.m_kinect.m_pInfraredFrameReader->AcquireLatestFrame(&pInfraredFrame);
 	if (FAILED(hr))
 		return;
 
@@ -73,7 +74,7 @@ void cInfraredView::UpdateKinectInfraredImage()
 	if (FAILED(hr))
 		goto error;
 
-	ProcessInfrared(nTime, pBuffer, nWidth, nHeight);
+	ProcessInfrared(pBuffer, nWidth, nHeight);
 
 
 error:
@@ -83,7 +84,7 @@ error:
 
 
 // Update Infrared Texture
-void cInfraredView::ProcessInfrared(INT64 nTime, const UINT16* pBuffer, int nWidth, int nHeight)
+void cInfraredView::ProcessInfrared(const UINT16* pBuffer, int nWidth, int nHeight)
 {
 	cRenderer &renderer = GetRenderer();
 	D3D11_MAPPED_SUBRESOURCE map;

@@ -115,7 +115,7 @@ void c3DView::OnPreRender(const float deltaSeconds)
 		// Render Point Cloud
 		if (m_showPointCloud)
 		{
-			g_root.m_sensorBuff.Render(renderer);
+			g_root.m_sensorBuff[0].Render(renderer);
 			//renderer.GetDevContext()->RSSetState(states.Wireframe());
 			//g_root.m_sensorBuff.RenderTessellation(renderer);
 		}
@@ -160,7 +160,8 @@ void c3DView::OnPreRender(const float deltaSeconds)
 
 
 // 직교투영으로 -Y축으로 바라보면서 장면을 그린다.
-void c3DView::Capture3D()
+void c3DView::Capture3D(const size_t camIdx //=0
+)
 {
 	const Vector3 eyePos(0.f, 380.f, 00.f);
 	const Vector3 lookAt(0, 0, 0);
@@ -193,7 +194,7 @@ void c3DView::Capture3D()
 		tfm.scale = Vector3(1.5f, 1, 1.5f);
 		//tfm.scale = Vector3(3.f, 1, 3.f);
 		//tfm.scale = Vector3(2.f, 1, 2.f);
-		g_root.m_sensorBuff.Render(renderer, "Heightmap", false, tfm.GetMatrixXM());
+		g_root.m_sensorBuff[camIdx].Render(renderer, "Heightmap", false, tfm.GetMatrixXM());
 		//g_root.m_sensorBuff.RenderTessellation(renderer, tfm.GetMatrixXM());
 	}
 	m_captureTarget.End(renderer);
@@ -211,7 +212,7 @@ void c3DView::Capture3D()
 		if (FAILED(hr))
 			return;
 
-		float *dst = (float*)g_root.m_sensorBuff.m_srcImg.data;
+		float *dst = (float*)g_root.m_sensorBuff[camIdx].m_srcImg.data;
 		D3D11_MAPPED_SUBRESOURCE map;
 		hr = renderer.GetDevContext()->Map(pStaging.Get(), 0, D3D11_MAP_READ, 0, &map);
 		if (FAILED(hr))
@@ -329,17 +330,17 @@ void c3DView::OnRender(const float deltaSeconds)
 		{
 			if (m_isGenPlane)
 			{
-				g_root.m_config.SetValue("plane-x", g_root.m_sensorBuff.m_plane.N.x);
-				g_root.m_config.SetValue("plane-y", g_root.m_sensorBuff.m_plane.N.y);
-				g_root.m_config.SetValue("plane-z", g_root.m_sensorBuff.m_plane.N.z);
-				g_root.m_config.SetValue("plane-d", g_root.m_sensorBuff.m_plane.D);
+				g_root.m_config.SetValue("plane-x", g_root.m_sensorBuff[0].m_plane.N.x);
+				g_root.m_config.SetValue("plane-y", g_root.m_sensorBuff[0].m_plane.N.y);
+				g_root.m_config.SetValue("plane-z", g_root.m_sensorBuff[0].m_plane.N.z);
+				g_root.m_config.SetValue("plane-d", g_root.m_sensorBuff[0].m_plane.D);
 			}
 
 			if (m_isGenVolumeCenter)
 			{
-				g_root.m_config.SetValue("center-x", g_root.m_sensorBuff.m_volumeCenter.x);
-				g_root.m_config.SetValue("center-y", g_root.m_sensorBuff.m_volumeCenter.y);
-				g_root.m_config.SetValue("center-z", g_root.m_sensorBuff.m_volumeCenter.z);
+				g_root.m_config.SetValue("center-x", g_root.m_sensorBuff[0].m_volumeCenter.x);
+				g_root.m_config.SetValue("center-y", g_root.m_sensorBuff[0].m_volumeCenter.y);
+				g_root.m_config.SetValue("center-z", g_root.m_sensorBuff[0].m_volumeCenter.z);
 			}
 
 			if (g_root.m_config.Write("config_depthframe.txt"))
@@ -357,18 +358,27 @@ void c3DView::OnRender(const float deltaSeconds)
 				if (config.GetString("plane-x", "none") != "none")
 				{
 					m_isGenPlane = true;
-					g_root.m_sensorBuff.m_plane.N.x = config.GetFloat("plane-x");
-					g_root.m_sensorBuff.m_plane.N.y = config.GetFloat("plane-y");
-					g_root.m_sensorBuff.m_plane.N.z = config.GetFloat("plane-z");
-					g_root.m_sensorBuff.m_plane.D = config.GetFloat("plane-d");
+					g_root.m_sensorBuff[0].m_plane.N.x = config.GetFloat("plane-x");
+					g_root.m_sensorBuff[0].m_plane.N.y = config.GetFloat("plane-y");
+					g_root.m_sensorBuff[0].m_plane.N.z = config.GetFloat("plane-z");
+					g_root.m_sensorBuff[0].m_plane.D = config.GetFloat("plane-d");
+
+					g_root.m_sensorBuff[1].m_plane.N.x = config.GetFloat("plane-x");
+					g_root.m_sensorBuff[1].m_plane.N.y = config.GetFloat("plane-y");
+					g_root.m_sensorBuff[1].m_plane.N.z = config.GetFloat("plane-z");
+					g_root.m_sensorBuff[1].m_plane.D = config.GetFloat("plane-d");
 				}
 
 				if (config.GetString("center-x", "none") != "none")
 				{
 					m_isGenVolumeCenter = true;
-					g_root.m_sensorBuff.m_volumeCenter.x = config.GetFloat("center-x");
-					g_root.m_sensorBuff.m_volumeCenter.y = config.GetFloat("center-y");
-					g_root.m_sensorBuff.m_volumeCenter.z = config.GetFloat("center-z");
+					g_root.m_sensorBuff[0].m_volumeCenter.x = config.GetFloat("center-x");
+					g_root.m_sensorBuff[0].m_volumeCenter.y = config.GetFloat("center-y");
+					g_root.m_sensorBuff[0].m_volumeCenter.z = config.GetFloat("center-z");
+
+					g_root.m_sensorBuff[1].m_volumeCenter.x = config.GetFloat("center-x");
+					g_root.m_sensorBuff[1].m_volumeCenter.y = config.GetFloat("center-y");
+					g_root.m_sensorBuff[1].m_volumeCenter.z = config.GetFloat("center-z");
 				}
 			}
 		}
@@ -384,12 +394,12 @@ void c3DView::OnRender(const float deltaSeconds)
 		{
 			m_state = eState::VCENTER;
 		}
-		const Vector3 &volumeCenter = g_root.m_sensorBuff.m_volumeCenter;
+		const Vector3 &volumeCenter = g_root.m_sensorBuff[0].m_volumeCenter;
 		ImGui::Text("volume center = %f, %f, %f", volumeCenter.x, volumeCenter.y, volumeCenter.z);
 
 		if (ImGui::Button("Change Space"))
 		{
-			g_root.m_sensorBuff.ChangeSpace(GetRenderer());
+			g_root.m_sensorBuff[0].ChangeSpace(GetRenderer());
 		}
 
 		if (ImGui::Button("Standard Deviation"))
@@ -416,7 +426,8 @@ double CalcAverage(const int k, const double Avr, const double Xk)
 
 
 // 바닥의 표준편차를 구한다.
-double c3DView::CalcBasePlaneStandardDeviation()
+double c3DView::CalcBasePlaneStandardDeviation(const size_t camIdx //=0
+)
 {
 	const float xLimitLower = -40.f;
 	const float xLimitUpper = 45.f;
@@ -426,7 +437,7 @@ double c3DView::CalcBasePlaneStandardDeviation()
 	// 높이 평균 구하기
 	int k = 0;
 	double avr = 0;
-	for (auto &vtx : g_root.m_sensorBuff.m_vertices)
+	for (auto &vtx : g_root.m_sensorBuff[camIdx].m_vertices)
 	{
 		if ((xLimitLower < vtx.x)
 			&& (xLimitUpper > vtx.x)
@@ -440,7 +451,7 @@ double c3DView::CalcBasePlaneStandardDeviation()
 	// 표준 편차 구하기
 	k = 0;
 	double sd = 0;
-	for (auto &vtx : g_root.m_sensorBuff.m_vertices)
+	for (auto &vtx : g_root.m_sensorBuff[camIdx].m_vertices)
 	{
 		if ((xLimitLower < vtx.x)
 			&& (xLimitUpper > vtx.x)
@@ -575,7 +586,7 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 		// Generate Plane
 		if ((m_genPlane >= 0) && (m_genPlane < 3))
 		{
-			const Vector3 vtxPos = g_root.m_sensorBuff.PickVertex(ray);
+			const Vector3 vtxPos = g_root.m_sensorBuff[0].PickVertex(ray);
 			m_sphere.SetPos(vtxPos);
 			m_planePos[m_genPlane++] = vtxPos;
 
@@ -592,14 +603,14 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 				m_planeGrid.m_transform.pos = Vector3(0, 0, 0);
 				m_planeGrid.m_transform.pos = plane.N * -plane.D;
 
-				g_root.m_sensorBuff.GeneratePlane(m_planePos);
+				g_root.m_sensorBuff[0].GeneratePlane(m_planePos);
 			}
 		}
 
 		// Picking Vertex Pos
 		if (eState::PICKPOS == m_state)
 		{
-			const Vector3 vtxPos = g_root.m_sensorBuff.PickVertex(ray);
+			const Vector3 vtxPos = g_root.m_sensorBuff[0].PickVertex(ray);
 			m_pickPos = vtxPos;
 			m_sphere.SetPos(vtxPos);
 			m_state = eState::NORMAL;
@@ -608,11 +619,11 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 		// Picking Volume Center
 		if (eState::VCENTER == m_state)
 		{
-			const Vector3 vtxPos = g_root.m_sensorBuff.PickVertex(ray);
-			g_root.m_sensorBuff.m_volumeCenter = vtxPos;
+			const Vector3 vtxPos = g_root.m_sensorBuff[0].PickVertex(ray);
+			g_root.m_sensorBuff[0].m_volumeCenter = vtxPos;
 			m_isGenVolumeCenter = true;
 
-			const Plane &plane = g_root.m_sensorBuff.m_plane;
+			const Plane &plane = g_root.m_sensorBuff[0].m_plane;
 			const float d = plane.Distance(vtxPos) * 10.f;
 			m_volumeCenterLine.SetLine(vtxPos + plane.N*d, vtxPos - plane.N*d, 0.1f);
 			

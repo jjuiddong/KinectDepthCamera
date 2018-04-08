@@ -19,10 +19,10 @@ public:
 
 protected:
 	void UpdateFileList();
-	bool OpenFile(const common::StrPath &ansifileName);
+	bool OpenFile(const common::StrPath &ansifileName, const size_t camIdx=0);
 	void UpdateDelayMeasure(const float deltaSeconds);
-	void CalcDelayMeasure();
-	void StoreMinimumDifferenceSensorBuffer();
+	void CalcDelayMeasure(const size_t camIdx = 0);
+	void StoreMinimumDifferenceSensorBuffer(const size_t camIdx=0);
 	void RenderFileList();
 
 	
@@ -36,6 +36,7 @@ public:
 	eState::Enum m_state;
 	bool m_isCaptureContinuos;
 	float m_captureTime;
+	float m_triggerDelayTime;
 
 	// Animation
 	bool m_isFileAnimation;

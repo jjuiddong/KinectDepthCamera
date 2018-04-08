@@ -15,7 +15,7 @@ public:
 
 	bool Init(graphic::cRenderer &renderer);
 	virtual void OnRender(const float deltaSeconds) override;
-	void Process();
+	void Process(const size_t camIdx = 0);
 
 
 protected:
@@ -32,7 +32,7 @@ protected:
 		cContour contour;
 	};
 
-	void ProcessDepth();
+	void ProcessDepth(const size_t camIdx=0);
 	void UpdateTexture();
 	bool FindBox(cv::Mat &img, const u_int vtxCnt, OUT vector<cContour> &out);
 	void RemoveDuplicateContour(vector<sContourInfo> &contours);

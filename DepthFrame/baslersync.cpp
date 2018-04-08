@@ -29,8 +29,7 @@ public:
 
 
 cBaslerCameraSync::cBaslerCameraSync()
-	: m_Camera(NULL)
-	, m_isSetupSuccess(false)
+	: m_isSetupSuccess(false)
 	, m_NumCams(0)
 {
 }
@@ -48,20 +47,16 @@ bool cBaslerCameraSync::Init()
 	try
 	{
 		CToFCamera::InitProducer();
-		//m_Camera = new CToFCamera();
 
-		if (EXIT_SUCCESS == BaslerCameraSetup())
-		{
-			//m_baslerSetupSuccess = true;
-		}
+		if (EXIT_SUCCESS != BaslerCameraSetup())
+			return false;
 	}
 	catch (GenICam::GenericException& e)
 	{
 		common::Str128 msg = "Exception occurred: ";
 		msg += e.GetDescription();
 		::MessageBoxA(NULL, msg.c_str(), "Error", MB_OK);
-		//cerr << "Exception occurred: " << endl << e.GetDescription() << endl;
-		//exitCode = EXIT_FAILURE;
+
 		return false;
 	}
 
@@ -90,43 +85,44 @@ int cBaslerCameraSync::BaslerCameraSetup()
 
 		setTriggerDelays();
 
-		//
-		// Grab and process images
-		//
-
-		// Let the camera class use our allocator. 
-		// When the application doesn't provide an allocator, a default one that allocates memory buffers
-		// on the heap will be used automatically.
-		m_Camera->SetBufferAllocator(new CustomAllocator(), true); // m_Camera takes ownership and will clean-up allocator.
-
-																   // Allocate the memory buffers and prepare image acquisition.
-		m_Camera->PrepareAcquisition(nBuffers);
-
-		// Enqueue all buffers to be filled with image data.
-		for (size_t i = 0; i < nBuffers; ++i)
+		// Prepare cameras and buffers for image exposure.
+		for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
 		{
-			m_Camera->QueueBuffer(i);
+			// Let the camera class use our allocator. 
+			// When the application doesn't provide an allocator, a default one that allocates memory buffers
+			// on the heap will be used automatically.
+			m_Cameras.at(camIdx)->SetBufferAllocator(new CustomAllocator(), true); // m_Camera takes ownership and will clean-up allocator.
+
+			// Allocate the memory buffers and prepare image exposure.
+			m_Cameras.at(camIdx)->PrepareAcquisition(nBuffers);
+
+			// Enqueue all buffers to be filled with image data.
+			for (size_t j = 0; j < nBuffers; ++j)
+			{
+				m_Cameras.at(camIdx)->QueueBuffer(j);
+			}
+
+			// Start the acquisition engine.
+			m_Cameras.at(camIdx)->StartAcquisition();
+
+			// Now, the acquisition can be started on the camera.
+			m_Cameras.at(camIdx)->IssueAcquisitionStartCommand(); // The camera continuously sends data now.
 		}
-
-		// Start the acquisition engine.
-		m_Camera->StartAcquisition();
-
-		// Now, the acquisition can be started on the camera.
-		m_Camera->IssueAcquisitionStartCommand(); // The camera continuously sends data now.
 
 	}
 	catch (const GenICam::GenericException& e)
 	{
-		//cerr << "Exception occurred: " << e.GetDescription() << endl;
 		common::Str128 msg = "Exception occurred: ";
 		msg += e.GetDescription();
 
 		// After successfully opening the camera, the IsConnected method can be used 
 		// to check if the device is still connected.
-		if (m_Camera->IsOpen() && !m_Camera->IsConnected())
+		for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
 		{
-			//cerr << "Camera has been removed." << endl;
-			msg += "Camera has been removed.";
+			if (m_Cameras.at(camIdx)->IsOpen() && !m_Cameras.at(camIdx)->IsConnected())
+			{
+				msg += "Camera has been removed.";
+			}
 		}
 
 		::MessageBoxA(NULL, msg.c_str(), "Error", MB_OK);
@@ -141,34 +137,9 @@ int cBaslerCameraSync::BaslerCameraSetup()
 
 void cBaslerCameraSync::setupCamera()
 {
-	//m_Camera->OpenFirstCamera();
-	////cout << "Connected to camera " << m_Camera->GetCameraInfo().strDisplayName << endl;
-
-	//// Enable 3D (point cloud) data, intensity data, and confidence data 
-	//GenApi::CEnumerationPtr ptrComponentSelector = m_Camera->GetParameter("ComponentSelector");
-	//GenApi::CBooleanPtr ptrComponentEnable = m_Camera->GetParameter("ComponentEnable");
-	//GenApi::CEnumerationPtr ptrPixelFormat = m_Camera->GetParameter("PixelFormat");
-
-	//// Enable range data
-	//ptrComponentSelector->FromString("Range");
-	//ptrComponentEnable->SetValue(true);
-	//// Range information can be sent either as a 16-bit grey value image or as 3D coordinates (point cloud). For this sample, we want to acquire 3D coordinates.
-	//// Note: To change the format of an image component, the Component Selector must first be set to the component
-	//// you want to configure (see above).
-	//// To use 16-bit integer depth information, choose "Mono16" instead of "Coord3D_ABC32f".
-	//ptrPixelFormat->FromString("Coord3D_ABC32f");
-
-	//ptrComponentSelector->FromString("Intensity");
-	//ptrComponentEnable->SetValue(true);
-
-	//ptrComponentSelector->FromString("Confidence");
-	//ptrComponentEnable->SetValue(true);
-
-
-
-	//cout << "Searching for cameras ... " << endl << endl;
+	AddLog("Searching for cameras ... ");
 	m_CameraList = CToFCamera::EnumerateCameras();
-	//cout << "found " << m_CameraList.size() << " ToF cameras " << endl << endl;
+	AddLog(common::format("found %d ToF cameras ", m_CameraList.size()));
 
 	// Store number of cameras.
 	m_NumCams = (int)m_CameraList.size();
@@ -186,7 +157,7 @@ void cBaslerCameraSync::setupCamera()
 	for (iterator = m_CameraList.begin(); iterator != m_CameraList.end(); ++iterator)
 	{
 		CameraInfo cInfo = *iterator;
-		//cout << "Configuring Camera " << camIdx << " : " << cInfo.strDisplayName << "." << endl;
+		AddLog(common::format("Configuring Camera %d : %s", camIdx, cInfo.strDisplayName.c_str()));
 
 		// Create shared pointer to ToF camera.
 		std::shared_ptr<CToFCamera> cam(new CToFCamera());
@@ -218,9 +189,9 @@ void cBaslerCameraSync::setupCamera()
 
 		{
 			// Enable 3D (point cloud) data, intensity data, and confidence data 
-			GenApi::CEnumerationPtr ptrComponentSelector = m_Camera->GetParameter("ComponentSelector");
-			GenApi::CBooleanPtr ptrComponentEnable = m_Camera->GetParameter("ComponentEnable");
-			GenApi::CEnumerationPtr ptrPixelFormat = m_Camera->GetParameter("PixelFormat");
+			GenApi::CEnumerationPtr ptrComponentSelector = cam->GetParameter("ComponentSelector");
+			GenApi::CBooleanPtr ptrComponentEnable = cam->GetParameter("ComponentEnable");
+			GenApi::CEnumerationPtr ptrPixelFormat = cam->GetParameter("PixelFormat");
 
 			// Enable range data
 			ptrComponentSelector->FromString("Range");
@@ -246,11 +217,10 @@ void cBaslerCameraSync::setupCamera()
 
 void cBaslerCameraSync::findMaster()
 {
-
 	// Number of masters found ( != 1 ) 
 	unsigned int nMaster;
 
-	//cout << endl << "waiting for cameras to negotiate master role ..." << endl << endl;
+	AddLog("waiting for cameras to negotiate master role ...");
 
 	do
 	{
@@ -302,26 +272,24 @@ void cBaslerCameraSync::findMaster()
 	{
 		if (true == m_IsMaster[camIdx])
 		{
-			//cout << "   camera " << camIdx << " is master" << endl << endl;
+			AddLog(common::format("   camera %d is master", camIdx));
 			externalMasterClock = false;
 		}
 	}
 
 	if (true == externalMasterClock)
 	{
-		//cout << "External master clock present in subnet: All cameras are slaves." << endl << endl;
+		AddLog("External master clock present in subnet: All cameras are slaves.");
 	}
-
-
 }
+
 
 void cBaslerCameraSync::syncCameras() 
 {
-
 	// Maximum allowed offset from master clock. 
 	const uint64_t tsOffsetMax = 10000;
 
-	//cout << "Wait until offsets from master clock have settled below " << tsOffsetMax << " ns " << endl << endl;
+	AddLog(common::format("Wait until offsets from master clock have settled below %d ns", tsOffsetMax));
 
 	for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
 	{
@@ -332,11 +300,10 @@ void cBaslerCameraSync::syncCameras()
 			do
 			{
 				tsOffset = GetMaxAbsGevIEEE1588OffsetFromMasterInTimeWindow(camIdx, 1.0, 0.1);
-				//cout << "max offset of cam " << camIdx << " = " << tsOffset << " ns" << endl;
+				AddLog(common::format("max offset of cam %d = %d ns", camIdx, tsOffsetMax));
 			} while (tsOffset >= tsOffsetMax);
 		}
 	}
-
 }
 
 
@@ -376,7 +343,6 @@ int64_t cBaslerCameraSync::GetMaxAbsGevIEEE1588OffsetFromMasterInTimeWindow(size
 
 void cBaslerCameraSync::setTriggerDelays() 
 {
-
 	// Current timestamp
 	uint64_t timestamp, syncStartTimestamp;
 
@@ -386,16 +352,14 @@ void cBaslerCameraSync::setTriggerDelays()
 	// Initialize trigger delay.
 	m_TriggerDelay = 0;
 
-	//cout << endl << "configuring start time and trigger delays ..." << endl << endl;
+	AddLog("configuring start time and trigger delays ...");
 
 	//
 	// Cycle through cameras and set trigger delay.
 	//
 	for (size_t camIdx = 0; camIdx < m_Cameras.size(); camIdx++)
 	{
-
-		//cout << "Camera " << camIdx << " : " << endl;
-
+		AddLog(common::format("Camera %d : ", camIdx));
 		//
 		// Read timestamp and exposure time.
 		// Calculation of synchronous free run timestamps will all be based 
@@ -415,7 +379,7 @@ void cBaslerCameraSync::setTriggerDelays()
 
 			// Assemble 64-bit timestamp and keep it.
 			timestamp = tsLow + (tsHigh << 32);
-			//cout << "Reading time stamp from first camera. \ntimestamp = " << timestamp << endl << endl;
+			AddLog(common::format("Reading time stamp from first camera. timestamp = %I64d", timestamp));
 
 			//cout << "Reading exposure times from first camera:" << endl;
 
@@ -428,11 +392,12 @@ void cBaslerCameraSync::setTriggerDelays()
 			for (size_t l = 0; l < n_expTimes; l++)
 			{
 				ptrExposureTimeSelector->SetValue(l);
-				//cout << "exposure time " << l << " = " << ptrExposureTime->GetValue() << endl << endl;
+				AddLog(common::format("exposure time %d = %f", l, ptrExposureTime->GetValue()));
+
 				m_TriggerDelay += (int64_t)(1000 * ptrExposureTime->GetValue());   // Convert from us -> ns
 			}
 
-			//cout << "Calculating trigger delay." << endl;
+			AddLog("Calculating trigger delay.");
 
 			// Add readout time.
 			m_TriggerDelay += (n_expTimes - 1) * m_ReadoutTime;
@@ -441,7 +406,7 @@ void cBaslerCameraSync::setTriggerDelays()
 			m_TriggerDelay += 1000000;
 
 			// Calculate synchronous trigger rate.
-			//cout << "Calculating maximum synchronous trigger rate ... " << endl;
+			AddLog("Calculating maximum synchronous trigger rate ... ");
 			m_SyncTriggerRate = 1000000000 / (m_NumCams * m_TriggerDelay);
 
 			// If the calculated value is greater than the maximum supported rate, 
@@ -453,8 +418,8 @@ void cBaslerCameraSync::setTriggerDelays()
 			}
 
 			// Print trigger delay and synchronous trigger rate.
-			//cout << "Trigger delay = " << m_TriggerDelay / 1000000 << " ms" << endl;
-			//cout << "Setting synchronous trigger rate to " << m_SyncTriggerRate << " fps" << endl << endl;
+			AddLog(common::format("Trigger delay = %I64d ms", m_TriggerDelay / 1000000) );
+			AddLog(common::format("Setting synchronous trigger rate to %I64d fps", m_SyncTriggerRate));
 		}
 
 		// Set synchronization rate.
@@ -484,9 +449,10 @@ void cBaslerCameraSync::setTriggerDelays()
 		ptrSyncUpdate->Execute();
 
 		// Show new synchronous free run start time.
-		//cout << "Setting Sync Start time stamp" << endl;
-		//cout << "SyncStartLow = " << ptrSyncStartLow->GetValue() << endl;
-		//cout << "SyncStartHigh = " << ptrSyncStartHigh->GetValue() << endl << endl;
+		//cout <<  << endl;
+		AddLog("Setting Sync Start time stamp");
+		AddLog(common::format("SyncStartLow = %I64d", ptrSyncStartLow->GetValue()));
+		AddLog(common::format("SyncStartHigh = %I64d", ptrSyncStartHigh->GetValue()));
 	}
 }
 
@@ -497,39 +463,48 @@ bool cBaslerCameraSync::Capture()
 
 	try
 	{
-		GrabResult grabResult;
-		// Wait up to 1000 ms for the next grabbed buffer available in the 
-		// acquisition engine's output queue.
-		m_Camera->GetGrabResult(grabResult, 100);
-
-		// Check whether a buffer has been grabbed successfully.
-		if (grabResult.status == GrabResult::Timeout)
+		for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
 		{
-			//cerr << "Timeout occurred." << endl;
-			// The timeout might be caused by a removal of the camera. Check if the camera
-			// is still connected.
-			if (!m_Camera->IsConnected())
+			GrabResult grabResult;
+			// Wait up to 1000 ms for the next grabbed buffer available in the 
+			// acquisition engine's output queue.
+			m_Cameras.at(camIdx)->GetGrabResult(grabResult, 100);
+
+			// Check whether a buffer has been grabbed successfully.
+			if (grabResult.status == GrabResult::Timeout)
 			{
-				//cerr << "Camera has been removed." << endl;
+				//cerr << "Timeout occurred." << endl;
+				//TimoutOccurred = true;
+				// In case of a timeout, no buffer has been grabbed, i.e., the grab result doesn't hold a valid buffer.
+				// Do not try to access the buffer in case of a timeout.
+
+				// The timeout might be caused by a removal of the camera. Check if the camera
+				// is still connected.
+				if (!m_Cameras.at(camIdx)->IsConnected())
+				{
+					//cerr << "Camera has been removed." << endl;
+				}
+
+				return false;
 			}
-			//break; // exit loop
-			return false;
-		}
-		if (grabResult.status != GrabResult::Ok)
-		{
-			//cerr << "Failed to grab image." << endl;
-			//break; // exit loop
-			return false;
-		}
 
-		//nImagesGrabbed++;
-		// We can process the buffer now. The buffer will not be overwritten with new data until
-		// it is explicitly placed in the acquisition engine's input queue again.
-		processData(grabResult);
+			if (grabResult.status != GrabResult::Ok)
+			{
+				//cerr << "Got a buffer, but it hasn't been successfully grabbed." << endl;
+				return false;
+			}
 
-		// We finished processing the data, put the buffer back into the acquisition 
-		// engine's input queue to be filled with new image data.
-		m_Camera->QueueBuffer(grabResult.hBuffer);
+			// A successfully grabbed buffer can be processed now. The buffer will not be overwritten with new data until
+			// it is explicitly placed in the acquisition engine's input queue again.
+			processData(camIdx, grabResult);
+
+			// Data processing has finished. Put the buffer back into the acquisition 
+			// engine's input queue to be filled with new image data.
+			//if (grabResult.status != GrabResult::Timeout)
+			//{
+				m_Cameras.at(camIdx)->QueueBuffer(grabResult.hBuffer);
+			//}
+		}
 	}
 	catch (const GenICam::GenericException& e)
 	{
@@ -537,12 +512,13 @@ bool cBaslerCameraSync::Capture()
 		common::Str128 msg = "Exception occurred: ";
 		msg += e.GetDescription();
 
-		// After successfully opening the camera, the IsConnected method can be used 
-		// to check if the device is still connected.
-		if (m_Camera->IsOpen() && !m_Camera->IsConnected())
+		for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
 		{
-			//cerr << "Camera has been removed." << endl;
-			msg += "Camera has been removed.";
+			if (m_Cameras.at(camIdx)->IsOpen() && !m_Cameras.at(camIdx)->IsConnected())
+			{
+				//cerr << "Camera has been removed." << endl;
+				msg += "Camera has been removed.";
+			}
 		}
 
 		::MessageBoxA(NULL, msg.c_str(), "Error", MB_OK);
@@ -553,10 +529,10 @@ bool cBaslerCameraSync::Capture()
 }
 
 
-void cBaslerCameraSync::processData(const GrabResult& grabResult)
+void cBaslerCameraSync::processData(const size_t camIdx, const GrabResult& grabResult)
 {
 	BufferParts parts;
-	m_Camera->GetBufferParts(grabResult, parts);
+	m_Cameras.at(camIdx)->GetBufferParts(grabResult, parts);
 
 	// Retrieve the values for the center pixel
 	CToFCamera::Coord3D *p3DCoordinate = (CToFCamera::Coord3D*) parts[0].pData;
@@ -573,14 +549,16 @@ void cBaslerCameraSync::processData(const GrabResult& grabResult)
 	memcpy(&reader.m_intensity[0], pIntensity, sizeof(unsigned short) * 640 * 480);
 	memcpy(&reader.m_confidence[0], pConfidence, sizeof(unsigned short) * 640 * 480);
 
-	g_root.m_sensorBuff.ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer(), reader);
+	g_root.m_sensorBuff[camIdx].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer(), reader);
 
 	// save *.pcd file
 	if (g_root.m_isAutoSaveCapture)
 	{
 		using namespace std;
-		string fileName = string("../media/depth/") + common::GetCurrentDateTime() + ".pcd";
-		ofstream o(fileName, ios::binary);
+		common::StrPath fileName;
+		fileName.Format("../media/depthMulti/%d/%s.pcd", camIdx, common::GetCurrentDateTime().c_str());
+
+		ofstream o(fileName.c_str(), ios::binary);
 		if (o)
 		{
 			o.write((char*)p3DCoordinate, sizeof(float)*nPixel * 3);
@@ -593,19 +571,26 @@ void cBaslerCameraSync::processData(const GrabResult& grabResult)
 
 void cBaslerCameraSync::Clear()
 {
-	if (m_isSetupSuccess && m_Camera)
+
+	if (m_isSetupSuccess && !m_Cameras.empty())
 	{
-		// Stop the camera
-		m_Camera->IssueAcquisitionStopCommand();
-		// Stop the acquisition engine and release memory buffers and other resources used for grabbing.
-		m_Camera->FinishAcquisition();
-		// Close the connection to the camera
-		m_Camera->Close();
+		for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
+		{
+			// Stop the camera.
+			m_Cameras.at(camIdx)->IssueAcquisitionStopCommand();
+
+			// Stop the acquisition engine and release memory buffers and other resources used for grabbing.
+			m_Cameras.at(camIdx)->FinishAcquisition();
+
+			// Close connection to camera.
+			m_Cameras.at(camIdx)->Close();
+		}
 	}
 
-	if (m_Camera)
+	if (!m_Cameras.empty())
 	{
-		SAFE_DELETE(m_Camera);
+		m_Cameras.clear();
+		m_NumCams = 0;
 
 		if (CToFCamera::IsProducerInitialized())
 			CToFCamera::TerminateProducer();  // Won't throw any exceptions
