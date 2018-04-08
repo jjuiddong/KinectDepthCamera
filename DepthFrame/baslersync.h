@@ -23,16 +23,24 @@ public:
 protected:
 	int BaslerCameraSetup();
 	void setupCamera();
+	void findMaster();
+	void syncCameras();
+	void setTriggerDelays();
 	void processData(const GrabResult& grabResult);
+	int64_t GetMaxAbsGevIEEE1588OffsetFromMasterInTimeWindow(size_t camIdx, double timeToMeasureSec, double timeDeltaSec);
 
 
 public:
 	enum { MAX_CAMS = 10 };
 
 	bool m_isSetupSuccess;
-	CToFCamera * m_Camera;
+	CToFCamera *m_Camera;
 	CameraList m_CameraList;
 	vector<std::shared_ptr<CToFCamera>> m_Cameras;
 	size_t m_NumCams;
 	bool m_IsMaster[MAX_CAMS];
+	uint64_t m_SyncTriggerRate;
+	int64_t m_TriggerDelay;
+	static const int64_t m_ReadoutTime = 21000000;
+	static const int64_t m_TriggerBaseDelay = 250000000;    // 250 ms
 };

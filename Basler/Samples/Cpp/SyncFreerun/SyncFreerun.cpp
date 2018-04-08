@@ -332,7 +332,8 @@ void Sample::setupCameras()
     CameraList::const_iterator iterator;
 
     // Iterate over list of cameras.
-    for (iterator = m_CameraList.begin(); iterator != m_CameraList.end(); ++iterator) {
+    for (iterator = m_CameraList.begin(); iterator != m_CameraList.end(); ++iterator) 
+	{
         CameraInfo cInfo = *iterator;
         cout << "Configuring Camera " << camIdx << " : "<< cInfo.strDisplayName << "." << endl;
 
@@ -438,11 +439,11 @@ void Sample::findMaster()
     {
         cout << "External master clock present in subnet: All cameras are slaves." << endl << endl;
     }
-
-
 }
 
-void Sample::syncCameras() {
+
+void Sample::syncCameras() 
+{
 
     // Maximum allowed offset from master clock. 
     const uint64_t tsOffsetMax = 10000;

@@ -214,6 +214,7 @@
     <ClInclude Include="root.h" />
     <ClInclude Include="sensorbuffer.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="StopWatch.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Common\AI\AI.vcxproj">
