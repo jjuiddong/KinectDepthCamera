@@ -365,6 +365,30 @@ void Sample::setupCameras()
         GenApi::CEnumerationPtr ptrTriggerSource = cam->GetParameter("TriggerSource");
         ptrTriggerSource->FromString("SyncTimer");
 
+
+		{
+			// Enable 3D (point cloud) data, intensity data, and confidence data 
+			GenApi::CEnumerationPtr ptrComponentSelector = cam->GetParameter("ComponentSelector");
+			GenApi::CBooleanPtr ptrComponentEnable = cam->GetParameter("ComponentEnable");
+			GenApi::CEnumerationPtr ptrPixelFormat = cam->GetParameter("PixelFormat");
+
+			// Enable range data
+			ptrComponentSelector->FromString("Range");
+			ptrComponentEnable->SetValue(true);
+			// Range information can be sent either as a 16-bit grey value image or as 3D coordinates (point cloud). For this sample, we want to acquire 3D coordinates.
+			// Note: To change the format of an image component, the Component Selector must first be set to the component
+			// you want to configure (see above).
+			// To use 16-bit integer depth information, choose "Mono16" instead of "Coord3D_ABC32f".
+			ptrPixelFormat->FromString("Coord3D_ABC32f");
+
+			ptrComponentSelector->FromString("Intensity");
+			ptrComponentEnable->SetValue(true);
+
+			ptrComponentSelector->FromString("Confidence");
+			ptrComponentEnable->SetValue(true);
+		}
+
+
         // Proceed to next camera.
         camIdx++;
     }
@@ -743,6 +767,24 @@ void Sample::processData(size_t camIdx,  const GrabResult& grabResult )
             cout << fixed << setprecision(6) << "camera " << camIdx << "\tframeID = " 
                 << frameID << "\ttimestamp = " << timeStampMillis << " ms" << endl;
         }
+
+
+		//char fileName[128];
+		//sprintf(fileName, "camera%d-%I64d.pcd", camIdx, frameID);
+		//ofstream o(fileName, ios::binary);
+		//if (o)
+		//{
+		//	BufferParts parts;
+		//	m_Cameras.at(camIdx)->GetBufferParts(grabResult, parts);
+		//	CToFCamera::Coord3D *p3DCoordinate = (CToFCamera::Coord3D*) parts[0].pData;
+		//	uint16_t *pIntensity = (uint16_t*)parts[1].pData;
+		//	uint16_t *pConfidence = (uint16_t*)parts[2].pData;
+		//	const size_t nPixel = parts[0].width * parts[0].height;
+
+		//	o.write((char*)p3DCoordinate, sizeof(float)*nPixel * 3);
+		//	o.write((char*)pIntensity, sizeof(uint16_t)*nPixel);
+		//	o.write((char*)pConfidence, sizeof(uint16_t)*nPixel);
+		//}
     }
    
 }

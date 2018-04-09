@@ -8,6 +8,8 @@
 using namespace GenApi;
 
 
+void BaslerCameraThread(cBaslerCameraSync *basler);
+
 void mSleep(int sleepMs)      // Use a wrapper  
 {
 	Sleep(sleepMs);           // Sleep expects time in ms
@@ -28,9 +30,12 @@ public:
 
 
 
-cBaslerCameraSync::cBaslerCameraSync()
+cBaslerCameraSync::cBaslerCameraSync(const bool isThreadMode //= false
+)
 	: m_isSetupSuccess(false)
 	, m_NumCams(0)
+	, m_isThreadMode(isThreadMode)
+	, m_state(eThreadState::NONE)
 {
 }
 
@@ -43,24 +48,34 @@ cBaslerCameraSync::~cBaslerCameraSync()
 bool cBaslerCameraSync::Init()
 {
 	m_isSetupSuccess = false;
+	m_timer.Create();
 
-	try
+	if (m_isThreadMode)
 	{
-		CToFCamera::InitProducer();
+		m_state = eThreadState::CONNECT_TRY;
+		m_thread = std::thread(BaslerCameraThread, this);
+	}
+	else
+	{
+		m_state = eThreadState::NONE;
 
-		if (EXIT_SUCCESS != BaslerCameraSetup())
+		try
+		{
+			CToFCamera::InitProducer();
+
+			if (EXIT_SUCCESS != BaslerCameraSetup())
+				return false;
+		}
+		catch (GenICam::GenericException& e)
+		{
+			common::Str128 msg = "Exception occurred: ";
+			msg += e.GetDescription();
+			::MessageBoxA(NULL, msg.c_str(), "Error", MB_OK);
+
 			return false;
-	}
-	catch (GenICam::GenericException& e)
-	{
-		common::Str128 msg = "Exception occurred: ";
-		msg += e.GetDescription();
-		::MessageBoxA(NULL, msg.c_str(), "Error", MB_OK);
-
-		return false;
+		}
 	}
 
-	m_isSetupSuccess = true;
 	return true;
 }
 
@@ -117,7 +132,7 @@ int cBaslerCameraSync::BaslerCameraSetup()
 
 		// After successfully opening the camera, the IsConnected method can be used 
 		// to check if the device is still connected.
-		for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
+		for (size_t camIdx = 0; camIdx < m_Cameras.size(); camIdx++)
 		{
 			if (m_Cameras.at(camIdx)->IsOpen() && !m_Cameras.at(camIdx)->IsConnected())
 			{
@@ -212,6 +227,8 @@ void cBaslerCameraSync::setupCamera()
 		// Proceed to next camera.
 		camIdx++;
 	}
+
+	m_isSetupSuccess = true;
 }
 
 
@@ -301,7 +318,10 @@ void cBaslerCameraSync::syncCameras()
 			{
 				tsOffset = GetMaxAbsGevIEEE1588OffsetFromMasterInTimeWindow(camIdx, 1.0, 0.1);
 				AddLog(common::format("max offset of cam %d = %d ns", camIdx, tsOffsetMax));
-			} while (tsOffset >= tsOffsetMax);
+
+			} while ((tsOffset >= tsOffsetMax) 
+				&& (!m_isThreadMode || (m_isThreadMode && (eThreadState::DISCONNECT_TRY != m_state))) 
+				);
 		}
 	}
 }
@@ -462,20 +482,24 @@ void cBaslerCameraSync::setTriggerDelays()
 bool cBaslerCameraSync::Capture()
 {
 	RETV(!m_isSetupSuccess, false);
+	RETV(m_isThreadMode, false);
 
 	try
 	{
 		for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
 		{
+			g_root.m_sensorBuff[camIdx].m_isLoaded = false;
+
 			GrabResult grabResult;
 			// Wait up to 1000 ms for the next grabbed buffer available in the 
 			// acquisition engine's output queue.
-			m_Cameras.at(camIdx)->GetGrabResult(grabResult, 100);
+			m_Cameras.at(camIdx)->GetGrabResult(grabResult, 500);
 
 			// Check whether a buffer has been grabbed successfully.
 			if (grabResult.status == GrabResult::Timeout)
 			{
 				AddLog(common::format("Timeout occurred. camIdx = %d", camIdx));
+				common::dbg::ErrLog("Timeout occurred. camIdx = %d\n", camIdx);
 
 				//cerr << "Timeout occurred." << endl;
 				//TimoutOccurred = true;
@@ -496,6 +520,7 @@ bool cBaslerCameraSync::Capture()
 			{
 				//cerr << "Got a buffer, but it hasn't been successfully grabbed." << endl;
 				AddLog(common::format("Got a buffer, but it hasn't been successfully grabbed. camIdx = %d", camIdx));
+				common::dbg::ErrLog("Got a buffer, but it hasn't been successfully grabbed. camIdx = %d\n", camIdx);
 				continue;
 			}
 
@@ -517,7 +542,7 @@ bool cBaslerCameraSync::Capture()
 		common::Str128 msg = "Exception occurred: ";
 		msg += e.GetDescription();
 
-		for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
+		for (size_t camIdx = 0; camIdx < m_Cameras.size(); camIdx++)
 		{
 			if (m_Cameras.at(camIdx)->IsOpen() && !m_Cameras.at(camIdx)->IsConnected())
 			{
@@ -529,6 +554,82 @@ bool cBaslerCameraSync::Capture()
 		::MessageBoxA(NULL, msg.c_str(), "Error", MB_OK);
 		return false;
 	}
+
+	return true;
+}
+
+
+bool cBaslerCameraSync::CaptureThread()
+{
+	RETV(!m_isSetupSuccess, false);
+	static int logCnt = 0;
+	const int MAX_LOG = 1000;
+
+	try
+	{
+		for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
+		{
+			GrabResult grabResult;
+			m_Cameras.at(camIdx)->GetGrabResult(grabResult, 500);
+
+			if (grabResult.status == GrabResult::Timeout)
+			{
+				++logCnt;
+				if (logCnt < MAX_LOG)
+					common::dbg::ErrLogp("Timeout occurred. camIdx = %d\n", camIdx);
+
+				if (!m_Cameras.at(camIdx)->IsConnected())
+				{
+					++logCnt;
+					if (logCnt < MAX_LOG)
+						common::dbg::ErrLogp("Connection Faile. camIdx = %d\n", camIdx);
+				}
+				continue;
+			}
+
+			if (grabResult.status != GrabResult::Ok)
+			{
+				++logCnt;
+				if (logCnt < MAX_LOG)
+					common::dbg::ErrLog("Got a buffer, but it hasn't been successfully grabbed. camIdx = %d\n", camIdx);
+				continue;
+			}
+
+			{
+				common::AutoCSLock cs(m_cs);
+
+				BufferParts parts;
+				m_Cameras.at(camIdx)->GetBufferParts(grabResult, parts);
+
+				// Retrieve the values for the center pixel
+				CToFCamera::Coord3D *p3DCoordinate = (CToFCamera::Coord3D*) parts[0].pData;
+				uint16_t *pIntensity = (uint16_t*)parts[1].pData;
+				const size_t nPixel = parts[0].width * parts[0].height;
+				memcpy(&m_captureBuff[camIdx].m_vertices[0], p3DCoordinate, sizeof(float) * 3 * 640 * 480);
+				memcpy(&m_captureBuff[camIdx].m_intensity[0], pIntensity, sizeof(unsigned short) * 640 * 480);
+				m_captureBuff[camIdx].m_time = m_timer.GetMilliSeconds(); // Update Time
+			}
+
+			m_Cameras.at(camIdx)->QueueBuffer(grabResult.hBuffer);
+		}
+	}
+	catch (const GenICam::GenericException& )
+	{
+		return false;
+	}
+
+	return true;
+}
+
+
+bool cBaslerCameraSync::CopyCaptureBuffer(graphic::cRenderer &renderer)
+{
+	common::AutoCSLock cs(m_cs);
+
+	if (g_root.m_sensorBuff[0].m_time < m_captureBuff[0].m_time)
+		g_root.m_sensorBuff[0].ReadDatFile(renderer, m_captureBuff[0]);
+	if (g_root.m_sensorBuff[1].m_time < m_captureBuff[1].m_time)
+		g_root.m_sensorBuff[1].ReadDatFile(renderer, m_captureBuff[1]);
 
 	return true;
 }
@@ -546,10 +647,6 @@ void cBaslerCameraSync::processData(const size_t camIdx, const GrabResult& grabR
 	const size_t nPixel = parts[0].width * parts[0].height;
 
 	cDatReader reader;
-	reader.m_vertices.resize(640 * 480);
-	reader.m_intensity.resize(640 * 480);
-	reader.m_confidence.resize(640 * 480);
-
 	memcpy(&reader.m_vertices[0], p3DCoordinate, sizeof(float) * 3 * 640 * 480);
 	memcpy(&reader.m_intensity[0], pIntensity, sizeof(unsigned short) * 640 * 480);
 	memcpy(&reader.m_confidence[0], pConfidence, sizeof(unsigned short) * 640 * 480);
@@ -576,28 +673,94 @@ void cBaslerCameraSync::processData(const size_t camIdx, const GrabResult& grabR
 
 void cBaslerCameraSync::Clear()
 {
-
-	if (m_isSetupSuccess && !m_Cameras.empty())
+	if (m_isThreadMode)
 	{
-		for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
+		m_state = eThreadState::DISCONNECT_TRY;
+
+		if (m_thread.joinable())
+			m_thread.join();
+	}
+	else
+	{
+		if (m_isSetupSuccess && !m_Cameras.empty())
 		{
-			// Stop the camera.
-			m_Cameras.at(camIdx)->IssueAcquisitionStopCommand();
+			for (size_t camIdx = 0; camIdx < m_Cameras.size(); camIdx++)
+			{
+				// Stop the camera.
+				m_Cameras.at(camIdx)->IssueAcquisitionStopCommand();
 
-			// Stop the acquisition engine and release memory buffers and other resources used for grabbing.
-			m_Cameras.at(camIdx)->FinishAcquisition();
+				// Stop the acquisition engine and release memory buffers and other resources used for grabbing.
+				m_Cameras.at(camIdx)->FinishAcquisition();
 
-			// Close connection to camera.
-			m_Cameras.at(camIdx)->Close();
+				// Close connection to camera.
+				m_Cameras.at(camIdx)->Close();
+			}
+		}
+
+		if (!m_Cameras.empty())
+		{
+			m_Cameras.clear();
+			m_NumCams = 0;
+
+			if (CToFCamera::IsProducerInitialized())
+				CToFCamera::TerminateProducer();  // Won't throw any exceptions
 		}
 	}
-
-	if (!m_Cameras.empty())
-	{
-		m_Cameras.clear();
-		m_NumCams = 0;
-
-		if (CToFCamera::IsProducerInitialized())
-			CToFCamera::TerminateProducer();  // Won't throw any exceptions
-	}
 }
+
+
+// 쓰레드 처리
+void BaslerCameraThread(cBaslerCameraSync *basler)
+{
+	try
+	{
+		CToFCamera::InitProducer();
+
+		if (EXIT_SUCCESS != basler->BaslerCameraSetup())
+		{
+			basler->m_state = cBaslerCameraSync::eThreadState::CONNECT_FAIL;
+			return;
+		}
+
+		double triggerDelayTime = basler->m_timer.GetMilliSeconds();
+		basler->m_state = cBaslerCameraSync::eThreadState::CAPTURE;
+		while (cBaslerCameraSync::eThreadState::CAPTURE == basler->m_state)
+		{
+			if (basler->m_timer.GetMilliSeconds() - triggerDelayTime > 1000)
+			{
+				basler->setTriggerDelays();
+				triggerDelayTime = basler->m_timer.GetMilliSeconds();
+			}
+
+			basler->CaptureThread();
+		}
+
+		basler->m_state = cBaslerCameraSync::eThreadState::DISCONNECT;
+	}
+	catch (GenICam::GenericException& e)
+	{
+		common::Str128 msg = "Exception occurred: ";
+		msg += e.GetDescription();
+		::MessageBoxA(NULL, msg.c_str(), "Error", MB_OK);
+
+		basler->m_state = cBaslerCameraSync::eThreadState::CONNECT_FAIL;
+	}
+
+	for (size_t camIdx = 0; camIdx < basler->m_Cameras.size(); camIdx++)
+	{
+		// Stop the camera.
+		basler->m_Cameras.at(camIdx)->IssueAcquisitionStopCommand();
+		// Stop the acquisition engine and release memory buffers and other resources used for grabbing.
+		basler->m_Cameras.at(camIdx)->FinishAcquisition();
+		// Close connection to camera.
+		basler->m_Cameras.at(camIdx)->Close();
+	}
+	basler->m_Cameras.clear();
+	basler->m_NumCams = 0;
+
+	if (CToFCamera::IsProducerInitialized())
+		CToFCamera::TerminateProducer();  // Won't throw any exceptions
+
+	basler->m_state = cBaslerCameraSync::eThreadState::DISCONNECT;
+}
+

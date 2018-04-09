@@ -6,6 +6,8 @@
 //
 #pragma once
 
+#include "baslersync.h"
+
 
 class cDatReader;
 
@@ -31,6 +33,7 @@ public:
 	bool ReadPlyFile(graphic::cRenderer &renderer, const string &fileName);
 	bool ReadDatFile(graphic::cRenderer &renderer, const string &fileName);
 	bool ReadDatFile(graphic::cRenderer &renderer, const cDatReader &reader);
+
 	inline common::Vector3 Get3DPos(const int x, const int y, USHORT nMinDepth, USHORT nMaxDepth);
 	inline common::Vector3 GetVertex(const int x, const int y);
 	common::Vector3 PickVertex(const common::Ray &ray);
@@ -49,6 +52,8 @@ public:
 
 public:
 	bool m_isLoaded;
+	double m_time; // update time
+	int m_frameId;
 	int m_width;
 	int m_height;
 	int m_pointCloudCount;
@@ -66,5 +71,4 @@ public:
 	sGraph<50000> m_analysis1;
 	sGraph<50000> m_analysis2;
 	sGraph<30> m_diffAvrs;
-
 };

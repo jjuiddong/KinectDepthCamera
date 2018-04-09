@@ -19,7 +19,8 @@ public:
 
 
 
-cBaslerCamera::cBaslerCamera()
+cBaslerCamera::cBaslerCamera(const bool isThreadMode //= false
+)
 	: m_Camera(NULL)
 	, m_isSetupSuccess(false)
 {
@@ -224,10 +225,6 @@ void cBaslerCamera::processData(const GrabResult& grabResult)
 	const size_t nPixel = parts[0].width * parts[0].height;
 
 	cDatReader reader;
-	reader.m_vertices.resize(640 * 480);
-	reader.m_intensity.resize(640 * 480);
-	reader.m_confidence.resize(640 * 480);
-
 	memcpy(&reader.m_vertices[0], p3DCoordinate, sizeof(float) * 3 * 640 * 480);
 	memcpy(&reader.m_intensity[0], pIntensity, sizeof(unsigned short) * 640 * 480);
 	memcpy(&reader.m_confidence[0], pConfidence, sizeof(unsigned short) * 640 * 480);

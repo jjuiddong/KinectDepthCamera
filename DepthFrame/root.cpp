@@ -24,6 +24,7 @@ cRoot::cRoot()
 	, m_isPalete(false)
 	, m_isConnectKinect(false)
 	, m_baslerCameraIdx(0)
+	, m_balserCam(true)
 {
 	ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
 	ZeroMemory(&m_hDistrib2, sizeof(m_hDistrib2));
@@ -99,6 +100,7 @@ void cRoot::MeasureVolume(
 	((cViewer*)g_application)->m_3dView->Capture3D(camIdx);
 	((cViewer*)g_application)->m_filterView->Process(camIdx);
 	((cViewer*)g_application)->m_infraredView->Process(camIdx);
+
 	//((cViewer*)g_application)->m_depthView->Process();
 	//((cViewer*)g_application)->m_depthView2->Process();
 }

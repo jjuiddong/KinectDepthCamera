@@ -12,7 +12,7 @@ using namespace GenTLConsumerImplHelper;
 class cBaslerCamera
 {
 public:
-	cBaslerCamera();
+	cBaslerCamera(const bool isThreadMode = false);
 	virtual ~cBaslerCamera();
 
 	bool Init();

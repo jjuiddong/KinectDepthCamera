@@ -32,19 +32,21 @@ void cLogView::OnRender(const float deltaSeconds)
 	ImGui::PushStyleVar(ImGuiStyleVar_ChildWindowRounding, 5.0f);
 	ImGui::BeginChild("Sub2", ImVec2(0, m_rect.Height()-85), true);
 
-	u_int i = (u_int)m_first;
-	while (i != (u_int)m_last)
 	{
-		ImGui::Selectable(m_logs[i].c_str());
-		i = (i + 1) % m_logs.size();
-	}
+		common::AutoCSLock cs(m_cs);
+		u_int i = (u_int)m_first;
+		while (i != (u_int)m_last)
+		{
+			ImGui::Selectable(m_logs[i].c_str());
+			i = (i + 1) % m_logs.size();
+		}
 
-	if (m_isScroll)
-	{
-		ImGui::SetScrollHere();
-		m_isScroll = false;
+		if (m_isScroll)
+		{
+			ImGui::SetScrollHere();
+			m_isScroll = false;
+		}
 	}
-
 
 	ImGui::EndChild();
 	ImGui::PopStyleVar();
@@ -54,6 +56,8 @@ void cLogView::OnRender(const float deltaSeconds)
 // push circular queue
 void cLogView::AddLog(const string &str)
 {
+	common::AutoCSLock cs(m_cs);
+
 	m_logs[m_last++] = str.c_str();
 
 	if ((u_int)m_last >= m_logs.size())

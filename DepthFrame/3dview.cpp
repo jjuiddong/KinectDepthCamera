@@ -264,34 +264,26 @@ void c3DView::RenderBoxVolume3D(graphic::cRenderer &renderer)
 	for (auto &box : g_root.m_boxes)
 	{
 		m_boxLine.SetColor(box.color);
-		m_boxLine.SetLine(box.box3d[0], box.box3d[1], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(box.box3d[1], box.box3d[2], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(box.box3d[2], box.box3d[3], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(box.box3d[3], box.box3d[0], 0.1f);
-		m_boxLine.Render(renderer);
 
-		m_boxLine.SetLine(box.box3d[4], box.box3d[5], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(box.box3d[5], box.box3d[6], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(box.box3d[6], box.box3d[7], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(box.box3d[7], box.box3d[4], 0.1f);
-		m_boxLine.Render(renderer);
+		for (u_int i = 0; i < box.pointCnt; ++i)
+		{
+			m_boxLine.SetLine(box.box3d[i], box.box3d[(i + 1) % box.pointCnt], 0.1f);
+			m_boxLine.Render(renderer);
+		}
 
-		m_boxLine.SetLine(box.box3d[0], box.box3d[4], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(box.box3d[1], box.box3d[5], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(box.box3d[2], box.box3d[6], 0.1f);
-		m_boxLine.Render(renderer);
-		m_boxLine.SetLine(box.box3d[3], box.box3d[7], 0.1f);
-		m_boxLine.Render(renderer);
+		for (u_int i = 0; i < box.pointCnt; ++i)
+		{
+			m_boxLine.SetLine(box.box3d[i + box.pointCnt]
+				, box.box3d[((i + 1) % box.pointCnt) + box.pointCnt], 0.1f);
+			m_boxLine.Render(renderer);
+		}
+
+		for (u_int i = 0; i < box.pointCnt; ++i)
+		{
+			m_boxLine.SetLine(box.box3d[i], box.box3d[i + box.pointCnt], 0.1f);
+			m_boxLine.Render(renderer);
+		}
 	}
-
 }
 
 

@@ -106,21 +106,30 @@ void cFilterView::ProcessDepth(const size_t camIdx //=0
 			cv::Mat binImg = m_binImg.clone();
 			while (!isFindBox && (loopCnt < 8))
 			{
-				vector<cContour> out;
-				if (FindBox(binImg, vtxCnt, out))
+				vector<cContour> temp;
+				if (FindBox(binImg, vtxCnt, temp))
 				{
-					for (auto &contour : out)
-					{
-						//isFindBox = true;
+					// 원래 크기로 되돌린다.
+					cv::Mat img2 = binImg.clone();
+					for (int k = 0; k < loopCnt; ++k)
+						cv::erode(img2, img2, element);
 
-						sContourInfo info;
-						info.level = vtxCnt;
-						info.loop = loopCnt;
-						info.lowerH = 0;
-						info.upperH = areaFloor->maxIdx * 0.1f;
-						info.contour = contour;
-						info.color = areaFloor->color;
-						m_contours.push_back(info);
+					vector<cContour> out;
+					if (FindBox(img2, vtxCnt, out))
+					{
+						for (auto &contour : out)
+						{
+							//isFindBox = true;
+
+							sContourInfo info;
+							info.level = vtxCnt;
+							info.loop = loopCnt;
+							info.lowerH = 0;
+							info.upperH = areaFloor->maxIdx * 0.1f;
+							info.contour = contour;
+							info.color = areaFloor->color;
+							m_contours.push_back(info);
+						}
 					}
 					//break;
 				}
@@ -198,11 +207,12 @@ void cFilterView::ProcessDepth(const size_t camIdx //=0
 			box.volume.y *= 1.f;
 			box.volume.z *= scale;
 
-			box.volume.x -= (float)info.loop*1.4f;
-			box.volume.z -= (float)info.loop*1.4f;
+			//box.volume.x -= (float)info.loop*1.4f;
+			//box.volume.z -= (float)info.loop*1.4f;
 
 			box.minVolume = box.volume.x * box.volume.y * box.volume.z;
 			box.maxVolume = box.minVolume;
+			box.loopCnt = info.loop;
 		}
 		else
 		{
@@ -212,6 +222,7 @@ void cFilterView::ProcessDepth(const size_t camIdx //=0
 
 			box.minVolume = (float)info.contour.Area() * scale * scale * box.volume.y;
 			box.maxVolume = box.minVolume;
+			box.loopCnt = info.loop;
 		}
 
 		for (u_int i = 0; i < info.contour.Size(); ++i)
@@ -281,23 +292,23 @@ bool cFilterView::FindBox(cv::Mat &img
 			{
 				cContour contour;
 				contour.Init(approx);
-				//contour.Draw(m_dstImg, Scalar(0, 255, 0), 1);
 				out.push_back(contour);
 
-				AddLog("Detect Box");
-				AddLog(common::format("pos1 = %d, %d", approx[0].x, approx[0].y));
-				AddLog(common::format("pos2 = %d, %d", approx[1].x, approx[1].y));
-				AddLog(common::format("pos3 = %d, %d", approx[2].x, approx[2].y));
-				AddLog(common::format("pos4 = %d, %d", approx[3].x, approx[3].y));
+				//contour.Draw(m_dstImg, Scalar(0, 255, 0), 1);
+				//AddLog("Detect Box");
+				//AddLog(common::format("pos1 = %d, %d", approx[0].x, approx[0].y));
+				//AddLog(common::format("pos2 = %d, %d", approx[1].x, approx[1].y));
+				//AddLog(common::format("pos3 = %d, %d", approx[2].x, approx[2].y));
+				//AddLog(common::format("pos4 = %d, %d", approx[3].x, approx[3].y));
 
-				const Vector2 v1((float)approx[0].x, (float)approx[0].y);
-				const Vector2 v2((float)approx[1].x, (float)approx[1].y);
-				const Vector2 v3((float)approx[2].x, (float)approx[2].y);
-				const Vector2 v4((float)approx[3].x, (float)approx[3].y);
-				AddLog(common::format("pos1-2 len = %f", (v1 - v2).Length()));
-				AddLog(common::format("pos2-3 len = %f", (v2 - v3).Length()));
-				AddLog(common::format("pos3-4 len = %f", (v3 - v4).Length()));
-				AddLog(common::format("pos4-1 len = %f", (v4 - v1).Length()));
+				//const Vector2 v1((float)approx[0].x, (float)approx[0].y);
+				//const Vector2 v2((float)approx[1].x, (float)approx[1].y);
+				//const Vector2 v3((float)approx[2].x, (float)approx[2].y);
+				//const Vector2 v4((float)approx[3].x, (float)approx[3].y);
+				//AddLog(common::format("pos1-2 len = %f", (v1 - v2).Length()));
+				//AddLog(common::format("pos2-3 len = %f", (v2 - v3).Length()));
+				//AddLog(common::format("pos3-4 len = %f", (v3 - v4).Length()));
+				//AddLog(common::format("pos4-1 len = %f", (v4 - v1).Length()));
 			}
 		}
 	}

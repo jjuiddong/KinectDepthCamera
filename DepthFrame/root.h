@@ -79,6 +79,7 @@ public:
 		common::Vector3 volume;
 		common::Vector3 box3d[8*2];
 		u_int pointCnt;
+		int loopCnt;
 		graphic::cColor color;
 	};
 	vector<sBoxInfo> m_boxes;

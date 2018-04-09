@@ -167,6 +167,7 @@ void cBoxView::OnRender(const float deltaSeconds)
 			ImGui::Text("\t H = %f", box.volume.y);
 			ImGui::Text("\t V/W = %f", box.minVolume / 6000.f);
 			ImGui::Text("\t V/W = %f", box.maxVolume / 6000.f);
+			ImGui::Text("\t Loop = %d", box.loopCnt);
 			ImGui::Spacing();
 			ImGui::Separator();
 		}

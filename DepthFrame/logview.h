@@ -21,6 +21,7 @@ protected:
 	int m_last;
 	bool m_isScroll;
 	vector<common::Str128> m_logs;
+	common::CriticalSection m_cs;
 };
 
 

@@ -26,6 +26,7 @@ cInputView::cInputView(const string &name)
 	, m_comboFileIdx(0)
 	, m_isReadTwoCamera(false)
 	, m_isReadCamera2(false)
+	, m_isOnlyTwoCameraFile(false)
 {
 }
 
@@ -87,7 +88,7 @@ void cInputView::OnRender(const float deltaSeconds)
 
 		if (ImGui::Button("Capture Balser Camera"))
 			if (g_root.m_balserCam.IsConnect())
-				g_root.BaslerCapture();
+				g_root.m_balserCam.CopyCaptureBuffer(((cViewer*)g_application)->m_3dView->GetRenderer());
 
 		if (m_isCaptureContinuos)
 		{
@@ -100,10 +101,10 @@ void cInputView::OnRender(const float deltaSeconds)
 				m_isCaptureContinuos = true;
 		}
 
-		if (ImGui::Button("Trigger Delay"))
-		{
-			g_root.m_balserCam.setTriggerDelays();
-		}
+		//if (ImGui::Button("Trigger Delay"))
+		//{
+		//	g_root.m_balserCam.setTriggerDelays();
+		//}
 	}
 	break;
 	}
@@ -123,7 +124,8 @@ void cInputView::OnRender(const float deltaSeconds)
 		m_triggerDelayTime += deltaSeconds;
 		if (m_captureTime > 0.1f)
 		{
-			if (g_root.BaslerCapture())
+			//if (g_root.BaslerCapture())
+			if (g_root.m_balserCam.CopyCaptureBuffer( ((cViewer*)g_application)->m_3dView->GetRenderer()))
 				UpdateDelayMeasure(m_captureTime);
 			else
 				m_measureTime += m_captureTime;
@@ -132,7 +134,7 @@ void cInputView::OnRender(const float deltaSeconds)
 		}
 		if (m_triggerDelayTime > 1.f)
 		{
-			g_root.m_balserCam.setTriggerDelays();
+			//g_root.m_balserCam.setTriggerDelays();
 			m_triggerDelayTime = 0;
 		}
 
@@ -153,7 +155,6 @@ void cInputView::OnRender(const float deltaSeconds)
 						const bool r1 = g_root.m_sensorBuff[0].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
 							, m_files[m_aniIndex].ansi().c_str());
 
-						
 						bool r2 = false;
 						if (m_secondFileIds[m_aniIndex2] - m_fileIds[m_aniIndex] < 60)
 						{
@@ -208,6 +209,10 @@ void cInputView::OnRender(const float deltaSeconds)
 		{
 			m_isFileAnimation = false;
 		}
+
+		ImGui::SameLine();
+		ImGui::Checkbox("Ani Only 2 Camera", &m_isOnlyTwoCameraFile);
+
 		if ((u_int)(m_aniIndex-1) < m_files.size())
 			ImGui::Text("%s", m_files[m_aniIndex-1].c_str());
 		if (m_isReadTwoCamera && ((u_int)m_aniIndex2 < m_secondFiles.size()))
@@ -218,9 +223,10 @@ void cInputView::OnRender(const float deltaSeconds)
 		if (ImGui::Button("File Animation - Play"))
 		{
 			m_isFileAnimation = true;
-			//m_aniIndex = 0;
-			//m_aniIndex2 = 0;
 		}
+
+		ImGui::SameLine();
+		ImGui::Checkbox("Ani Only 2 Camera", &m_isOnlyTwoCameraFile);
 
 		if ((u_int)(m_aniIndex - 1) < m_files.size())
 			ImGui::Text("%s", m_files[m_aniIndex - 1].c_str());
@@ -241,7 +247,7 @@ void cInputView::OnRender(const float deltaSeconds)
 
 void cInputView::RenderFileList()
 {
-	ImGui::Checkbox("Read Two Camera", &m_isReadTwoCamera);
+	ImGui::Checkbox("Read Two File", &m_isReadTwoCamera);
 	ImGui::SameLine();
 	ImGui::Checkbox("Read Camera2", &m_isReadCamera2);
 
@@ -335,7 +341,11 @@ void cInputView::StoreMinimumDifferenceSensorBuffer(
 	const size_t camIdx //=0 
 	)
 {
-	if (m_minDifference > g_root.m_sensorBuff[camIdx].m_diffAvrs.GetCurValue())
+	const float diffValue = g_root.m_sensorBuff[camIdx].m_diffAvrs.GetCurValue();
+	if (0 == diffValue)
+		return; // not updated
+
+	if (m_minDifference > diffValue)
 	{
 		if (g_root.m_sensorBuff[camIdx].m_vertices.size() != m_vertices.size())
 		{
@@ -348,7 +358,7 @@ void cInputView::StoreMinimumDifferenceSensorBuffer(
 		memcpy(&m_depthBuff[0], &g_root.m_sensorBuff[camIdx].m_depthBuff[0], m_depthBuff.size() * sizeof(m_depthBuff[0]));
 		memcpy(&m_depthBuff2[0], &g_root.m_sensorBuff[camIdx].m_depthBuff2[0], m_depthBuff2.size() * sizeof(m_depthBuff2[0]));
 
-		m_minDifference = g_root.m_sensorBuff[camIdx].m_diffAvrs.GetCurValue();
+		m_minDifference = diffValue;
 	}
 }
 
@@ -531,21 +541,27 @@ int cInputView::GetTwoCameraAnimationIndex(int aniIdx1, int aniIdx2)
 	RETV(aniIdx1 < 0, -1);
 	RETV(aniIdx2 < 0, -1);
 	RETV((int)m_fileIds.size() <= aniIdx1, -1);
-	RETV((int)m_secondFileIds.size() <= aniIdx1, -1);
 	RETV((int)m_secondFileIds.size() <= aniIdx2, -1);
-	RETV((int)m_fileIds.size() <= aniIdx2, -1);
 
 	while (m_fileIds[aniIdx1] > m_secondFileIds[aniIdx2])
 	{
 		++aniIdx2;
 
-		if ((int)m_fileIds.size() <= aniIdx2)
-			return -1;
 		if ((int)m_secondFileIds.size() <= aniIdx2)
 			return -1;
 	}
 
 	return aniIdx2;
+}
+
+
+// 2개의 카메라 정보가 있는 파일만 애니메이션 한다.
+int cInputView::GetOnlyTwoCameraAnimationIndex(int aniIdx1, int aniIdx2)
+{
+
+
+
+	return -1;
 }
 
 
@@ -564,7 +580,6 @@ bool cInputView::OpenFile(const StrPath &ansifileName
 	{
 		g_root.m_sensorBuff[camIdx].ReadDatFile(
 			((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
-
 		g_root.MeasureVolume();
 	}
 
@@ -576,8 +591,6 @@ void cInputView::OnEventProc(const sf::Event &evt)
 {
 	if (evt.type == sf::Event::KeyReleased)
 	{
-		return;
-
 		switch (evt.key.code)
 		{
 		case sf::Keyboard::Key::Down:

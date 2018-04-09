@@ -19,8 +19,8 @@ public:
 
 
 public:
+	double m_time; // Update Time
 	vector<common::Vector3> m_vertices;
-	vector<graphic::cColor> m_colors;
 	vector<unsigned short> m_intensity;
 	vector<unsigned short> m_confidence;
 };

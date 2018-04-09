@@ -26,6 +26,7 @@ protected:
 	void RenderFileList();
 	__int64 ConvertFileNameToInt64(const common::StrPath &fileName);
 	int GetTwoCameraAnimationIndex(int aniIdx1, int aniIdx2);
+	int GetOnlyTwoCameraAnimationIndex(int aniIdx1, int aniIdx2);
 
 	
 public:
@@ -43,6 +44,7 @@ public:
 	// Animation
 	bool m_isFileAnimation;
 	bool m_isReadTwoCamera;
+	bool m_isOnlyTwoCameraFile;
 	int m_aniIndex;
 	int m_aniIndex2;
 	float m_aniTime;

@@ -10,6 +10,8 @@ cSensorBuffer::cSensorBuffer()
 	, m_height(0)
 	, m_plane(Vector3(0, 0, 0), 0)
 	, m_isLoaded(false)
+	, m_time(0)
+	, m_frameId(0)
 {
 	ZeroMemory(&m_diffAvrs, sizeof(m_diffAvrs));
 	m_srcImg = cv::Mat((int)g_capture3DHeight, (int)g_capture3DWidth, CV_32FC1);
@@ -237,8 +239,7 @@ bool cSensorBuffer::ReadDatFile(cRenderer &renderer, const string &fileName)
 	if (!reader.Read(fileName))
 		return false;
 
-	if (ReadDatFile(renderer, reader))
-		m_isLoaded = true;
+	ReadDatFile(renderer, reader);
 	
 	return true;
 }
@@ -325,6 +326,10 @@ bool cSensorBuffer::ReadDatFile(graphic::cRenderer &renderer, const cDatReader &
 		for (u_int i = (u_int)cnt; i < m_vertices.size(); ++i)
 			m_vertices[i] = Vector3(0, 0, 0);
 	}
+
+	m_isLoaded = true;
+	m_time = reader.m_time;
+	m_frameId++;
 
 	return true;
 }
