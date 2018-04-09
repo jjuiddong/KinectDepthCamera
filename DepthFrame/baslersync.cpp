@@ -343,6 +343,8 @@ int64_t cBaslerCameraSync::GetMaxAbsGevIEEE1588OffsetFromMasterInTimeWindow(size
 
 void cBaslerCameraSync::setTriggerDelays() 
 {
+	RET(!m_isSetupSuccess);
+
 	// Current timestamp
 	uint64_t timestamp, syncStartTimestamp;
 
@@ -473,6 +475,8 @@ bool cBaslerCameraSync::Capture()
 			// Check whether a buffer has been grabbed successfully.
 			if (grabResult.status == GrabResult::Timeout)
 			{
+				AddLog(common::format("Timeout occurred. camIdx = %d", camIdx));
+
 				//cerr << "Timeout occurred." << endl;
 				//TimoutOccurred = true;
 				// In case of a timeout, no buffer has been grabbed, i.e., the grab result doesn't hold a valid buffer.
@@ -485,13 +489,14 @@ bool cBaslerCameraSync::Capture()
 					//cerr << "Camera has been removed." << endl;
 				}
 
-				return false;
+				continue;
 			}
 
 			if (grabResult.status != GrabResult::Ok)
 			{
 				//cerr << "Got a buffer, but it hasn't been successfully grabbed." << endl;
-				return false;
+				AddLog(common::format("Got a buffer, but it hasn't been successfully grabbed. camIdx = %d", camIdx));
+				continue;
 			}
 
 			// A successfully grabbed buffer can be processed now. The buffer will not be overwritten with new data until

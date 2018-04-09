@@ -115,7 +115,22 @@ void c3DView::OnPreRender(const float deltaSeconds)
 		// Render Point Cloud
 		if (m_showPointCloud)
 		{
-			g_root.m_sensorBuff[0].Render(renderer);
+			if (g_root.m_baslerCameraIdx == 0)
+			{
+				g_root.m_sensorBuff[0].Render(renderer);
+			}
+			else if (g_root.m_baslerCameraIdx == 1)
+			{
+				if (g_root.m_sensorBuff[1].m_isLoaded)
+					g_root.m_sensorBuff[1].Render(renderer, "Unlit", false, g_root.m_cameraOffset2.GetMatrixXM());
+			}
+			else
+			{
+				g_root.m_sensorBuff[0].Render(renderer);
+				if (g_root.m_sensorBuff[1].m_isLoaded)
+					g_root.m_sensorBuff[1].Render(renderer, "Unlit", false, g_root.m_cameraOffset2.GetMatrixXM());
+			}
+
 			//renderer.GetDevContext()->RSSetState(states.Wireframe());
 			//g_root.m_sensorBuff.RenderTessellation(renderer);
 		}
@@ -194,8 +209,24 @@ void c3DView::Capture3D(const size_t camIdx //=0
 		tfm.scale = Vector3(1.5f, 1, 1.5f);
 		//tfm.scale = Vector3(3.f, 1, 3.f);
 		//tfm.scale = Vector3(2.f, 1, 2.f);
-		g_root.m_sensorBuff[camIdx].Render(renderer, "Heightmap", false, tfm.GetMatrixXM());
+		//g_root.m_sensorBuff[camIdx].Render(renderer, "Heightmap", false, tfm.GetMatrixXM());
 		//g_root.m_sensorBuff.RenderTessellation(renderer, tfm.GetMatrixXM());
+
+		if (g_root.m_baslerCameraIdx == 0)
+		{
+			g_root.m_sensorBuff[0].Render(renderer, "Heightmap", false, tfm.GetMatrixXM());
+		}
+		else if (g_root.m_baslerCameraIdx == 1)
+		{
+			if (g_root.m_sensorBuff[1].m_isLoaded)
+				g_root.m_sensorBuff[1].Render(renderer, "Heightmap", false, g_root.m_cameraOffset2.GetMatrixXM() * tfm.GetMatrixXM());
+		}
+		else
+		{
+			g_root.m_sensorBuff[0].Render(renderer, "Heightmap", false, tfm.GetMatrixXM());
+			if (g_root.m_sensorBuff[1].m_isLoaded)
+				g_root.m_sensorBuff[1].Render(renderer, "Heightmap", false, g_root.m_cameraOffset2.GetMatrixXM() * tfm.GetMatrixXM());
+		}
 	}
 	m_captureTarget.End(renderer);
 
@@ -289,6 +320,13 @@ void c3DView::OnRender(const float deltaSeconds)
 		//ImGui::SameLine();
 		//ImGui::RadioButton("Basler", (int*)&g_root.m_input, cRoot::eInputType::BASLER);
 		//ImGui::Spacing();
+
+		ImGui::RadioButton("Camera1", &g_root.m_baslerCameraIdx, 0);
+		ImGui::SameLine();
+		ImGui::RadioButton("Camera2", &g_root.m_baslerCameraIdx, 1);
+		ImGui::SameLine();
+		ImGui::RadioButton("Camera All", &g_root.m_baslerCameraIdx, 2);
+
 
 		if (ImGui::Button("Camera Origin"))
 		{
@@ -685,10 +723,10 @@ void c3DView::OnEventProc(const sf::Event &evt)
 		case sf::Keyboard::Space:
 			break;
 
-		//case sf::Keyboard::Left: m_camera.MoveRight(-0.5f); break;
-		//case sf::Keyboard::Right: m_camera.MoveRight(0.5f); break;
-		//case sf::Keyboard::Up: m_camera.MoveUp(0.5f); break;
-		//case sf::Keyboard::Down: m_camera.MoveUp(-0.5f); break;
+		//case sf::Keyboard::Left: g_root.m_cameraOffset2.pos.x -= 0.1f; break;
+		//case sf::Keyboard::Right: g_root.m_cameraOffset2.pos.x += 0.1f; break;
+		//case sf::Keyboard::Up: g_root.m_cameraOffset2.pos.z += 0.1f; break;
+		//case sf::Keyboard::Down: g_root.m_cameraOffset2.pos.z -= 0.1f; break;
 		}
 		break;
 

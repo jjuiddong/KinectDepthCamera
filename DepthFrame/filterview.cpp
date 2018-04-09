@@ -237,7 +237,7 @@ bool cFilterView::FindBox(cv::Mat &img
 	vector<vector<cv::Point>> contours;
 	findContours(img, contours, CV_RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
-	int m_minArea = 200;
+	int m_minArea = 300;
 	double m_minCos = -0.4f; // 직각 체크
 	double m_maxCos = 0.4f;
 
@@ -279,18 +279,9 @@ bool cFilterView::FindBox(cv::Mat &img
 				//(vtc == 4) && 
 				(mincos >= m_minCos) && (maxcos <= m_maxCos))
 			{
-				//vector<cv::Point> rectPoint(4);
-				//rectPoint[0] = approx[0];
-				//rectPoint[1] = approx[1];
-				//rectPoint[2] = approx[2];
-				//rectPoint[3] = approx[3];
-				//cRectContour rect;
-				//rect.Init(rectPoint);
-				//out.push_back(rect);
-
 				cContour contour;
 				contour.Init(approx);
-				contour.Draw(m_dstImg, Scalar(0, 255, 0), 1);
+				//contour.Draw(m_dstImg, Scalar(0, 255, 0), 1);
 				out.push_back(contour);
 
 				AddLog("Detect Box");

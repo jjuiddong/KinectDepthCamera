@@ -17,12 +17,15 @@ cInputView::cInputView(const string &name)
 	, m_captureTime(0)
 	, m_triggerDelayTime(0)
 	, m_isFileAnimation(false)
-	, m_aniIndex(0)
+	, m_aniIndex(-1)
+	, m_aniIndex2(-1)
 	, m_selFileIdx(-1)
 	, m_state(eState::NORMAL)
 	, m_measureTime(0)
 	, m_minDifference(0)
 	, m_comboFileIdx(0)
+	, m_isReadTwoCamera(false)
+	, m_isReadCamera2(false)
 {
 }
 
@@ -33,8 +36,7 @@ cInputView::~cInputView()
 
 bool cInputView::Init(graphic::cRenderer &renderer)
 {
-	UpdateFileList();
-
+	//UpdateFileList();
 	return true;
 }
 
@@ -142,17 +144,60 @@ void cInputView::OnRender(const float deltaSeconds)
 		{
 			if (m_files.size() > (u_int)m_aniIndex)
 			{
-				if (g_root.m_sensorBuff[0].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
-					, m_files[m_aniIndex].ansi().c_str()))
-					UpdateDelayMeasure(m_aniTime);
+				if (m_isReadTwoCamera)
+				{
+					m_aniIndex2 = GetTwoCameraAnimationIndex(m_aniIndex, m_aniIndex2);
+
+					if (m_aniIndex2 >= 0)
+					{
+						const bool r1 = g_root.m_sensorBuff[0].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
+							, m_files[m_aniIndex].ansi().c_str());
+
+						
+						bool r2 = false;
+						if (m_secondFileIds[m_aniIndex2] - m_fileIds[m_aniIndex] < 60)
+						{
+							r2 = g_root.m_sensorBuff[1].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
+								, m_secondFiles[m_aniIndex2].ansi().c_str());
+						}
+						else
+						{
+							g_root.m_sensorBuff[1].m_isLoaded = false;
+						}
+
+						if (r1 || r2)
+							UpdateDelayMeasure(m_aniTime);
+						else
+							m_measureTime += m_captureTime;
+					}
+				}
 				else
-					m_measureTime += m_captureTime;
+				{
+					if (g_root.m_sensorBuff[0].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
+						, m_files[m_aniIndex].ansi().c_str()))
+						UpdateDelayMeasure(m_aniTime);
+					else
+						m_measureTime += m_captureTime;
+				}
+
 			}
 		
 			m_aniIndex++;
 			m_aniTime = 0.f;
 			if ((u_int)m_aniIndex >= m_files.size())
+			{
 				m_aniIndex = 0;
+				m_aniIndex2 = 0;
+			}
+
+			if (m_isReadTwoCamera)
+			{
+				if (m_aniIndex2 < 0)
+				{
+					m_aniIndex = 0;
+					m_aniIndex2 = 0;
+				}
+			}
 		}
 	}
 
@@ -163,14 +208,24 @@ void cInputView::OnRender(const float deltaSeconds)
 		{
 			m_isFileAnimation = false;
 		}
-		ImGui::Text("%s", m_files[m_aniIndex].c_str());
+		if ((u_int)(m_aniIndex-1) < m_files.size())
+			ImGui::Text("%s", m_files[m_aniIndex-1].c_str());
+		if (m_isReadTwoCamera && ((u_int)m_aniIndex2 < m_secondFiles.size()))
+			ImGui::Text("%s", m_secondFiles[m_aniIndex2].c_str());
 	}
 	else
 	{
 		if (ImGui::Button("File Animation - Play"))
 		{
 			m_isFileAnimation = true;
+			//m_aniIndex = 0;
+			//m_aniIndex2 = 0;
 		}
+
+		if ((u_int)(m_aniIndex - 1) < m_files.size())
+			ImGui::Text("%s", m_files[m_aniIndex - 1].c_str());
+		if (m_isReadTwoCamera && ((u_int)m_aniIndex2 < m_secondFiles.size()))
+			ImGui::Text("%s", m_secondFiles[m_aniIndex2].c_str());
 	}
 
 	ImGui::Spacing();
@@ -186,6 +241,10 @@ void cInputView::OnRender(const float deltaSeconds)
 
 void cInputView::RenderFileList()
 {
+	ImGui::Checkbox("Read Two Camera", &m_isReadTwoCamera);
+	ImGui::SameLine();
+	ImGui::Checkbox("Read Camera2", &m_isReadCamera2);
+
 	ImGui::PushID(10);
 	ImGui::InputText("", g_root.m_inputFilePath.m_str, g_root.m_inputFilePath.SIZE);
 	ImGui::PopID();
@@ -203,10 +262,6 @@ void cInputView::RenderFileList()
 	{
 		int i = 0;
 		bool isOpenPopup = false;
-
-		//ImGui::Columns(5, "modelcolumns5", false);
-		//for (auto &fileName : m_files2)
-		//for (u_int i = MAX_FILEPAGE*m_comboFileIdx; )
 
 		const u_int fileSize = m_files.size();
 		const u_int maxSize = (m_comboFileIdx == (m_filePages-1))? fileSize : MAX_FILEPAGE;
@@ -231,7 +286,7 @@ void cInputView::RenderFileList()
 				common::StrPath ansifileName = m_files[idx].ansi();// change UTF8 -> UTF16
 				m_selectPath = ansifileName;
 
-				OpenFile(ansifileName);
+				OpenFile(ansifileName, m_isReadCamera2? 1 : 0);
 
 				// Popup Menu
 				if (ImGui::IsItemClicked(1))
@@ -337,15 +392,33 @@ void cInputView::UpdateFileList()
 	exts.push_back(L"pcd2"); exts.push_back(L"PCD2");
 
 	vector<WStrPath> out;
-	out.reserve(256);
-	common::CollectFiles(exts, g_root.m_inputFilePath.wstr().c_str(), out);
+	out.reserve(512);
 
-	m_files.reserve(256);
+	if (m_isReadTwoCamera)
+	{
+		// two camera는 0,1 경로에 따로 로딩한다.
+		common::CollectFiles(exts, (g_root.m_inputFilePath + "/0").wstr().c_str(), out);
+
+		vector<WStrPath> out2;
+		out2.reserve(512);
+		common::CollectFiles(exts, (g_root.m_inputFilePath + "/1").wstr().c_str(), out2);
+
+		m_secondFiles.clear();
+		m_secondFiles.reserve(512);
+		for (auto &str : out2)
+			m_secondFiles.push_back(str.utf8());
+	}
+	else
+	{
+		common::CollectFiles(exts, g_root.m_inputFilePath.wstr().c_str(), out);
+	}
+
+	m_files.reserve(out.size());
 	for (auto &str : out)
 		m_files.push_back(str.utf8());
 
 	m_files2.clear();
-	m_files2.reserve(256);
+	m_files2.reserve(out.size());
 	for (auto &str : out)
 		m_files2.push_back(str.utf8().GetFileName());
 
@@ -383,8 +456,96 @@ void cInputView::UpdateFileList()
 		m_comboFileStr.m_str[cnt++] = '.';
 	}
 
+
+	// 2대의 카메라를 애니메이션 한다면, 각 0/1 폴더의 파일을 __int64 값으로 수치화해서 저장한다.
+	// 애니메이션시 값을 비교해 가장 가까운 파일을 서로 연결해 애니메이션 한다.
+	if (m_isReadTwoCamera)
+	{
+		m_fileIds.clear();
+		m_fileIds.reserve(m_files2.size());
+		for (auto &fileName : m_files2)
+		{
+			const __int64 num = ConvertFileNameToInt64(fileName);
+			if (num > 0)
+				m_fileIds.push_back(num);
+		}
+
+		m_secondFileIds.clear();
+		m_secondFileIds.reserve(m_secondFiles.size());
+		for (auto &fileName : m_secondFiles)
+		{
+			const __int64 num = ConvertFileNameToInt64(fileName.GetFileName());
+			if (num > 0)
+				m_secondFileIds.push_back(num);
+		}
+	}
+
 	m_filePages = pages + 1;
 	m_comboFileIdx = 0;
+	m_aniIndex = -1;
+	m_aniIndex2 = -1;
+}
+
+
+// 파일명을 숫자로 리턴한다.
+// ex = 2018-04-08-15-53-28-211.pcd
+// int64 = 20180408155328211
+__int64 cInputView::ConvertFileNameToInt64(const common::StrPath &fileName)
+{
+	if (fileName.size() != 27)
+		return 0;
+
+	char buff[32];
+	ZeroMemory(buff, sizeof(buff));
+
+	// ex = 2018-04-08-15-53-28-211.pcd
+	buff[0] = fileName.m_str[0]; // 2
+	buff[1] = fileName.m_str[1]; // 0
+	buff[2] = fileName.m_str[2]; // 1
+	buff[3] = fileName.m_str[3]; // 8
+	buff[4] = fileName.m_str[5]; // 0
+	buff[5] = fileName.m_str[6]; // 4
+	buff[6] = fileName.m_str[8]; // 0
+	buff[7] = fileName.m_str[9]; // 8
+	buff[8] = fileName.m_str[11]; // 1
+	buff[9] = fileName.m_str[12]; // 5
+	buff[10] = fileName.m_str[14]; // 5
+	buff[11] = fileName.m_str[15]; // 3
+	buff[12] = fileName.m_str[17]; // 2
+	buff[13] = fileName.m_str[18]; // 8
+	buff[14] = fileName.m_str[20]; // 2
+	buff[15] = fileName.m_str[21]; // 1
+	buff[16] = fileName.m_str[22]; // 1
+
+	const __int64 val = _atoi64(buff);
+	return val;
+}
+
+
+// 2개의 카메라 애니메이션을 할 때, 첫 번째 카메라 애니메이션 파일을 기준으로, 
+// 두 번째 카메라 애니메이션 파일을 선택한다.
+// 이 때, 파일명이 시간을 나타내므로, 가장 가까운 시간에 있는 파일을 선택해
+// 인덱스값을 리턴한다.
+int cInputView::GetTwoCameraAnimationIndex(int aniIdx1, int aniIdx2)
+{
+	RETV(aniIdx1 < 0, -1);
+	RETV(aniIdx2 < 0, -1);
+	RETV((int)m_fileIds.size() <= aniIdx1, -1);
+	RETV((int)m_secondFileIds.size() <= aniIdx1, -1);
+	RETV((int)m_secondFileIds.size() <= aniIdx2, -1);
+	RETV((int)m_fileIds.size() <= aniIdx2, -1);
+
+	while (m_fileIds[aniIdx1] > m_secondFileIds[aniIdx2])
+	{
+		++aniIdx2;
+
+		if ((int)m_fileIds.size() <= aniIdx2)
+			return -1;
+		if ((int)m_secondFileIds.size() <= aniIdx2)
+			return -1;
+	}
+
+	return aniIdx2;
 }
 
 
@@ -415,6 +576,8 @@ void cInputView::OnEventProc(const sf::Event &evt)
 {
 	if (evt.type == sf::Event::KeyReleased)
 	{
+		return;
+
 		switch (evt.key.code)
 		{
 		case sf::Keyboard::Key::Down:

@@ -71,7 +71,26 @@ void cBoxView::OnPreRender(const float deltaSeconds)
 		{
 			CommonStates states(renderer.GetDevice());
 			renderer.GetDevContext()->OMSetBlendState(states.NonPremultiplied(), 0, 0xffffffff);
-			g_root.m_sensorBuff[1].Render(renderer, "Unlit", true);
+
+			if (g_root.m_baslerCameraIdx == 0)
+			{
+				g_root.m_sensorBuff[0].Render(renderer, "Unlit", true);
+			}
+			else if (g_root.m_baslerCameraIdx == 1)
+			{
+				if (g_root.m_sensorBuff[1].m_isLoaded)
+					g_root.m_sensorBuff[1].Render(renderer, "Unlit", true, g_root.m_cameraOffset2.GetMatrixXM());
+			}
+			else
+			{
+				g_root.m_sensorBuff[0].Render(renderer, "Unlit", true);
+				if (g_root.m_sensorBuff[1].m_isLoaded)
+					g_root.m_sensorBuff[1].Render(renderer, "Unlit", true, g_root.m_cameraOffset2.GetMatrixXM());
+			}
+
+			//if (g_root.m_sensorBuff[1].m_isLoaded)
+			//	g_root.m_sensorBuff[1].Render(renderer, "Unlit", true);
+
 			renderer.GetDevContext()->OMSetBlendState(states.Opaque(), 0, 0xffffffff);
 		}
 	}

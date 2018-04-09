@@ -24,6 +24,8 @@ protected:
 	void CalcDelayMeasure(const size_t camIdx = 0);
 	void StoreMinimumDifferenceSensorBuffer(const size_t camIdx=0);
 	void RenderFileList();
+	__int64 ConvertFileNameToInt64(const common::StrPath &fileName);
+	int GetTwoCameraAnimationIndex(int aniIdx1, int aniIdx2);
 
 	
 public:
@@ -40,7 +42,9 @@ public:
 
 	// Animation
 	bool m_isFileAnimation;
+	bool m_isReadTwoCamera;
 	int m_aniIndex;
+	int m_aniIndex2;
 	float m_aniTime;
 	int m_selFileIdx;
 
@@ -59,6 +63,10 @@ public:
 	int m_comboFileIdx;
 	common::Str256 m_comboFileStr;
 	common::StrPath m_selectPath; // UTF-16
-	vector<common::StrPath> m_files; // UTF-8 encoding
+	vector<common::StrPath> m_files; // UTF-8 encoding (fulle filename)
 	vector<common::StrPath> m_files2; // UTF-8 encoding (only filename)
+	vector<common::StrPath> m_secondFiles; // UTF-8 encoding
+	vector<__int64> m_fileIds;
+	vector<__int64> m_secondFileIds;
+	bool m_isReadCamera2;
 };

@@ -48,6 +48,7 @@ public:
 
 
 public:
+	bool m_isLoaded;
 	int m_width;
 	int m_height;
 	int m_pointCloudCount;

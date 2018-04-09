@@ -9,6 +9,7 @@ cSensorBuffer::cSensorBuffer()
 	: m_width(0)
 	, m_height(0)
 	, m_plane(Vector3(0, 0, 0), 0)
+	, m_isLoaded(false)
 {
 	ZeroMemory(&m_diffAvrs, sizeof(m_diffAvrs));
 	m_srcImg = cv::Mat((int)g_capture3DHeight, (int)g_capture3DWidth, CV_32FC1);
@@ -111,6 +112,7 @@ bool cSensorBuffer::ReadKinectSensor(cRenderer &renderer
 
 	ProcessKinectDepthBuff(renderer, nTime, pBuffer, nMinDepth, nMaxDepth);
 
+	m_isLoaded = true;
 	return true;
 }
 
@@ -222,18 +224,21 @@ bool cSensorBuffer::ReadPlyFile(cRenderer &renderer, const string &fileName)
 		for (u_int i = (u_int)cnt; i < m_vertices.size(); ++i)
 			m_vertices[i] = Vector3(0, 0, 0);
 	}
-	
+
+	m_isLoaded = true;
 	return true;
 }
 
 
 bool cSensorBuffer::ReadDatFile(cRenderer &renderer, const string &fileName)
 {
+	m_isLoaded = false;
 	cDatReader reader;
 	if (!reader.Read(fileName))
 		return false;
 
-	ReadDatFile(renderer, reader);
+	if (ReadDatFile(renderer, reader))
+		m_isLoaded = true;
 	
 	return true;
 }

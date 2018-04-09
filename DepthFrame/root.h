@@ -47,7 +47,10 @@ public:
 	eInputType::Enum m_input;
 	common::Vector3 m_3dEyePos;
 	common::Vector3 m_3dLookAt;
+	int m_baslerCameraIdx; // 0: camera1, 1: camera2, 2: all
 	cSensorBuffer m_sensorBuff[2];
+	common::Transform m_cameraOffset2; // camera2 offset
+
 
 	// Update Every Time
 	int m_distribCount;

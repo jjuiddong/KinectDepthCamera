@@ -11,7 +11,7 @@
 #include "infraredview.h"
 #include "filterview.h"
 
-
+using namespace common;
 
 cRoot::cRoot()
 	: m_distribCount(0)
@@ -23,10 +23,13 @@ cRoot::cRoot()
 	, m_isAutoMeasure(false)
 	, m_isPalete(false)
 	, m_isConnectKinect(false)
+	, m_baslerCameraIdx(0)
 {
 	ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
 	ZeroMemory(&m_hDistrib2, sizeof(m_hDistrib2));
 	ZeroMemory(&m_hDistribDifferential, sizeof(m_hDistribDifferential));
+
+	m_cameraOffset2.pos = Vector3(-57.9f, 2.8f, -71.3f);
 }
 
 cRoot::~cRoot()
