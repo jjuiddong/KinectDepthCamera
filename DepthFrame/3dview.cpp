@@ -446,13 +446,13 @@ void c3DView::OnRender(const float deltaSeconds)
 	}
 }
 
-
-// Àç±Í Æò±Õ
-double CalcAverage(const int k, const double Avr, const double Xk)
-{
-	const double alpha = (double)(k - 1.f) / (double)k;
-	return alpha * Avr + (1.f - alpha) * Xk;
-}
+//
+//// Àç±Í Æò±Õ
+//double CalcAverage(const int k, const double Avr, const double Xk)
+//{
+//	const double alpha = (double)(k - 1.f) / (double)k;
+//	return alpha * Avr + (1.f - alpha) * Xk;
+//}
 
 
 // ¹Ù´ÚÀÇ Ç¥ÁØÆíÂ÷¸¦ ±¸ÇÑ´Ù.

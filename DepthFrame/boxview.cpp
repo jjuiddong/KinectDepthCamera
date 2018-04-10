@@ -1,5 +1,7 @@
 #include "stdafx.h"
 #include "boxview.h"
+#include "filterview.h"
+#include "depthframe.h"
 
 using namespace graphic;
 using namespace framework;
@@ -102,27 +104,65 @@ void cBoxView::RenderBoxVolume3D(graphic::cRenderer &renderer)
 {
 	for (auto &box : g_root.m_boxes)
 	{
-		m_boxLine.SetColor(box.color);
+		const float width = 0.2f;
+		common::Vector4 color = box.color.GetColor();
+		color = color * 0.7f;
+		const cColor newColor(color);
+		//m_boxLine.SetColor(newColor);
+		m_boxLine.SetColor(cColor(0.f,1.f,1.f));
 
 		for (u_int i = 0; i < box.pointCnt; ++i)
 		{
-			m_boxLine.SetLine(box.box3d[i], box.box3d[(i+1)% box.pointCnt], 0.1f);
+			m_boxLine.SetLine(box.box3d[i], box.box3d[(i+1)% box.pointCnt], width);
 			m_boxLine.Render(renderer);
 		}
 
 		for (u_int i = 0; i < box.pointCnt; ++i)
 		{
 			m_boxLine.SetLine(box.box3d[i + box.pointCnt]
-				, box.box3d[((i + 1) % box.pointCnt) + box.pointCnt], 0.1f);
+				, box.box3d[((i + 1) % box.pointCnt) + box.pointCnt], width);
 			m_boxLine.Render(renderer);
 		}
 
 		for (u_int i = 0; i < box.pointCnt; ++i)
 		{
-			m_boxLine.SetLine(box.box3d[i], box.box3d[i + box.pointCnt], 0.1f);
+			m_boxLine.SetLine(box.box3d[i], box.box3d[i + box.pointCnt], width);
 			m_boxLine.Render(renderer);
 		}
 	}
+
+
+	// Render Average Box 
+	cFilterView *filterView = ((cViewer*)g_application)->m_filterView;
+	if (filterView)
+	{
+		for (auto &box : filterView->m_avrContours)
+		{
+			const float width = 0.2f;
+			m_boxLine.SetColor(box.box.color);
+
+			const u_int pointCnt = box.box.contour.Size();
+			for (u_int i = 0; i < pointCnt; ++i)
+			{
+				m_boxLine.SetLine(box.vertices3d[i], box.vertices3d[(i + 1) % pointCnt], width);
+				m_boxLine.Render(renderer);
+			}
+
+			for (u_int i = 0; i < pointCnt; ++i)
+			{
+				m_boxLine.SetLine(box.vertices3d[i + pointCnt]
+					, box.vertices3d[((i + 1) % pointCnt) + pointCnt], width);
+				m_boxLine.Render(renderer);
+			}
+
+			for (u_int i = 0; i < pointCnt; ++i)
+			{
+				m_boxLine.SetLine(box.vertices3d[i], box.vertices3d[i + pointCnt], width);
+				m_boxLine.Render(renderer);
+			}
+		}
+	}
+
 }
 
 

@@ -35,7 +35,7 @@ public:
 	bool m_showPointCloud;
 
 	graphic::cGridLine m_ground;
-	graphic::cDbgLine m_boxLine;
+	graphic::cLine m_boxLine;
 	graphic::cRenderTarget m_renderTarget;
 
 	// MouseMove Variable

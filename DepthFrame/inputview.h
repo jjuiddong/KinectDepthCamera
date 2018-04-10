@@ -26,7 +26,7 @@ protected:
 	void RenderFileList();
 	__int64 ConvertFileNameToInt64(const common::StrPath &fileName);
 	int GetTwoCameraAnimationIndex(int aniIdx1, int aniIdx2);
-	int GetOnlyTwoCameraAnimationIndex(int aniIdx1, int aniIdx2);
+	std::pair<int, int> GetOnlyTwoCameraAnimationIndex(int aniIdx1, int aniIdx2);
 
 	
 public:

@@ -33,7 +33,7 @@ void cContour::Draw(cv::Mat &dst
 }
 
 
-bool cContour::IsContain(const cContour &contour)
+bool cContour::IsContain(const cContour &contour) const
 {
 	Paths p1(1), p2(1), solution;
 
@@ -52,7 +52,22 @@ bool cContour::IsContain(const cContour &contour)
 }
 
 
-u_int cContour::Area()
+u_int cContour::Area() const
 {
 	return (u_int)abs(cv::contourArea(m_data));
 }
+
+
+cv::Point cContour::Center() const
+{
+	if (m_data.empty())
+		return cv::Point(0, 0);
+
+	Point center;
+	for (auto &pt : m_data)
+		center += pt;
+
+	center = Point(center.x / m_data.size(), center.y / m_data.size());
+	return center;
+}
+

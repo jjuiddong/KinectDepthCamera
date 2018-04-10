@@ -103,3 +103,11 @@ public:
 	common::StrPath m_inputFilePath;
 	common::cConfig m_config;
 };
+
+
+// Àç±Í Æò±Õ
+static double CalcAverage(const int k, const double Avr, const double Xk)
+{
+	const double alpha = (double)(k - 1.f) / (double)k;
+	return alpha * Avr + (1.f - alpha) * Xk;
+}

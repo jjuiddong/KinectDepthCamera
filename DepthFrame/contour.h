@@ -13,10 +13,11 @@ public:
 
 	bool Init(const vector<cv::Point> &contour);
 	void Draw(cv::Mat &dst, const cv::Scalar &color = cv::Scalar(0, 0, 0), const int thickness = 1) const;
-	bool IsContain(const cContour &contour);
-	u_int Area();
-	inline u_int Size();
-	inline cv::Point operator[] (int i);
+	bool IsContain(const cContour &contour) const;
+	u_int Area() const;
+	cv::Point Center() const;
+	inline u_int Size() const;
+	inline cv::Point operator[] (int i) const;
 
 
 public:
@@ -25,5 +26,5 @@ public:
 
 
 
-inline u_int cContour::Size() {return m_data.size();}
-inline cv::Point cContour::operator[] (int i) {return m_data[i];}
+inline u_int cContour::Size() const {return m_data.size();}
+inline cv::Point cContour::operator[] (int i) const {return m_data[i];}

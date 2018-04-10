@@ -101,6 +101,8 @@ void cRoot::MeasureVolume(
 	((cViewer*)g_application)->m_filterView->Process(camIdx);
 	((cViewer*)g_application)->m_infraredView->Process(camIdx);
 
+	((cViewer*)g_application)->m_filterView->CalcBoxVolumeAverage();
+
 	//((cViewer*)g_application)->m_depthView->Process();
 	//((cViewer*)g_application)->m_depthView2->Process();
 }

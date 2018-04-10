@@ -150,6 +150,13 @@ void cInputView::OnRender(const float deltaSeconds)
 				{
 					m_aniIndex2 = GetTwoCameraAnimationIndex(m_aniIndex, m_aniIndex2);
 
+					if (m_isOnlyTwoCameraFile)
+					{
+						auto ret = GetOnlyTwoCameraAnimationIndex(m_aniIndex, m_aniIndex2);
+						m_aniIndex = ret.first;
+						m_aniIndex2 = ret.second;
+					}
+
 					if (m_aniIndex2 >= 0)
 					{
 						const bool r1 = g_root.m_sensorBuff[0].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
@@ -556,12 +563,31 @@ int cInputView::GetTwoCameraAnimationIndex(int aniIdx1, int aniIdx2)
 
 
 // 2개의 카메라 정보가 있는 파일만 애니메이션 한다.
-int cInputView::GetOnlyTwoCameraAnimationIndex(int aniIdx1, int aniIdx2)
+std::pair<int, int> cInputView::GetOnlyTwoCameraAnimationIndex(int aniIdx1, int aniIdx2)
 {
+	RETV(aniIdx1 < 0, std::make_pair(-1, -1) );
+	RETV(aniIdx2 < 0, std::make_pair(-1, -1));
+	RETV((int)m_fileIds.size() <= aniIdx1, std::make_pair(-1, -1));
+	RETV((int)m_secondFileIds.size() <= aniIdx2, std::make_pair(-1, -1));
 
+	while (m_secondFileIds[aniIdx2] - m_fileIds[aniIdx1] > 60)
+	{
+		if (m_fileIds[aniIdx1] > m_secondFileIds[aniIdx2])
+		{
+			++aniIdx2;
+		}
+		else
+		{
+			++aniIdx1;
+		}
 
+		if ((int)m_fileIds.size() <= aniIdx1)
+			return { -1,-1 };
+		if ((int)m_secondFileIds.size() <= aniIdx2)
+			return { -1,-1 };
+	}
 
-	return -1;
+	return { aniIdx1, aniIdx2 };
 }
 
 

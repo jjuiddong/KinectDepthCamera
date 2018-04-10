@@ -6,6 +6,7 @@
 using namespace graphic;
 using namespace framework;
 using namespace cv;
+using namespace common;
 
 
 cFilterView::cFilterView(const string &name)
@@ -142,14 +143,6 @@ void cFilterView::ProcessDepth(const size_t camIdx //=0
 
 	RemoveDuplicateContour(m_contours);
 
-	// display remove rect
-	for (auto &info : m_removeRects)
-	{
-		cRectContour &rect = info.r;
-		const Scalar color(255, 0, 0);
-		rect.Draw(m_dstImg, color, 1);
-	}
-
 	// Display Detect Box (for debugging)
 	if (!m_contours.empty() && !m_binImg.empty())
 		cvtColor(m_binImg, m_binImg, cv::COLOR_GRAY2RGB);
@@ -179,64 +172,228 @@ void cFilterView::ProcessDepth(const size_t camIdx //=0
 		//rect.Draw(m_binImg, Scalar(255,0,0), 1); // for debugging
 
 		//const float scale = 50.f / 110.f;
-		const float scale = 50.f / 73.2f;
-		const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete) ? -13.f : 2.5f;
+		//const float scale = 50.f / 73.2f;
+		//const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete) ? -13.f : 3.5f;
 
-		cRoot::sBoxInfo box;
+		//cRoot::sBoxInfo box;
 
-		if (info.contour.Size() == 4)
-		{
-			const Vector2 v1((float)info.contour[0].x, (float)info.contour[0].y);
-			const Vector2 v2((float)info.contour[1].x, (float)info.contour[1].y);
-			const Vector2 v3((float)info.contour[2].x, (float)info.contour[2].y);
-			const Vector2 v4((float)info.contour[3].x, (float)info.contour[3].y);
-		
-			// maximum value
-			const float l1 = std::max((v1 - v2).Length(), (v3 - v4).Length());
-			const float l2 = std::max((v2 - v3).Length(), (v4 - v1).Length());
-			box.volume.x = std::max(l1, l2);
-			box.volume.y = (info.upperH - info.lowerH) + offsetY;
-			box.volume.z = std::min(l1, l2);
+		//if (info.contour.Size() == 4)
+		//{
+		//	const Vector2 v1((float)info.contour[0].x, (float)info.contour[0].y);
+		//	const Vector2 v2((float)info.contour[1].x, (float)info.contour[1].y);
+		//	const Vector2 v3((float)info.contour[2].x, (float)info.contour[2].y);
+		//	const Vector2 v4((float)info.contour[3].x, (float)info.contour[3].y);
+		//
+		//	// maximum value
+		//	const float l1 = std::max((v1 - v2).Length(), (v3 - v4).Length());
+		//	const float l2 = std::max((v2 - v3).Length(), (v4 - v1).Length());
+		//	box.volume.x = std::max(l1, l2);
+		//	box.volume.y = (info.upperH - info.lowerH) + offsetY;
+		//	box.volume.z = std::min(l1, l2);
 
-			// average value
-			//box.volume.x = (((v1 - v2).Length()) + ((v3 - v4).Length())) * 0.5f;
-			//box.volume.y = (info.upperH - info.lowerH) + offsetY;
-			//box.volume.z = (((v2 - v3).Length()) + ((v4 - v1).Length())) * 0.5f;
+		//	// average value
+		//	//box.volume.x = (((v1 - v2).Length()) + ((v3 - v4).Length())) * 0.5f;
+		//	//box.volume.y = (info.upperH - info.lowerH) + offsetY;
+		//	//box.volume.z = (((v2 - v3).Length()) + ((v4 - v1).Length())) * 0.5f;
 
-			box.volume.x *= scale;
-			box.volume.y *= 1.f;
-			box.volume.z *= scale;
+		//	box.volume.x *= scale;
+		//	box.volume.y *= 1.f;
+		//	box.volume.z *= scale;
 
-			//box.volume.x -= (float)info.loop*1.4f;
-			//box.volume.z -= (float)info.loop*1.4f;
+		//	//box.volume.x -= (float)info.loop*1.4f;
+		//	//box.volume.z -= (float)info.loop*1.4f;
 
-			box.minVolume = box.volume.x * box.volume.y * box.volume.z;
-			box.maxVolume = box.minVolume;
-			box.loopCnt = info.loop;
-		}
-		else
-		{
-			box.volume.x *= 0;
-			box.volume.y = (info.upperH - info.lowerH) + offsetY;
-			box.volume.z *= 0;
+		//	box.minVolume = box.volume.x * box.volume.y * box.volume.z;
+		//	box.maxVolume = box.minVolume;
+		//	box.loopCnt = info.loop;
+		//}
+		//else
+		//{
+		//	box.volume.x *= 0;
+		//	box.volume.y = (info.upperH - info.lowerH) + offsetY;
+		//	box.volume.z *= 0;
 
-			box.minVolume = (float)info.contour.Area() * scale * scale * box.volume.y;
-			box.maxVolume = box.minVolume;
-			box.loopCnt = info.loop;
-		}
+		//	box.minVolume = (float)info.contour.Area() * scale * scale * box.volume.y;
+		//	box.maxVolume = box.minVolume;
+		//	box.loopCnt = info.loop;
+		//}
 
-		for (u_int i = 0; i < info.contour.Size(); ++i)
-		{
-			box.box3d[i] = Vector3((info.contour[i].x - 320) / 1.5f, info.upperH, (480 - info.contour[i].y - 240) / 1.5f);
-			box.box3d[i + info.contour.Size()] = Vector3((info.contour[i].x - 320) / 1.5f, info.lowerH, (480 - info.contour[i].y - 240) / 1.5f);
-		}
+		//for (u_int i = 0; i < info.contour.Size(); ++i)
+		//{
+		//	box.box3d[i] = Vector3((info.contour[i].x - 320) / 1.5f, info.upperH, (480 - info.contour[i].y - 240) / 1.5f);
+		//	box.box3d[i + info.contour.Size()] = Vector3((info.contour[i].x - 320) / 1.5f, info.lowerH, (480 - info.contour[i].y - 240) / 1.5f);
+		//}
 
-		box.color = info.color;
-		box.pointCnt = info.contour.Size();
+		//box.color = info.color;
+		//box.pointCnt = info.contour.Size();
+		cRoot::sBoxInfo box = CalcBoxInfo(info);
 		g_root.m_boxes.push_back(box);
 	}
 
 	UpdateTexture();
+}
+
+
+cRoot::sBoxInfo cFilterView::CalcBoxInfo(const sContourInfo &info)
+{
+	//const float scale = 50.f / 73.2f;
+	const float scale = 50.f / 74.5f;
+	const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete) ? -13.f : 3.5f;
+
+	cRoot::sBoxInfo box;
+	if (info.contour.Size() == 4)
+	{
+		const Vector2 v1((float)info.contour[0].x, (float)info.contour[0].y);
+		const Vector2 v2((float)info.contour[1].x, (float)info.contour[1].y);
+		const Vector2 v3((float)info.contour[2].x, (float)info.contour[2].y);
+		const Vector2 v4((float)info.contour[3].x, (float)info.contour[3].y);
+
+		// maximum value
+		const float l1 = std::max((v1 - v2).Length(), (v3 - v4).Length());
+		const float l2 = std::max((v2 - v3).Length(), (v4 - v1).Length());
+		box.volume.x = std::max(l1, l2);
+		box.volume.y = (info.upperH - info.lowerH) + offsetY;
+		box.volume.z = std::min(l1, l2);
+
+		// average value
+		//box.volume.x = (((v1 - v2).Length()) + ((v3 - v4).Length())) * 0.5f;
+		//box.volume.y = (info.upperH - info.lowerH) + offsetY;
+		//box.volume.z = (((v2 - v3).Length()) + ((v4 - v1).Length())) * 0.5f;
+
+		box.volume.x *= scale;
+		box.volume.y *= 1.f;
+		box.volume.z *= scale;
+
+		//box.volume.x -= (float)info.loop*1.4f;
+		//box.volume.z -= (float)info.loop*1.4f;
+
+		box.minVolume = box.volume.x * box.volume.y * box.volume.z;
+		box.maxVolume = box.minVolume;
+		box.loopCnt = info.loop;
+	}
+	else
+	{
+		box.volume.x *= 0;
+		box.volume.y = (info.upperH - info.lowerH) + offsetY;
+		box.volume.z *= 0;
+
+		box.minVolume = (float)info.contour.Area() * scale * scale * box.volume.y;
+		box.maxVolume = box.minVolume;
+		box.loopCnt = info.loop;
+	}
+
+	for (u_int i = 0; i < info.contour.Size(); ++i)
+	{
+		box.box3d[i] = Vector3((info.contour[i].x - 320) / 1.5f, info.upperH, (480 - info.contour[i].y - 240) / 1.5f);
+		box.box3d[i + info.contour.Size()] = Vector3((info.contour[i].x - 320) / 1.5f, info.lowerH, (480 - info.contour[i].y - 240) / 1.5f);
+	}
+
+	box.color = info.color;
+	box.pointCnt = info.contour.Size();
+	return box;
+}
+
+
+// 일정 시간동안 박스크기 평균값을 구한다.
+void cFilterView::CalcBoxVolumeAverage()
+{
+	const float max_center_gap = 10.f;
+	const float max_vertex_gap = 10.f;
+	
+	for (auto &info : m_avrContours)
+		info.check = false;
+
+	for (u_int i = 0; i < m_contours.size(); ++i)
+	{
+		sContourInfo &srcBox = m_contours[i];
+		cv::Point center0 = srcBox.contour.Center();
+		Vector3 c0((float)center0.x, srcBox.upperH, (float)center0.y);
+
+		int boxIdx = -1;
+		for (u_int k = 0; k < m_avrContours.size(); ++k)
+		{
+			sAvrContour &avrBox = m_avrContours[k];
+			if (avrBox.check)
+				continue;
+
+			// 꼭지점 갯수가 다르면, 검색 실패
+			if (srcBox.contour.Size() != avrBox.box.contour.Size())
+				continue;
+
+			cv::Point center1 = avrBox.box.contour.Center();
+			Vector3 c1((float)center1.x, avrBox.box.upperH, (float)center1.y);
+
+			// 박스 중점이 가까우면, 같은 박스인것으로 취급
+			const float len = (c0 - c1).Length();
+			if (len > max_center_gap)
+				continue;
+
+			avrBox.check = true;
+			boxIdx = (int)k;
+			break;
+		}
+
+		if (boxIdx < 0) // Not Found
+		{
+			sAvrContour box;
+			box.check = true;
+			box.count = 1;
+			box.box = srcBox;
+			for (u_int k = 0; k < srcBox.contour.Size(); ++k)
+			{
+				box.avrVertices[k] = Vector2((float)srcBox.contour[k].x, (float)srcBox.contour[k].y);
+				
+				box.vertices3d[k] = Vector3((box.avrVertices[k].x - 320) / 1.5f, box.box.upperH, (480 - box.avrVertices[k].y - 240) / 1.5f);
+				box.vertices3d[k + box.box.contour.Size()] = Vector3((box.avrVertices[k].x - 320) / 1.5f, box.box.lowerH, (480 - box.avrVertices[k].y - 240) / 1.5f);
+			}
+
+			m_avrContours.push_back(box);
+			continue;
+		}
+
+		// box 꼭지점 검색
+		// 각 박스의 꼭지점에 대응하는 avr box의 꼭지점을 찾아서, 꼭지점 위치를 평균한다.
+		sAvrContour &avrBox = m_avrContours[boxIdx];
+		++avrBox.count;
+
+		for (u_int k = 0; k < srcBox.contour.Size(); ++k)
+		{
+			cv::Point vtx0 = srcBox.contour[k];
+			Vector2 p0((float)vtx0.x, (float)vtx0.y);
+
+			for (u_int m = 0; m < avrBox.box.contour.Size(); ++m)
+			{
+				cv::Point vtx1 = avrBox.box.contour[m];
+				Vector2 p1((float)vtx1.x, (float)vtx1.y);
+
+				const float len = (p1 - p0).Length();
+				if (len > max_vertex_gap)
+					continue; // 꼭지점 사이 거리가 멀면, 다음 꼭지점 검색
+
+				// 대응되는 꼭지점을 찾았으면, 위치를 평균해서 저장한다. 재귀평균식 적용
+				avrBox.avrVertices[m].x = (float)CalcAverage(avrBox.count, avrBox.avrVertices[m].x, p0.x);
+				avrBox.avrVertices[m].y = (float)CalcAverage(avrBox.count, avrBox.avrVertices[m].y, p0.y);
+
+				avrBox.vertices3d[m] = Vector3((avrBox.avrVertices[m].x - 320) / 1.5f, avrBox.box.upperH, (480 - avrBox.avrVertices[m].y - 240) / 1.5f);
+				avrBox.vertices3d[m + avrBox.box.contour.Size()] = Vector3((avrBox.avrVertices[m].x - 320) / 1.5f, avrBox.box.lowerH, (480 - avrBox.avrVertices[m].y - 240) / 1.5f);
+			}
+		}
+
+		// BoxInfo 정보 업데이트
+		sContourInfo tempInfo = avrBox.box;
+		for (u_int k = 0; k < avrBox.box.contour.Size(); ++k)
+			tempInfo.contour.m_data[k] = cv::Point((int)avrBox.avrVertices[k].x, (int)avrBox.avrVertices[k].y);
+		avrBox.result = CalcBoxInfo(tempInfo);
+	}
+
+	++m_calcAverageCount;
+}
+
+
+void cFilterView::ClearBoxVolumeAverage()
+{
+	m_avrContours.clear();
+	m_calcAverageCount = 0;
 }
 
 
