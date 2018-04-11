@@ -14,6 +14,10 @@
 #include "logview.h"
 #include "resultview.h"
 #include "boxview.h"
+#include "../ZipLib/ZipFile.h"
+#include "../ZipLib/streams/memstream.h"
+#include "../ZipLib/methods/Bzip2Method.h"
+
 
 
 using namespace graphic;
@@ -118,6 +122,11 @@ bool cViewer::OnInit()
 	m_logView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_resultView);
 	
 	g_root.InitSensor();
+
+	// test zip
+	//ZipFile::AddFile("D:\\자료\\Box Volume\\Media-2018-04-11\\DepthSample\\test.zip"
+	//	, "D:\\자료\\Box Volume\\Media-2018-04-11\\DepthSample\\2018-03-24-10-04-13-662.pcd"
+	//	, "2018-03-24-10-04-13-662.pcd", LzmaMethod::Create());
 
 	m_gui.SetContext();
 
