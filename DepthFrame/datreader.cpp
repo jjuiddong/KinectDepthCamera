@@ -39,6 +39,22 @@ bool cDatReader::Read(const string &fileName)
 }
 
 
+bool cDatReader::Write(const string &fileName)
+{
+	using namespace std;
+	ofstream o(fileName.c_str(), ios::binary);	
+	if (o)
+	{
+		const int nPixel = m_vertices.size();
+		o.write((char*)&m_vertices[0], sizeof(float)*nPixel * 3);
+		o.write((char*)&m_intensity[0], sizeof(uint16_t)*nPixel);
+		o.write((char*)&m_confidence[0], sizeof(uint16_t)*nPixel);
+	}
+
+	return o.is_open();
+}
+
+
 void cDatReader::Clear()
 {
 }

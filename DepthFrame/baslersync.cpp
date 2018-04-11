@@ -304,7 +304,7 @@ void cBaslerCameraSync::findMaster()
 void cBaslerCameraSync::syncCameras() 
 {
 	// Maximum allowed offset from master clock. 
-	const uint64_t tsOffsetMax = 10000;
+	const uint64_t tsOffsetMax = 10000; // 10 ms
 
 	AddLog(common::format("Wait until offsets from master clock have settled below %d ns", tsOffsetMax));
 
@@ -570,7 +570,7 @@ bool cBaslerCameraSync::CaptureThread()
 		for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
 		{
 			GrabResult grabResult;
-			m_Cameras.at(camIdx)->GetGrabResult(grabResult, 500);
+			m_Cameras.at(camIdx)->GetGrabResult(grabResult, 1000);
 
 			if (grabResult.status == GrabResult::Timeout)
 			{
@@ -595,6 +595,7 @@ bool cBaslerCameraSync::CaptureThread()
 				continue;
 			}
 
+			if (grabResult.status == GrabResult::Ok)
 			{
 				common::AutoCSLock cs(m_cs);
 
@@ -610,7 +611,10 @@ bool cBaslerCameraSync::CaptureThread()
 				m_captureBuff[camIdx].m_time = m_timer.GetMilliSeconds(); // Update Time
 			}
 
-			m_Cameras.at(camIdx)->QueueBuffer(grabResult.hBuffer);
+			if (grabResult.status != GrabResult::Timeout)
+			{
+				m_Cameras.at(camIdx)->QueueBuffer(grabResult.hBuffer);
+			}
 		}
 	}
 	catch (const GenICam::GenericException& )
@@ -626,10 +630,23 @@ bool cBaslerCameraSync::CopyCaptureBuffer(graphic::cRenderer &renderer)
 {
 	common::AutoCSLock cs(m_cs);
 
+	const string curTime = common::GetCurrentDateTime();
+
 	if (g_root.m_sensorBuff[0].m_time < m_captureBuff[0].m_time)
 		g_root.m_sensorBuff[0].ReadDatFile(renderer, m_captureBuff[0]);
 	if (g_root.m_sensorBuff[1].m_time < m_captureBuff[1].m_time)
 		g_root.m_sensorBuff[1].ReadDatFile(renderer, m_captureBuff[1]);
+
+	// save PCD file
+	for (int i = 0; i < 2; ++i)
+	{
+		if (g_root.m_isAutoSaveCapture)
+		{
+			common::StrPath fileName;
+			fileName.Format("../media/depthMulti/%d/%s.pcd", i, curTime.c_str());
+			m_captureBuff[i].Write(fileName.c_str());
+		}
+	}
 
 	return true;
 }
