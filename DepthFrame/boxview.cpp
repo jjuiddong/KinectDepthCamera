@@ -108,8 +108,8 @@ void cBoxView::RenderBoxVolume3D(graphic::cRenderer &renderer)
 		common::Vector4 color = box.color.GetColor();
 		color = color * 0.7f;
 		const cColor newColor(color);
-		//m_boxLine.SetColor(newColor);
-		m_boxLine.SetColor(cColor(0.f,1.f,1.f));
+		m_boxLine.SetColor(newColor);
+		//m_boxLine.SetColor(cColor(0.f,1.f,1.f));
 
 		for (u_int i = 0; i < box.pointCnt; ++i)
 		{
@@ -134,10 +134,16 @@ void cBoxView::RenderBoxVolume3D(graphic::cRenderer &renderer)
 
 	// Render Average Box 
 	cFilterView *filterView = ((cViewer*)g_application)->m_filterView;
+	vector<cFilterView::sAvrContour> &avrContours = filterView->m_avrContours;
+
 	if (filterView)
 	{
 		for (auto &box : filterView->m_avrContours)
 		{
+			const float distribCnt = (float)box.count / (float)((cViewer*)g_application)->m_filterView->m_calcAverageCount;
+			if (distribCnt < 0.5f)
+				continue;
+
 			const float width = 0.2f;
 			m_boxLine.SetColor(box.box.color);
 

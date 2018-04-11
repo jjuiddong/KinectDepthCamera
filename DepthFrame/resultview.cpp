@@ -71,10 +71,14 @@ void cResultView::OnRender(const float deltaSeconds)
 	//	ImGui::Separator();
 	//}
 
-	for (u_int i = 0; i < ((cViewer*)g_application)->m_filterView->m_avrContours.size(); ++i)
+	vector<cFilterView::sAvrContour> &avrContours = ((cViewer*)g_application)->m_filterView->m_avrContours;
+	for (u_int i = 0; i < avrContours.size(); ++i)
 	{
-		//auto &box = g_root.m_boxes[i];
-		auto &box = ((cViewer*)g_application)->m_filterView->m_avrContours[i].result;
+		auto &box = avrContours[i].result;
+
+		const float distribCnt = (float)avrContours[i].count / (float)((cViewer*)g_application)->m_filterView->m_calcAverageCount;
+		if (distribCnt < 0.5f)
+			continue;		
 
 		// 소수 첫 번째 자리에서 반올림
 		// 긴쪽이 가로, 짧은 쪽이 세로
@@ -85,11 +89,11 @@ void cResultView::OnRender(const float deltaSeconds)
 		const float l3 = box.volume.y;
 
 		ImGui::Text("Box%d", i + 1);
-		ImGui::Text(u8"\t 가로 = %f", l1);
-		ImGui::Text(u8"\t 세로 = %f", l2);
-		ImGui::Text(u8"\t 높이 = %f", l3);
+		ImGui::Text(u8"\t 가로 = %.1f", l1);
+		ImGui::Text(u8"\t 세로 = %.1f", l2);
+		ImGui::Text(u8"\t 높이 = %.1f", l3);
 		ImGui::Text(u8"\t V/W = %.1f", box.minVolume / 6000.f);
-		ImGui::Text(u8"\t Cnt = %d", ((cViewer*)g_application)->m_filterView->m_avrContours[i].count);
+		ImGui::Text(u8"\t Cnt = %d", avrContours[i].count);
 		//ImGui::Text(u8"\t V/W = %.1f", (box.volume.x * box.volume.y * box.volume.z) / 6000.f);
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -125,14 +129,14 @@ void cResultView::OnRender(const float deltaSeconds)
 
 			// 소수 첫 번째 자리에서 반올림
 			// 긴쪽이 가로, 짧은 쪽이 세로
-			const int l1 = std::max((int)(box.volume.x + 0.5f), (int)(box.volume.z + 0.5f));
-			const int l2 = std::min((int)(box.volume.x + 0.5f), (int)(box.volume.z + 0.5f));
-			const int l3 = (int)(box.volume.y + 0.5f);
+			const float l1 = std::max(box.volume.x, box.volume.z);
+			const float l2 = std::min(box.volume.x, box.volume.z);
+			const float l3 = box.volume.y;
 
 			ImGui::Text("Box%d", i + 1);
-			ImGui::Text(u8"\t 가로 = %d", l1);
-			ImGui::Text(u8"\t 세로 = %d", l2);
-			ImGui::Text(u8"\t 높이 = %d", l3);
+			ImGui::Text(u8"\t 가로 = %.1f", l1);
+			ImGui::Text(u8"\t 세로 = %.1f", l2);
+			ImGui::Text(u8"\t 높이 = %.1f", l3);
 			ImGui::Text(u8"\t V/W = %.1f", box.minVolume / 6000.f);
 			//ImGui::Text(u8"\t V/W = %.1f", (box.volume.x * box.volume.y * box.volume.z) / 6000.f);
 			ImGui::Spacing();

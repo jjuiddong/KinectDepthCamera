@@ -324,7 +324,7 @@ void cInputView::UpdateDelayMeasure(const float deltaSeconds)
 	if (eState::DELAY_MEASURE == m_state)
 	{
 		m_measureTime += deltaSeconds;
-		if (m_measureTime >= 1.f)
+		if (m_measureTime >= 3.f)
 		{
 			CalcDelayMeasure();
 			isUpdateVolumeCalc = false; // already show
@@ -385,14 +385,28 @@ void cInputView::DelayMeasure()
 void cInputView::CalcDelayMeasure(const size_t camIdx // =0
 )
 {
-	memcpy(&g_root.m_sensorBuff[camIdx].m_vertices[0], &m_vertices[0], m_vertices.size() * sizeof(m_vertices[0]));
-	memcpy(&g_root.m_sensorBuff[camIdx].m_depthBuff[0], &m_depthBuff[0], m_depthBuff.size() * sizeof(m_depthBuff[0]));
-	memcpy(&g_root.m_sensorBuff[camIdx].m_depthBuff2[0], &m_depthBuff2[0], m_depthBuff2.size() * sizeof(m_depthBuff2[0]));
+	//memcpy(&g_root.m_sensorBuff[camIdx].m_vertices[0], &m_vertices[0], m_vertices.size() * sizeof(m_vertices[0]));
+	//memcpy(&g_root.m_sensorBuff[camIdx].m_depthBuff[0], &m_depthBuff[0], m_depthBuff.size() * sizeof(m_depthBuff[0]));
+	//memcpy(&g_root.m_sensorBuff[camIdx].m_depthBuff2[0], &m_depthBuff2[0], m_depthBuff2.size() * sizeof(m_depthBuff2[0]));
 
-	g_root.MeasureVolume();
+	//g_root.MeasureVolume();
 	
 	// 측정된 정보를 따로 저장한다.
-	g_root.m_boxesStored = g_root.m_boxes;
+	//g_root.m_boxesStored = g_root.m_boxes;
+
+	// 누적된 평균값을 저장한다.
+	g_root.m_boxesStored.clear();
+	cFilterView *filterView = ((cViewer*)g_application)->m_filterView;
+	vector<cFilterView::sAvrContour> &avrContours = filterView->m_avrContours;
+	for (u_int i = 0; i < avrContours.size(); ++i)
+	{
+		const float distribCnt = (float)avrContours[i].count / (float)((cViewer*)g_application)->m_filterView->m_calcAverageCount;
+		if (distribCnt < 0.5f)
+			continue;
+
+		auto &box = avrContours[i].result;
+		g_root.m_boxesStored.push_back(box);
+	}
 
 	m_state = eState::NORMAL;
 }

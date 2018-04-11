@@ -236,8 +236,8 @@ void cFilterView::ProcessDepth(const size_t camIdx //=0
 
 cRoot::sBoxInfo cFilterView::CalcBoxInfo(const sContourInfo &info)
 {
-	//const float scale = 50.f / 73.2f;
-	const float scale = 50.f / 74.5f;
+	const float scale = 50.f / 73.2f;
+	//const float scale = 50.f / 74.5f;
 	const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete) ? -13.f : 3.5f;
 
 	cRoot::sBoxInfo box;
@@ -299,7 +299,14 @@ void cFilterView::CalcBoxVolumeAverage()
 {
 	const float max_center_gap = 10.f;
 	const float max_vertex_gap = 10.f;
-	
+
+	// 정보가 업데이트 되지 않았거나, 오차가 크면, 계산하지 않는다.
+	if (g_root.m_sensorBuff[0].m_diffAvrs.GetCurValue() == 0)
+		return;
+	if (g_root.m_sensorBuff[0].m_diffAvrs.GetCurValue() > 0.3f)
+		return;
+	if (m_contours.empty())
+		return;
 	for (auto &info : m_avrContours)
 		info.check = false;
 
@@ -415,7 +422,7 @@ bool cFilterView::FindBox(cv::Mat &img
 	{
 		// Approximate contour with accuracy proportional
 		// to the contour perimeter
-		cv::approxPolyDP(cv::Mat(contours[i]), approx, cv::arcLength(cv::Mat(contours[i]), true)*0.02f, true);
+		cv::approxPolyDP(cv::Mat(contours[i]), approx, cv::arcLength(cv::Mat(contours[i]), true)*0.013f, true);
 
 		// Skip small or non-convex objects 
 		const bool isConvex = cv::isContourConvex(approx);
