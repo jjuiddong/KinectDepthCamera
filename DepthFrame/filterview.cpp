@@ -67,6 +67,7 @@ void cFilterView::Process(
 }
 
 
+// 영상인식해서 박스의 모양을 인식한다.
 void cFilterView::ProcessDepth(const size_t camIdx //=0
 )
 {
@@ -234,6 +235,7 @@ void cFilterView::ProcessDepth(const size_t camIdx //=0
 }
 
 
+// 영상에서 인식된 픽셀 정보로 박스 실제 사이즈를 계산한다.
 cRoot::sBoxInfo cFilterView::CalcBoxInfo(const sContourInfo &info)
 {
 	const float scale = 50.f / 73.2f;
@@ -251,9 +253,9 @@ cRoot::sBoxInfo cFilterView::CalcBoxInfo(const sContourInfo &info)
 		// maximum value
 		const float l1 = std::max((v1 - v2).Length(), (v3 - v4).Length());
 		const float l2 = std::max((v2 - v3).Length(), (v4 - v1).Length());
-		box.volume.x = std::max(l1, l2);
+		box.volume.x = std::max(l1, l2); // 큰 값이 가로
 		box.volume.y = (info.upperH - info.lowerH) + offsetY;
-		box.volume.z = std::min(l1, l2);
+		box.volume.z = std::min(l1, l2); // 작은 값이 세로
 
 		// average value
 		//box.volume.x = (((v1 - v2).Length()) + ((v3 - v4).Length())) * 0.5f;
@@ -282,6 +284,7 @@ cRoot::sBoxInfo cFilterView::CalcBoxInfo(const sContourInfo &info)
 		box.loopCnt = info.loop;
 	}
 
+	// 3차원 박스 정보 설정
 	for (u_int i = 0; i < info.contour.Size(); ++i)
 	{
 		box.box3d[i] = Vector3((info.contour[i].x - 320) / 1.5f, info.upperH, (480 - info.contour[i].y - 240) / 1.5f);
@@ -297,8 +300,8 @@ cRoot::sBoxInfo cFilterView::CalcBoxInfo(const sContourInfo &info)
 // 일정 시간동안 박스크기 평균값을 구한다.
 void cFilterView::CalcBoxVolumeAverage()
 {
-	const float max_center_gap = 10.f;
-	const float max_vertex_gap = 10.f;
+	const float max_center_gap = 10.f; // 10 cm
+	const float max_vertex_gap = 10.f; // 10 cm
 
 	// 정보가 업데이트 되지 않았거나, 오차가 크면, 계산하지 않는다.
 	if (g_root.m_sensorBuff[0].m_diffAvrs.GetCurValue() == 0)

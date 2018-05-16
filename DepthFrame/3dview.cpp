@@ -175,6 +175,7 @@ void c3DView::OnPreRender(const float deltaSeconds)
 
 
 // 직교투영으로 -Y축으로 바라보면서 장면을 그린다.
+// 그린 장면을 로컬메모리에 저장한다.
 void c3DView::Capture3D(const size_t camIdx //=0
 )
 {

@@ -69,13 +69,6 @@ bool cRoot::InitSensor()
 }
 
 
-bool cRoot::BaslerCapture()
-{
-	m_balserCam.Capture();
-	return true;
-}
-
-
 bool cRoot::KinectCapture()
 {
 	// nothing~ now
@@ -83,6 +76,7 @@ bool cRoot::KinectCapture()
 }
 
 
+// camIdx 카메라가 인식한 영상으로 볼륨 측정한다.
 void cRoot::MeasureVolume(
 	const size_t camIdx  //=0
 	, const bool isUpdateSensor //=false
@@ -93,6 +87,10 @@ void cRoot::MeasureVolume(
 	if (m_isAutoMeasure || isUpdateSensor)
 	{
 		graphic::cRenderer &renderer = ((cViewer*)g_application)->m_3dView->GetRenderer();
+
+		// 포인트 클라우드에서 높이 분포를 계산한다.
+		// 높이분포를 이용해서 면적분포 메쉬를 생성한다.
+		// 높이 별로 포인트 클라우드를 생성한다.
 		m_sensorBuff[camIdx].MeasureVolume(renderer);
 	}
 
@@ -108,7 +106,7 @@ void cRoot::MeasureVolume(
 }
 
 
-void cRoot::Update(graphic::cRenderer &renderer, const float deltaSeconds)
+void cRoot::Update(const float deltaSeconds)
 {
 }
 

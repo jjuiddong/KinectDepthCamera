@@ -1,6 +1,6 @@
 //
 // 2018-04-07, jjuiddong
-// Basler Multi Camera Sync
+// Basler Multi Camera Sync with Multithreading
 //
 #pragma once
 
@@ -17,8 +17,7 @@ public:
 	virtual ~cBaslerCameraSync();
 
 	bool Init();
-	bool Capture();
-	bool CaptureThread();
+	bool Grab();
 	bool CopyCaptureBuffer(graphic::cRenderer &renderer);
 	void Clear();
 	bool IsConnect() const;
@@ -55,9 +54,11 @@ public:
 	};
 
 	eThreadState::Enum m_state;
-	std::thread m_thread;
+	bool m_isTrySyncTrigger;
+	bool m_isGrabLog;
 	common::cTimer m_timer;
 
+	std::thread m_thread;
 	common::CriticalSection m_cs;
 	cDatReader m_captureBuff[2]; // camera1-2
 };

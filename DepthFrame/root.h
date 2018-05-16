@@ -34,8 +34,7 @@ public:
 
 	bool Create();
 	bool InitSensor();
-	void Update(graphic::cRenderer &renderer, const float deltaSeconds);
-	bool BaslerCapture();
+	void Update(const float deltaSeconds);
 	bool KinectCapture();
 	void MeasureVolume(const size_t camIdx=0, const bool isUpdateSensor=false);
 	void Clear();
@@ -55,7 +54,7 @@ public:
 	// Update Every Time
 	int m_distribCount;
 	int m_areaCount;
-	float m_hDistrib[2000]; // 0 ~ 2000 분포, 0.1cm 단위
+	float m_hDistrib[2000]; // 0 ~ 2000 분포, 0.1cm 단위, m_hDistrib[100] = 높이 10cm 위치의 분포
 	float m_hDistrib2[2000]; // height distribution pulse
 	sGraph<2000> m_hDistribDifferential; // 2 differential
 
@@ -82,8 +81,8 @@ public:
 		int loopCnt;
 		graphic::cColor color;
 	};
-	vector<sBoxInfo> m_boxes;
-	vector<sBoxInfo> m_boxesStored;
+	vector<sBoxInfo> m_boxes; // 현재 인식된 박스 정보
+	vector<sBoxInfo> m_boxesStored; // 평균으로 계산된 박스 정보
 
 	// Kinect
 	bool m_isConnectKinect;

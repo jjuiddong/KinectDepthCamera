@@ -22,7 +22,6 @@ protected:
 	bool OpenFile(const common::StrPath &ansifileName, const size_t camIdx=0);
 	void UpdateDelayMeasure(const float deltaSeconds);
 	void CalcDelayMeasure(const size_t camIdx = 0);
-	void StoreMinimumDifferenceSensorBuffer(const size_t camIdx=0);
 	void RenderFileList();
 	__int64 ConvertFileNameToInt64(const common::StrPath &fileName);
 	int GetTwoCameraAnimationIndex(int aniIdx1, int aniIdx2);
@@ -52,15 +51,9 @@ public:
 
 	// Delay Measure (minimum difference error buffer)
 	float m_measureTime;
-	float m_minDifference;
-	vector<USHORT> m_depthBuff; // intensity
-	vector<USHORT> m_depthBuff2; // confidence
-	vector<common::Vector3> m_vertices;
 
 	// Files
-	enum {
-		MAX_FILEPAGE = 100
-	};
+	enum { MAX_FILEPAGE = 100 };
 	int m_filePages;
 	int m_comboFileIdx;
 	common::Str256 m_comboFileStr;

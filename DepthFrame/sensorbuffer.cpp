@@ -536,7 +536,9 @@ void cSensorBuffer::ChangeSpace(cRenderer &renderer)
 }
 
 
+// 포인트 클라우드에서 높이 분포를 계산한다.
 // 높이분포를 이용해서 면적분포 메쉬를 생성한다.
+// 높이 별로 포인트 클라우드를 생성한다.
 void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 {
 	// Calculate Height Distribution

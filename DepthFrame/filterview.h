@@ -46,7 +46,7 @@ public:
 	cv::Mat m_binImg;
 	cv::Mat m_dstImg;
 	graphic::cTexture m_depthTexture;
-	vector<sContourInfo> m_contours;
+	vector<sContourInfo> m_contours; // 현재 인식된 박스 정보
 	vector<sContourInfo> m_removeRects;
 
 	// Box Volume Average
@@ -58,6 +58,6 @@ public:
 		common::Vector2 avrVertices[8]; // 평균 버텍스 위치, 최대 8개 꼭지점
 		common::Vector3 vertices3d[8*2]; // 꼭지점 평균 버텍스 3D 위치
 	};
-	vector<sAvrContour> m_avrContours;
+	vector<sAvrContour> m_avrContours; // 평균으로 계산된 박스 정보
 	int m_calcAverageCount;
 };

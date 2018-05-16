@@ -26,7 +26,7 @@ public:
 	virtual void OnUpdate(const float deltaSeconds) override;
 	virtual void OnRender(const float deltaSeconds) override;
 	virtual void OnEventProc(const sf::Event &evt) override;
-
+	virtual void OnShutdown() override;
 
 public:
 	c3DView *m_3dView;

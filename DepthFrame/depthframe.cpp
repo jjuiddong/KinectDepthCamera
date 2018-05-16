@@ -32,13 +32,12 @@ cViewer::cViewer()
 	m_windowName = L"Volume Measure";
 	//m_isLazyMode = true;
 	//const RECT r = { 0, 0, 1024, 768 };
-	const RECT r = { 0, 0, 1280, 1024 };
+	const RECT r = { 0, 0, 1280, 960 };
 	m_windowRect = r;
 }
 
 cViewer::~cViewer()
 {
-	g_root.Clear();
 }
 
 
@@ -215,6 +214,7 @@ void cViewer::OnUpdate(const float deltaSeconds)
 	__super::OnUpdate(deltaSeconds);
 	cAutoCam cam(&m_camera);
 	GetMainCamera().Update(deltaSeconds);
+	g_root.Update(deltaSeconds);
 }
 
 
@@ -235,4 +235,10 @@ void cViewer::OnEventProc(const sf::Event &evt)
 		}
 		break;
 	}
+}
+
+
+void cViewer::OnShutdown()
+{
+	g_root.Clear();
 }

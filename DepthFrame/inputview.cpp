@@ -22,7 +22,6 @@ cInputView::cInputView(const string &name)
 	, m_selFileIdx(-1)
 	, m_state(eState::NORMAL)
 	, m_measureTime(0)
-	, m_minDifference(0)
 	, m_comboFileIdx(0)
 	, m_isReadTwoCamera(false)
 	, m_isReadCamera2(false)
@@ -101,10 +100,8 @@ void cInputView::OnRender(const float deltaSeconds)
 				m_isCaptureContinuos = true;
 		}
 
-		//if (ImGui::Button("Trigger Delay"))
-		//{
-		//	g_root.m_balserCam.setTriggerDelays();
-		//}
+		if (ImGui::Button("Basler Trigger"))
+			g_root.m_balserCam.m_isTrySyncTrigger = true;
 	}
 	break;
 	}
@@ -117,14 +114,14 @@ void cInputView::OnRender(const float deltaSeconds)
 	ImGui::Checkbox("AutoMeasure", &g_root.m_isAutoMeasure);
 	ImGui::SameLine();
 	ImGui::Checkbox("Palete", &g_root.m_isPalete);
+	ImGui::Checkbox("Grab-Log", &g_root.m_balserCam.m_isGrabLog);
 
-	if (m_isCaptureContinuos && (g_root.m_balserCam.IsConnect() || g_root.m_kinect.IsConnect()))
+	if (m_isCaptureContinuos && g_root.m_balserCam.IsConnect())
 	{
 		m_captureTime += deltaSeconds;
 		m_triggerDelayTime += deltaSeconds;
 		if (m_captureTime > 0.1f)
 		{
-			//if (g_root.BaslerCapture())
 			if (g_root.m_balserCam.CopyCaptureBuffer( ((cViewer*)g_application)->m_3dView->GetRenderer()))
 				UpdateDelayMeasure(m_captureTime);
 			else
@@ -216,14 +213,6 @@ void cInputView::OnRender(const float deltaSeconds)
 		{
 			m_isFileAnimation = false;
 		}
-
-		ImGui::SameLine();
-		ImGui::Checkbox("Ani Only 2 Camera", &m_isOnlyTwoCameraFile);
-
-		if ((u_int)(m_aniIndex-1) < m_files.size())
-			ImGui::Text("%s", m_files[m_aniIndex-1].c_str());
-		if (m_isReadTwoCamera && ((u_int)m_aniIndex2 < m_secondFiles.size()))
-			ImGui::Text("%s", m_secondFiles[m_aniIndex2].c_str());
 	}
 	else
 	{
@@ -231,15 +220,15 @@ void cInputView::OnRender(const float deltaSeconds)
 		{
 			m_isFileAnimation = true;
 		}
-
-		ImGui::SameLine();
-		ImGui::Checkbox("Ani Only 2 Camera", &m_isOnlyTwoCameraFile);
-
-		if ((u_int)(m_aniIndex - 1) < m_files.size())
-			ImGui::Text("%s", m_files[m_aniIndex - 1].c_str());
-		if (m_isReadTwoCamera && ((u_int)m_aniIndex2 < m_secondFiles.size()))
-			ImGui::Text("%s", m_secondFiles[m_aniIndex2].c_str());
 	}
+
+	ImGui::SameLine();
+	ImGui::Checkbox("Ani Only 2 Camera", &m_isOnlyTwoCameraFile);
+
+	if ((u_int)(m_aniIndex - 1) < m_files.size())
+		ImGui::Text("%s", m_files[m_aniIndex - 1].c_str());
+	if (m_isReadTwoCamera && ((u_int)m_aniIndex2 < m_secondFiles.size()))
+		ImGui::Text("%s", m_secondFiles[m_aniIndex2].c_str());
 
 	ImGui::Spacing();
 	ImGui::Separator();
@@ -329,43 +318,11 @@ void cInputView::UpdateDelayMeasure(const float deltaSeconds)
 			CalcDelayMeasure();
 			isUpdateVolumeCalc = false; // already show
 		}
-		else
-		{
-			StoreMinimumDifferenceSensorBuffer();
-		}
 	}
 
 	if (isUpdateVolumeCalc)
 	{
 		g_root.MeasureVolume();
-	}
-}
-
-
-// 데이타 변화율이 적은 정보를 저장한다.
-// 1 초가 지난 후, 계산된다.
-void cInputView::StoreMinimumDifferenceSensorBuffer(
-	const size_t camIdx //=0 
-	)
-{
-	const float diffValue = g_root.m_sensorBuff[camIdx].m_diffAvrs.GetCurValue();
-	if (0 == diffValue)
-		return; // not updated
-
-	if (m_minDifference > diffValue)
-	{
-		if (g_root.m_sensorBuff[camIdx].m_vertices.size() != m_vertices.size())
-		{
-			m_vertices.resize(g_root.m_sensorBuff[camIdx].m_vertices.size());
-			m_depthBuff.resize(g_root.m_sensorBuff[camIdx].m_depthBuff.size());
-			m_depthBuff2.resize(g_root.m_sensorBuff[camIdx].m_depthBuff2.size());
-		}
-
-		memcpy(&m_vertices[0], &g_root.m_sensorBuff[camIdx].m_vertices[0], m_vertices.size() * sizeof(m_vertices[0]));
-		memcpy(&m_depthBuff[0], &g_root.m_sensorBuff[camIdx].m_depthBuff[0], m_depthBuff.size() * sizeof(m_depthBuff[0]));
-		memcpy(&m_depthBuff2[0], &g_root.m_sensorBuff[camIdx].m_depthBuff2[0], m_depthBuff2.size() * sizeof(m_depthBuff2[0]));
-
-		m_minDifference = diffValue;
 	}
 }
 
@@ -376,7 +333,6 @@ void cInputView::DelayMeasure()
 
 	m_state = eState::DELAY_MEASURE;
 	m_measureTime = 0;
-	m_minDifference = FLT_MAX;
 	g_root.m_boxesStored.clear();
 }
 
@@ -385,15 +341,6 @@ void cInputView::DelayMeasure()
 void cInputView::CalcDelayMeasure(const size_t camIdx // =0
 )
 {
-	//memcpy(&g_root.m_sensorBuff[camIdx].m_vertices[0], &m_vertices[0], m_vertices.size() * sizeof(m_vertices[0]));
-	//memcpy(&g_root.m_sensorBuff[camIdx].m_depthBuff[0], &m_depthBuff[0], m_depthBuff.size() * sizeof(m_depthBuff[0]));
-	//memcpy(&g_root.m_sensorBuff[camIdx].m_depthBuff2[0], &m_depthBuff2[0], m_depthBuff2.size() * sizeof(m_depthBuff2[0]));
-
-	//g_root.MeasureVolume();
-	
-	// 측정된 정보를 따로 저장한다.
-	//g_root.m_boxesStored = g_root.m_boxes;
-
 	// 누적된 평균값을 저장한다.
 	g_root.m_boxesStored.clear();
 	cFilterView *filterView = ((cViewer*)g_application)->m_filterView;

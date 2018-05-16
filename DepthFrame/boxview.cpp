@@ -134,7 +134,6 @@ void cBoxView::RenderBoxVolume3D(graphic::cRenderer &renderer)
 
 	// Render Average Box 
 	cFilterView *filterView = ((cViewer*)g_application)->m_filterView;
-	vector<cFilterView::sAvrContour> &avrContours = filterView->m_avrContours;
 
 	if (filterView)
 	{

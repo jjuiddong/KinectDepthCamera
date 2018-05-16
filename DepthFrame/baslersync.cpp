@@ -7,7 +7,6 @@
 
 using namespace GenApi;
 
-
 void BaslerCameraThread(cBaslerCameraSync *basler);
 
 void mSleep(int sleepMs)      // Use a wrapper  
@@ -36,6 +35,8 @@ cBaslerCameraSync::cBaslerCameraSync(const bool isThreadMode //= false
 	, m_NumCams(0)
 	, m_isThreadMode(isThreadMode)
 	, m_state(eThreadState::NONE)
+	, m_isTrySyncTrigger(false)
+	, m_isGrabLog(true)
 {
 }
 
@@ -152,9 +153,9 @@ int cBaslerCameraSync::BaslerCameraSetup()
 
 void cBaslerCameraSync::setupCamera()
 {
-	AddLog("Searching for cameras ... ");
+	common::dbg::Logp("Searching for cameras ... \n");
 	m_CameraList = CToFCamera::EnumerateCameras();
-	AddLog(common::format("found %d ToF cameras ", m_CameraList.size()));
+	common::dbg::Logp("found %d ToF cameras \n", m_CameraList.size());
 
 	// Store number of cameras.
 	m_NumCams = (int)m_CameraList.size();
@@ -172,7 +173,7 @@ void cBaslerCameraSync::setupCamera()
 	for (iterator = m_CameraList.begin(); iterator != m_CameraList.end(); ++iterator)
 	{
 		CameraInfo cInfo = *iterator;
-		AddLog(common::format("Configuring Camera %d : %s", camIdx, cInfo.strDisplayName.c_str()));
+		common::dbg::Logp("Configuring Camera %d : %s\n", camIdx, cInfo.strDisplayName.c_str());
 
 		// Create shared pointer to ToF camera.
 		std::shared_ptr<CToFCamera> cam(new CToFCamera());
@@ -237,7 +238,7 @@ void cBaslerCameraSync::findMaster()
 	// Number of masters found ( != 1 ) 
 	unsigned int nMaster;
 
-	AddLog("waiting for cameras to negotiate master role ...");
+	common::dbg::Logp("waiting for cameras to negotiate master role ...\n");
 
 	do
 	{
@@ -280,23 +281,25 @@ void cBaslerCameraSync::findMaster()
 				m_IsMaster[i] = false;
 			}
 		}
-	} while (nMaster > 1);    // Repeat until there is at most one master left.
+	} while ((nMaster > 1)
+		&& (!m_isThreadMode || (m_isThreadMode && (eThreadState::DISCONNECT_TRY != m_state)))
+		);    // Repeat until there is at most one master left.
 
-							  // Use this variable to check whether there is an external master clock.
+	// Use this variable to check whether there is an external master clock.
 	bool externalMasterClock = true;
 
 	for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
 	{
 		if (true == m_IsMaster[camIdx])
 		{
-			AddLog(common::format("   camera %d is master", camIdx));
+			common::dbg::Logp("   camera %d is master\n", camIdx);
 			externalMasterClock = false;
 		}
 	}
 
 	if (true == externalMasterClock)
 	{
-		AddLog("External master clock present in subnet: All cameras are slaves.");
+		common::dbg::Logp("External master clock present in subnet: All cameras are slaves.\n");
 	}
 }
 
@@ -306,7 +309,7 @@ void cBaslerCameraSync::syncCameras()
 	// Maximum allowed offset from master clock. 
 	const uint64_t tsOffsetMax = 10000; // 10 ms
 
-	AddLog(common::format("Wait until offsets from master clock have settled below %d ns", tsOffsetMax));
+	common::dbg::Logp("Wait until offsets from master clock have settled below %d ns\n", tsOffsetMax);
 
 	for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
 	{
@@ -317,7 +320,7 @@ void cBaslerCameraSync::syncCameras()
 			do
 			{
 				tsOffset = GetMaxAbsGevIEEE1588OffsetFromMasterInTimeWindow(camIdx, 1.0, 0.1);
-				AddLog(common::format("max offset of cam %d = %d ns", camIdx, tsOffsetMax));
+				common::dbg::Logp("max offset of cam %d = %d ns\n", camIdx, tsOffsetMax);
 
 			} while ((tsOffset >= tsOffsetMax) 
 				&& (!m_isThreadMode || (m_isThreadMode && (eThreadState::DISCONNECT_TRY != m_state))) 
@@ -374,14 +377,14 @@ void cBaslerCameraSync::setTriggerDelays()
 	// Initialize trigger delay.
 	m_TriggerDelay = 0;
 
-	AddLog("configuring start time and trigger delays ...");
+	common::dbg::Logp("configuring start time and trigger delays ...\n");
 
 	//
 	// Cycle through cameras and set trigger delay.
 	//
 	for (size_t camIdx = 0; camIdx < m_Cameras.size(); camIdx++)
 	{
-		AddLog(common::format("Camera %d : ", camIdx));
+		common::dbg::Logp("Camera %d : \n", camIdx);
 		//
 		// Read timestamp and exposure time.
 		// Calculation of synchronous free run timestamps will all be based 
@@ -401,7 +404,7 @@ void cBaslerCameraSync::setTriggerDelays()
 
 			// Assemble 64-bit timestamp and keep it.
 			timestamp = tsLow + (tsHigh << 32);
-			AddLog(common::format("Reading time stamp from first camera. timestamp = %I64d", timestamp));
+			common::dbg::Logp("Reading time stamp from first camera. timestamp = %I64d\n", timestamp);
 
 			//cout << "Reading exposure times from first camera:" << endl;
 
@@ -414,12 +417,12 @@ void cBaslerCameraSync::setTriggerDelays()
 			for (size_t l = 0; l < n_expTimes; l++)
 			{
 				ptrExposureTimeSelector->SetValue(l);
-				AddLog(common::format("exposure time %d = %f", l, ptrExposureTime->GetValue()));
+				common::dbg::Logp("exposure time %d = %f\n", l, ptrExposureTime->GetValue());
 
 				m_TriggerDelay += (int64_t)(1000 * ptrExposureTime->GetValue());   // Convert from us -> ns
 			}
 
-			AddLog("Calculating trigger delay.");
+			common::dbg::Logp("Calculating trigger delay.\n");
 
 			// Add readout time.
 			m_TriggerDelay += (n_expTimes - 1) * m_ReadoutTime;
@@ -428,7 +431,7 @@ void cBaslerCameraSync::setTriggerDelays()
 			m_TriggerDelay += 1000000;
 
 			// Calculate synchronous trigger rate.
-			AddLog("Calculating maximum synchronous trigger rate ... ");
+			common::dbg::Logp("Calculating maximum synchronous trigger rate ... \n");
 			m_SyncTriggerRate = 1000000000 / (m_NumCams * m_TriggerDelay);
 
 			// If the calculated value is greater than the maximum supported rate, 
@@ -440,8 +443,8 @@ void cBaslerCameraSync::setTriggerDelays()
 			}
 
 			// Print trigger delay and synchronous trigger rate.
-			AddLog(common::format("Trigger delay = %I64d ms", m_TriggerDelay / 1000000) );
-			AddLog(common::format("Setting synchronous trigger rate to %I64d fps", m_SyncTriggerRate));
+			common::dbg::Logp("Trigger delay = %I64d ms\n", m_TriggerDelay / 1000000 );
+			common::dbg::Logp("Setting synchronous trigger rate to %I64d fps\n", m_SyncTriggerRate);
 		}
 
 		// Set synchronization rate.
@@ -472,131 +475,52 @@ void cBaslerCameraSync::setTriggerDelays()
 
 		// Show new synchronous free run start time.
 		//cout <<  << endl;
-		AddLog("Setting Sync Start time stamp");
-		AddLog(common::format("SyncStartLow = %I64d", ptrSyncStartLow->GetValue()));
-		AddLog(common::format("SyncStartHigh = %I64d", ptrSyncStartHigh->GetValue()));
+		common::dbg::Logp("Setting Sync Start time stamp\n");
+		common::dbg::Logp("SyncStartLow = %I64d\n", ptrSyncStartLow->GetValue());
+		common::dbg::Logp("SyncStartHigh = %I64d\n", ptrSyncStartHigh->GetValue());
 	}
 }
 
 
-bool cBaslerCameraSync::Capture()
+// Grab
+bool cBaslerCameraSync::Grab()
 {
 	RETV(!m_isSetupSuccess, false);
-	RETV(m_isThreadMode, false);
+	static int grabcnt = 0;
 
 	try
 	{
-		for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
-		{
-			g_root.m_sensorBuff[camIdx].m_isLoaded = false;
-
-			GrabResult grabResult;
-			// Wait up to 1000 ms for the next grabbed buffer available in the 
-			// acquisition engine's output queue.
-			m_Cameras.at(camIdx)->GetGrabResult(grabResult, 500);
-
-			// Check whether a buffer has been grabbed successfully.
-			if (grabResult.status == GrabResult::Timeout)
-			{
-				AddLog(common::format("Timeout occurred. camIdx = %d", camIdx));
-				common::dbg::ErrLog("Timeout occurred. camIdx = %d\n", camIdx);
-
-				//cerr << "Timeout occurred." << endl;
-				//TimoutOccurred = true;
-				// In case of a timeout, no buffer has been grabbed, i.e., the grab result doesn't hold a valid buffer.
-				// Do not try to access the buffer in case of a timeout.
-
-				// The timeout might be caused by a removal of the camera. Check if the camera
-				// is still connected.
-				if (!m_Cameras.at(camIdx)->IsConnected())
-				{
-					//cerr << "Camera has been removed." << endl;
-				}
-
-				continue;
-			}
-
-			if (grabResult.status != GrabResult::Ok)
-			{
-				//cerr << "Got a buffer, but it hasn't been successfully grabbed." << endl;
-				AddLog(common::format("Got a buffer, but it hasn't been successfully grabbed. camIdx = %d", camIdx));
-				common::dbg::ErrLog("Got a buffer, but it hasn't been successfully grabbed. camIdx = %d\n", camIdx);
-				continue;
-			}
-
-			// A successfully grabbed buffer can be processed now. The buffer will not be overwritten with new data until
-			// it is explicitly placed in the acquisition engine's input queue again.
-			processData(camIdx, grabResult);
-
-			// Data processing has finished. Put the buffer back into the acquisition 
-			// engine's input queue to be filled with new image data.
-			//if (grabResult.status != GrabResult::Timeout)
-			//{
-				m_Cameras.at(camIdx)->QueueBuffer(grabResult.hBuffer);
-			//}
-		}
-	}
-	catch (const GenICam::GenericException& e)
-	{
-		//cerr << "Exception occurred: " << e.GetDescription() << endl;
-		common::Str128 msg = "Exception occurred: ";
-		msg += e.GetDescription();
-
-		for (size_t camIdx = 0; camIdx < m_Cameras.size(); camIdx++)
-		{
-			if (m_Cameras.at(camIdx)->IsOpen() && !m_Cameras.at(camIdx)->IsConnected())
-			{
-				//cerr << "Camera has been removed." << endl;
-				msg += "Camera has been removed.";
-			}
-		}
-
-		::MessageBoxA(NULL, msg.c_str(), "Error", MB_OK);
-		return false;
-	}
-
-	return true;
-}
-
-
-bool cBaslerCameraSync::CaptureThread()
-{
-	RETV(!m_isSetupSuccess, false);
-	static int logCnt = 0;
-	const int MAX_LOG = 1000;
-
-	try
-	{
-		for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
+		//for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
+		for (size_t camIdx = 0; camIdx < 1; camIdx++)
 		{
 			GrabResult grabResult;
-			m_Cameras.at(camIdx)->GetGrabResult(grabResult, 1000);
+			m_Cameras.at(camIdx)->GetGrabResult(grabResult, 100);
 
 			if (grabResult.status == GrabResult::Timeout)
 			{
-				++logCnt;
-				if (logCnt < MAX_LOG)
-					common::dbg::ErrLogp("Timeout occurred. camIdx = %d\n", camIdx);
+				if (m_isGrabLog)
+					common::dbg::ErrLogp("Err Timeout occurred. camIdx = %d\n", camIdx);
 
 				if (!m_Cameras.at(camIdx)->IsConnected())
 				{
-					++logCnt;
-					if (logCnt < MAX_LOG)
-						common::dbg::ErrLogp("Connection Faile. camIdx = %d\n", camIdx);
+					if (m_isGrabLog)
+						common::dbg::ErrLogp("Err Timeout because Connection Faile. camIdx = %d\n", camIdx);
 				}
 				continue;
 			}
 
 			if (grabResult.status != GrabResult::Ok)
 			{
-				++logCnt;
-				if (logCnt < MAX_LOG)
-					common::dbg::ErrLog("Got a buffer, but it hasn't been successfully grabbed. camIdx = %d\n", camIdx);
+				if (m_isGrabLog)
+					common::dbg::ErrLog("Err Got a buffer, but it hasn't been successfully grabbed. camIdx = %d\n", camIdx);
 				continue;
 			}
 
 			if (grabResult.status == GrabResult::Ok)
 			{
+				if (m_isGrabLog)
+					common::dbg::Logp("camIdx = %d, grab = %d\n", camIdx, grabcnt++);
+
 				common::AutoCSLock cs(m_cs);
 
 				BufferParts parts;
@@ -740,16 +664,25 @@ void BaslerCameraThread(cBaslerCameraSync *basler)
 		}
 
 		double triggerDelayTime = basler->m_timer.GetMilliSeconds();
-		basler->m_state = cBaslerCameraSync::eThreadState::CAPTURE;
+
+		if (cBaslerCameraSync::eThreadState::CONNECT_TRY == basler->m_state)
+			basler->m_state = cBaslerCameraSync::eThreadState::CAPTURE;
+
 		while (cBaslerCameraSync::eThreadState::CAPTURE == basler->m_state)
 		{
 			if (basler->m_timer.GetMilliSeconds() - triggerDelayTime > 1000)
 			{
-				basler->setTriggerDelays();
+				//basler->setTriggerDelays();
 				triggerDelayTime = basler->m_timer.GetMilliSeconds();
 			}
 
-			basler->CaptureThread();
+			if (basler->m_isTrySyncTrigger)
+			{
+				basler->setTriggerDelays();
+				basler->m_isTrySyncTrigger = false;
+			}
+
+			basler->Grab();
 		}
 
 		basler->m_state = cBaslerCameraSync::eThreadState::DISCONNECT;
