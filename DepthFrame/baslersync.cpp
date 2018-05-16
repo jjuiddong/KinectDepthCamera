@@ -490,8 +490,7 @@ bool cBaslerCameraSync::Grab()
 
 	try
 	{
-		//for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
-		for (size_t camIdx = 0; camIdx < 1; camIdx++)
+		for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
 		{
 			GrabResult grabResult;
 			m_Cameras.at(camIdx)->GetGrabResult(grabResult, 100);
