@@ -32,12 +32,14 @@ public:
 cBaslerCameraSync::cBaslerCameraSync(const bool isThreadMode //= false
 )
 	: m_isSetupSuccess(false)
-	, m_NumCams(0)
 	, m_isThreadMode(isThreadMode)
 	, m_state(eThreadState::NONE)
 	, m_isTrySyncTrigger(false)
-	, m_isGrabLog(true)
+	, m_isGrabLog(false)
 {
+	ZeroMemory(&m_isCameraEnable, sizeof(m_isCameraEnable));
+	ZeroMemory(&m_oldCameraEnable, sizeof(m_oldCameraEnable));
+
 }
 
 cBaslerCameraSync::~cBaslerCameraSync()
@@ -84,8 +86,8 @@ bool cBaslerCameraSync::Init()
 int cBaslerCameraSync::BaslerCameraSetup()
 {
 	const size_t nBuffers = 3;  // Number of buffers to be used for grabbing.
-	const size_t nImagesToGrab = 10; // Number of images to grab.
-	size_t nImagesGrabbed = 0;
+	//const size_t nImagesToGrab = 10; // Number of images to grab.
+	//size_t nImagesGrabbed = 0;
 
 	try
 	{
@@ -102,8 +104,11 @@ int cBaslerCameraSync::BaslerCameraSetup()
 		setTriggerDelays();
 
 		// Prepare cameras and buffers for image exposure.
-		for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
+		for (size_t camIdx = 0; camIdx < m_CameraInfos.size(); camIdx++)
 		{
+			if (!m_Cameras.at(camIdx)->IsConnected())
+				continue;
+
 			// Let the camera class use our allocator. 
 			// When the application doesn't provide an allocator, a default one that allocates memory buffers
 			// on the heap will be used automatically.
@@ -150,86 +155,108 @@ int cBaslerCameraSync::BaslerCameraSetup()
 }
 
 
-
 void cBaslerCameraSync::setupCamera()
 {
 	common::dbg::Logp("Searching for cameras ... \n");
-	m_CameraList = CToFCamera::EnumerateCameras();
-	common::dbg::Logp("found %d ToF cameras \n", m_CameraList.size());
+	CameraList camList = CToFCamera::EnumerateCameras();
+	m_CameraInfos.reserve(camList.size());
+	std::copy(camList.begin(), camList.end(), back_inserter(m_CameraInfos));
 
-	// Store number of cameras.
-	m_NumCams = (int)m_CameraList.size();
+	common::dbg::Logp("found %d ToF cameras \n", camList.size());
+
 	size_t camIdx = 0;
 
 	// Initialize array with master/slave info.
 	for (size_t i = 0; i < MAX_CAMS; i++)
 	{
 		m_IsMaster[i] = false;
+		m_isCameraEnable[i] = false;
 	}
 
-	CameraList::const_iterator iterator;
-
 	// Iterate over list of cameras.
-	for (iterator = m_CameraList.begin(); iterator != m_CameraList.end(); ++iterator)
+	for (CameraInfo &cInfo : m_CameraInfos)
 	{
-		CameraInfo cInfo = *iterator;
 		common::dbg::Logp("Configuring Camera %d : %s\n", camIdx, cInfo.strDisplayName.c_str());
-
-		// Create shared pointer to ToF camera.
-		std::shared_ptr<CToFCamera> cam(new CToFCamera());
-
-		// Store shared pointer for later use.
-		m_Cameras.push_back(cam);
-
-		// Open camera with camera info.
-		cam->Open(cInfo);
-
-		//
-		// Configure camera for synchronous free run.
-		// Do not yet configure trigger delays.
-		//
-
-		// Enable IEEE1588.
-		CBooleanPtr ptrIEEE1588Enable = cam->GetParameter("GevIEEE1588");
-		ptrIEEE1588Enable->SetValue(true);
-
-		// Enable trigger.
-		GenApi::CEnumerationPtr ptrTriggerMode = cam->GetParameter("TriggerMode");
-
-		// Set trigger mode to "on".
-		ptrTriggerMode->FromString("On");
-
-		// Configure the sync timer as trigger source.
-		GenApi::CEnumerationPtr ptrTriggerSource = cam->GetParameter("TriggerSource");
-		ptrTriggerSource->FromString("SyncTimer");
-
-		{
-			// Enable 3D (point cloud) data, intensity data, and confidence data 
-			GenApi::CEnumerationPtr ptrComponentSelector = cam->GetParameter("ComponentSelector");
-			GenApi::CBooleanPtr ptrComponentEnable = cam->GetParameter("ComponentEnable");
-			GenApi::CEnumerationPtr ptrPixelFormat = cam->GetParameter("PixelFormat");
-
-			// Enable range data
-			ptrComponentSelector->FromString("Range");
-			ptrComponentEnable->SetValue(true);
-			// Range information can be sent either as a 16-bit grey value image or as 3D coordinates (point cloud). For this sample, we want to acquire 3D coordinates.
-			// Note: To change the format of an image component, the Component Selector must first be set to the component
-			// you want to configure (see above).
-			// To use 16-bit integer depth information, choose "Mono16" instead of "Coord3D_ABC32f".
-			ptrPixelFormat->FromString("Coord3D_ABC32f");
-
-			ptrComponentSelector->FromString("Intensity");
-			ptrComponentEnable->SetValue(true);
-
-			ptrComponentSelector->FromString("Confidence");
-			ptrComponentEnable->SetValue(true);
-		}
 
 		// Proceed to next camera.
 		camIdx++;
+
+		std::shared_ptr<CToFCamera> cam(new CToFCamera());
+		m_Cameras.push_back(cam);
+
+		// Open camera with camera info.
+		m_isCameraEnable[camIdx - 1] = OpenCamera(cam.get(), cInfo);
 	}
 
 	m_isSetupSuccess = true;
+	memcpy(m_oldCameraEnable, m_isCameraEnable, sizeof(m_isCameraEnable));
+}
+
+
+// Tof Camera Open
+bool cBaslerCameraSync::OpenCamera(CToFCamera *tofCam, const CameraInfo &cinfo)
+{
+	// Open camera with camera info.
+	try
+	{
+		tofCam->Open(cinfo);
+	}
+	catch (...)
+	{
+		common::dbg::Logp("Error Open Camera %s, %s\n"
+			, cinfo.strDisplayName.c_str(), cinfo.strIpAddress.c_str());
+		return false;
+	}
+
+	return InitCameraConfig(tofCam);
+}
+
+
+// Configure camera for synchronous free run.
+bool cBaslerCameraSync::InitCameraConfig(CToFCamera *tofCam)
+{
+	RETV(!tofCam, false);
+
+	//
+	// Configure camera for synchronous free run.
+	// Do not yet configure trigger delays.
+	//
+
+	// Enable IEEE1588.
+	CBooleanPtr ptrIEEE1588Enable = tofCam->GetParameter("GevIEEE1588");
+	ptrIEEE1588Enable->SetValue(true);
+
+	// Enable trigger.
+	GenApi::CEnumerationPtr ptrTriggerMode = tofCam->GetParameter("TriggerMode");
+
+	// Set trigger mode to "on".
+	ptrTriggerMode->FromString("On");
+
+	// Configure the sync timer as trigger source.
+	GenApi::CEnumerationPtr ptrTriggerSource = tofCam->GetParameter("TriggerSource");
+	ptrTriggerSource->FromString("SyncTimer");
+
+	// Enable 3D (point cloud) data, intensity data, and confidence data 
+	GenApi::CEnumerationPtr ptrComponentSelector = tofCam->GetParameter("ComponentSelector");
+	GenApi::CBooleanPtr ptrComponentEnable = tofCam->GetParameter("ComponentEnable");
+	GenApi::CEnumerationPtr ptrPixelFormat = tofCam->GetParameter("PixelFormat");
+
+	// Enable range data
+	ptrComponentSelector->FromString("Range");
+	ptrComponentEnable->SetValue(true);
+	// Range information can be sent either as a 16-bit grey value image or as 3D coordinates (point cloud). For this sample, we want to acquire 3D coordinates.
+	// Note: To change the format of an image component, the Component Selector must first be set to the component
+	// you want to configure (see above).
+	// To use 16-bit integer depth information, choose "Mono16" instead of "Coord3D_ABC32f".
+	ptrPixelFormat->FromString("Coord3D_ABC32f");
+
+	ptrComponentSelector->FromString("Intensity");
+	ptrComponentEnable->SetValue(true);
+
+	ptrComponentSelector->FromString("Confidence");
+	ptrComponentEnable->SetValue(true);
+
+	return true;
 }
 
 
@@ -249,8 +276,11 @@ void cBaslerCameraSync::findMaster()
 		// Note that if a PTP master clock is present in the subnet, all TOF cameras
 		// ultimately assume the slave role.
 		//
-		for (size_t i = 0; i < m_NumCams; i++)
+		for (size_t i = 0; i < m_CameraInfos.size(); i++)
 		{
+			if (!m_Cameras.at(i)->IsConnected())
+				continue;
+
 			// Latch IEEE1588 status.
 			CCommandPtr ptrGevIEEE1588DataSetLatch = m_Cameras.at(i)->GetParameter("GevIEEE1588DataSetLatch");
 			ptrGevIEEE1588DataSetLatch->Execute();
@@ -288,7 +318,7 @@ void cBaslerCameraSync::findMaster()
 	// Use this variable to check whether there is an external master clock.
 	bool externalMasterClock = true;
 
-	for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
+	for (size_t camIdx = 0; camIdx < m_CameraInfos.size(); camIdx++)
 	{
 		if (true == m_IsMaster[camIdx])
 		{
@@ -311,8 +341,11 @@ void cBaslerCameraSync::syncCameras()
 
 	common::dbg::Logp("Wait until offsets from master clock have settled below %d ns\n", tsOffsetMax);
 
-	for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
+	for (size_t camIdx = 0; camIdx < m_CameraInfos.size(); camIdx++)
 	{
+		if (!m_Cameras.at(camIdx)->IsConnected())
+			continue;
+
 		// Check all slaves for deviations from master clock.
 		if (false == m_IsMaster[camIdx])
 		{
@@ -384,6 +417,9 @@ void cBaslerCameraSync::setTriggerDelays()
 	//
 	for (size_t camIdx = 0; camIdx < m_Cameras.size(); camIdx++)
 	{
+		if (!m_Cameras.at(camIdx)->IsConnected())
+			continue;
+
 		common::dbg::Logp("Camera %d : \n", camIdx);
 		//
 		// Read timestamp and exposure time.
@@ -432,7 +468,7 @@ void cBaslerCameraSync::setTriggerDelays()
 
 			// Calculate synchronous trigger rate.
 			common::dbg::Logp("Calculating maximum synchronous trigger rate ... \n");
-			m_SyncTriggerRate = 1000000000 / (m_NumCams * m_TriggerDelay);
+			m_SyncTriggerRate = 1000000000 / (m_CameraInfos.size() * m_TriggerDelay);
 
 			// If the calculated value is greater than the maximum supported rate, 
 			// adjust it. 
@@ -482,6 +518,34 @@ void cBaslerCameraSync::setTriggerDelays()
 }
 
 
+// Camera DepthImage Receive On/Off
+void cBaslerCameraSync::ProcessCmd()
+{
+	for (int i = 0; i < MAX_CAMS; ++i)
+	{
+		if (m_oldCameraEnable[i] == m_isCameraEnable[i])
+			continue;
+		if (!m_Cameras[i]->IsConnected())
+			continue;
+
+		if (m_isCameraEnable[i])
+		{
+			// Start DepthImage Receive
+			m_Cameras[i]->StartAcquisition();
+			m_Cameras[i]->IssueAcquisitionStartCommand();
+		}
+		else
+		{
+			// Stop DepthImage Receive
+			m_Cameras[i]->StopAcquisition();
+			m_Cameras[i]->IssueAcquisitionStopCommand();
+		}
+
+		m_oldCameraEnable[i] = m_isCameraEnable[i];
+	}
+}
+
+
 // Grab
 bool cBaslerCameraSync::Grab()
 {
@@ -490,8 +554,11 @@ bool cBaslerCameraSync::Grab()
 
 	try
 	{
-		for (size_t camIdx = 0; camIdx < m_NumCams; camIdx++)
+		for (size_t camIdx = 0; camIdx < m_CameraInfos.size(); camIdx++)
 		{
+			if (!m_Cameras.at(camIdx)->IsConnected())
+				continue;
+
 			GrabResult grabResult;
 			m_Cameras.at(camIdx)->GetGrabResult(grabResult, 100);
 
@@ -500,11 +567,6 @@ bool cBaslerCameraSync::Grab()
 				if (m_isGrabLog)
 					common::dbg::ErrLogp("Err Timeout occurred. camIdx = %d\n", camIdx);
 
-				if (!m_Cameras.at(camIdx)->IsConnected())
-				{
-					if (m_isGrabLog)
-						common::dbg::ErrLogp("Err Timeout because Connection Faile. camIdx = %d\n", camIdx);
-				}
 				continue;
 			}
 
@@ -559,6 +621,8 @@ bool cBaslerCameraSync::CopyCaptureBuffer(graphic::cRenderer &renderer)
 		g_root.m_sensorBuff[0].ReadDatFile(renderer, m_captureBuff[0]);
 	if (g_root.m_sensorBuff[1].m_time < m_captureBuff[1].m_time)
 		g_root.m_sensorBuff[1].ReadDatFile(renderer, m_captureBuff[1]);
+	if (g_root.m_sensorBuff[2].m_time < m_captureBuff[2].m_time)
+		g_root.m_sensorBuff[2].ReadDatFile(renderer, m_captureBuff[2]);
 
 	// save PCD file
 	for (int i = 0; i < 2; ++i)
@@ -626,6 +690,9 @@ void cBaslerCameraSync::Clear()
 		{
 			for (size_t camIdx = 0; camIdx < m_Cameras.size(); camIdx++)
 			{
+				if (!m_Cameras.at(camIdx)->IsConnected())
+					continue;
+
 				// Stop the camera.
 				m_Cameras.at(camIdx)->IssueAcquisitionStopCommand();
 
@@ -640,7 +707,6 @@ void cBaslerCameraSync::Clear()
 		if (!m_Cameras.empty())
 		{
 			m_Cameras.clear();
-			m_NumCams = 0;
 
 			if (CToFCamera::IsProducerInitialized())
 				CToFCamera::TerminateProducer();  // Won't throw any exceptions
@@ -662,6 +728,10 @@ void BaslerCameraThread(cBaslerCameraSync *basler)
 			return;
 		}
 
+		// 플래그가 바뀌면, 카메라를 On/Off 처리한다.
+		bool isOldCamEnable[cBaslerCameraSync::MAX_CAMS];
+		memcpy(isOldCamEnable, basler->m_isCameraEnable, sizeof(basler->m_isCameraEnable));
+
 		double triggerDelayTime = basler->m_timer.GetMilliSeconds();
 
 		if (cBaslerCameraSync::eThreadState::CONNECT_TRY == basler->m_state)
@@ -680,7 +750,8 @@ void BaslerCameraThread(cBaslerCameraSync *basler)
 				basler->setTriggerDelays();
 				basler->m_isTrySyncTrigger = false;
 			}
-
+			
+			basler->ProcessCmd();
 			basler->Grab();
 		}
 
@@ -697,6 +768,9 @@ void BaslerCameraThread(cBaslerCameraSync *basler)
 
 	for (size_t camIdx = 0; camIdx < basler->m_Cameras.size(); camIdx++)
 	{
+		if (!basler->m_Cameras.at(camIdx)->IsConnected())
+			continue;
+
 		// Stop the camera.
 		basler->m_Cameras.at(camIdx)->IssueAcquisitionStopCommand();
 		// Stop the acquisition engine and release memory buffers and other resources used for grabbing.
@@ -705,7 +779,6 @@ void BaslerCameraThread(cBaslerCameraSync *basler)
 		basler->m_Cameras.at(camIdx)->Close();
 	}
 	basler->m_Cameras.clear();
-	basler->m_NumCams = 0;
 
 	if (CToFCamera::IsProducerInitialized())
 		CToFCamera::TerminateProducer();  // Won't throw any exceptions

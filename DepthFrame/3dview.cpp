@@ -21,6 +21,7 @@ c3DView::c3DView(const string &name)
 	, m_showBoxAreaPointCloud(true)
 	, m_planeStandardDeviation(0)
 	, m_showBoxVolume(false)
+	, m_isUpdateOrthogonalProjection(true)
 {
 }
 
@@ -117,18 +118,25 @@ void c3DView::OnPreRender(const float deltaSeconds)
 		{
 			if (g_root.m_baslerCameraIdx == 0)
 			{
-				g_root.m_sensorBuff[0].Render(renderer);
+				g_root.m_sensorBuff[0].Render(renderer, "Unlit", false, g_root.m_cameraOffset1.GetMatrixXM());
 			}
 			else if (g_root.m_baslerCameraIdx == 1)
 			{
 				if (g_root.m_sensorBuff[1].m_isLoaded)
 					g_root.m_sensorBuff[1].Render(renderer, "Unlit", false, g_root.m_cameraOffset2.GetMatrixXM());
 			}
+			else if (g_root.m_baslerCameraIdx == 2)
+			{
+				if (g_root.m_sensorBuff[2].m_isLoaded)
+					g_root.m_sensorBuff[2].Render(renderer, "Unlit", false, g_root.m_cameraOffset3.GetMatrixXM());
+			}
 			else
 			{
-				g_root.m_sensorBuff[0].Render(renderer);
+				g_root.m_sensorBuff[0].Render(renderer, "Unlit", false, g_root.m_cameraOffset1.GetMatrixXM());
 				if (g_root.m_sensorBuff[1].m_isLoaded)
 					g_root.m_sensorBuff[1].Render(renderer, "Unlit", false, g_root.m_cameraOffset2.GetMatrixXM());
+				if (g_root.m_sensorBuff[2].m_isLoaded)
+					g_root.m_sensorBuff[2].Render(renderer, "Unlit", false, g_root.m_cameraOffset3.GetMatrixXM());
 			}
 
 			//renderer.GetDevContext()->RSSetState(states.Wireframe());
@@ -179,6 +187,8 @@ void c3DView::OnPreRender(const float deltaSeconds)
 void c3DView::Capture3D(const size_t camIdx //=0
 )
 {
+	RET(!m_isUpdateOrthogonalProjection);
+
 	const Vector3 eyePos(0.f, 380.f, 00.f);
 	const Vector3 lookAt(0, 0, 0);
 	const float width = g_capture3DWidth;
@@ -215,18 +225,31 @@ void c3DView::Capture3D(const size_t camIdx //=0
 
 		if (g_root.m_baslerCameraIdx == 0)
 		{
-			g_root.m_sensorBuff[0].Render(renderer, "Heightmap", false, tfm.GetMatrixXM());
+			g_root.m_sensorBuff[0].Render(renderer, "Heightmap", false
+				, g_root.m_cameraOffset1.GetMatrixXM() * tfm.GetMatrixXM());
 		}
 		else if (g_root.m_baslerCameraIdx == 1)
 		{
 			if (g_root.m_sensorBuff[1].m_isLoaded)
-				g_root.m_sensorBuff[1].Render(renderer, "Heightmap", false, g_root.m_cameraOffset2.GetMatrixXM() * tfm.GetMatrixXM());
+				g_root.m_sensorBuff[1].Render(renderer, "Heightmap", false
+					, g_root.m_cameraOffset2.GetMatrixXM() * tfm.GetMatrixXM());
+		}
+		else if (g_root.m_baslerCameraIdx == 2)
+		{
+			if (g_root.m_sensorBuff[2].m_isLoaded)
+				g_root.m_sensorBuff[2].Render(renderer, "Heightmap", false
+					, g_root.m_cameraOffset3.GetMatrixXM() * tfm.GetMatrixXM());
 		}
 		else
 		{
-			g_root.m_sensorBuff[0].Render(renderer, "Heightmap", false, tfm.GetMatrixXM());
+			g_root.m_sensorBuff[0].Render(renderer, "Heightmap", false
+				, g_root.m_cameraOffset1.GetMatrixXM() * tfm.GetMatrixXM());
 			if (g_root.m_sensorBuff[1].m_isLoaded)
-				g_root.m_sensorBuff[1].Render(renderer, "Heightmap", false, g_root.m_cameraOffset2.GetMatrixXM() * tfm.GetMatrixXM());
+				g_root.m_sensorBuff[1].Render(renderer, "Heightmap", false
+					, g_root.m_cameraOffset2.GetMatrixXM() * tfm.GetMatrixXM());
+			if (g_root.m_sensorBuff[2].m_isLoaded)
+				g_root.m_sensorBuff[2].Render(renderer, "Heightmap", false
+					, g_root.m_cameraOffset3.GetMatrixXM() * tfm.GetMatrixXM());
 		}
 	}
 	m_captureTarget.End(renderer);
@@ -318,7 +341,9 @@ void c3DView::OnRender(const float deltaSeconds)
 		ImGui::SameLine();
 		ImGui::RadioButton("Camera2", &g_root.m_baslerCameraIdx, 1);
 		ImGui::SameLine();
-		ImGui::RadioButton("Camera All", &g_root.m_baslerCameraIdx, 2);
+		ImGui::RadioButton("Camera3", &g_root.m_baslerCameraIdx, 2);
+		ImGui::SameLine();
+		ImGui::RadioButton("Camera All", &g_root.m_baslerCameraIdx, 3);
 
 
 		if (ImGui::Button("Camera Origin"))
@@ -389,27 +414,24 @@ void c3DView::OnRender(const float deltaSeconds)
 				if (config.GetString("plane-x", "none") != "none")
 				{
 					m_isGenPlane = true;
-					g_root.m_sensorBuff[0].m_plane.N.x = config.GetFloat("plane-x");
-					g_root.m_sensorBuff[0].m_plane.N.y = config.GetFloat("plane-y");
-					g_root.m_sensorBuff[0].m_plane.N.z = config.GetFloat("plane-z");
-					g_root.m_sensorBuff[0].m_plane.D = config.GetFloat("plane-d");
-
-					g_root.m_sensorBuff[1].m_plane.N.x = config.GetFloat("plane-x");
-					g_root.m_sensorBuff[1].m_plane.N.y = config.GetFloat("plane-y");
-					g_root.m_sensorBuff[1].m_plane.N.z = config.GetFloat("plane-z");
-					g_root.m_sensorBuff[1].m_plane.D = config.GetFloat("plane-d");
+					for (int i = 0; i < 3; ++i)
+					{
+						g_root.m_sensorBuff[i].m_plane.N.x = config.GetFloat("plane-x");
+						g_root.m_sensorBuff[i].m_plane.N.y = config.GetFloat("plane-y");
+						g_root.m_sensorBuff[i].m_plane.N.z = config.GetFloat("plane-z");
+						g_root.m_sensorBuff[i].m_plane.D = config.GetFloat("plane-d");
+					}
 				}
 
 				if (config.GetString("center-x", "none") != "none")
 				{
 					m_isGenVolumeCenter = true;
-					g_root.m_sensorBuff[0].m_volumeCenter.x = config.GetFloat("center-x");
-					g_root.m_sensorBuff[0].m_volumeCenter.y = config.GetFloat("center-y");
-					g_root.m_sensorBuff[0].m_volumeCenter.z = config.GetFloat("center-z");
-
-					g_root.m_sensorBuff[1].m_volumeCenter.x = config.GetFloat("center-x");
-					g_root.m_sensorBuff[1].m_volumeCenter.y = config.GetFloat("center-y");
-					g_root.m_sensorBuff[1].m_volumeCenter.z = config.GetFloat("center-z");
+					for (int i = 0; i < 3; ++i)
+					{
+						g_root.m_sensorBuff[i].m_volumeCenter.x = config.GetFloat("center-x");
+						g_root.m_sensorBuff[i].m_volumeCenter.y = config.GetFloat("center-y");
+						g_root.m_sensorBuff[i].m_volumeCenter.z = config.GetFloat("center-z");
+					}
 				}
 			}
 		}

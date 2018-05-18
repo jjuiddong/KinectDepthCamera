@@ -14,6 +14,7 @@
 #include "logview.h"
 #include "resultview.h"
 #include "boxview.h"
+#include "cameraview.h"
 #include "../ZipLib/ZipFile.h"
 #include "../ZipLib/streams/memstream.h"
 #include "../ZipLib/methods/Bzip2Method.h"
@@ -32,7 +33,8 @@ cViewer::cViewer()
 	m_windowName = L"Volume Measure";
 	//m_isLazyMode = true;
 	//const RECT r = { 0, 0, 1024, 768 };
-	const RECT r = { 0, 0, 1280, 960 };
+	//const RECT r = { 0, 0, 1280, 960 };
+	const RECT r = { 0, 0, (int)(1280*1.5f)	, (int)(960*1.5f) };
 	m_windowRect = r;
 }
 
@@ -120,6 +122,10 @@ bool cViewer::OnInit()
 	m_logView = new cLogView("Output Log");
 	m_logView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_resultView);
 	
+	m_camView = new cCameraView("Camera");
+	m_camView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_inputView);
+
+
 	g_root.InitSensor();
 
 	// test zip

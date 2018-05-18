@@ -47,8 +47,10 @@ public:
 	common::Vector3 m_3dEyePos;
 	common::Vector3 m_3dLookAt;
 	int m_baslerCameraIdx; // 0: camera1, 1: camera2, 2: all
-	cSensorBuffer m_sensorBuff[2];
+	cSensorBuffer m_sensorBuff[3];
+	common::Transform m_cameraOffset1; // camera1 offset
 	common::Transform m_cameraOffset2; // camera2 offset
+	common::Transform m_cameraOffset3; // camera3 offset
 
 
 	// Update Every Time

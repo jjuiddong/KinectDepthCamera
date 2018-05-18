@@ -21,6 +21,7 @@ public:
 		, const char *techniqName = "Unlit"
 		, const bool isAphablend = false
 		, const XMMATRIX &parentTm = graphic::XMIdentity);
+
 	void RenderTessellation(graphic::cRenderer &renderer 
 		, const XMMATRIX &parentTm = graphic::XMIdentity);
 
@@ -43,6 +44,13 @@ public:
 	void AnalysisDepth();
 	void Clear();
 
+
+protected:
+	bool UpdatePointCloud(graphic::cRenderer &renderer
+		, const vector<common::Vector3> &vertices
+		, const vector<unsigned short> &intensity
+		, const vector<unsigned short> &confidence
+	);
 	bool ProcessKinectDepthBuff(graphic::cRenderer &renderer
 		, INT64 nTime
 		, const USHORT* pBuffer
@@ -52,6 +60,7 @@ public:
 
 public:
 	bool m_isLoaded;
+	bool m_isUpdatePointCloud;
 	double m_time; // update time
 	int m_frameId;
 	int m_width;

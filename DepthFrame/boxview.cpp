@@ -76,18 +76,25 @@ void cBoxView::OnPreRender(const float deltaSeconds)
 
 			if (g_root.m_baslerCameraIdx == 0)
 			{
-				g_root.m_sensorBuff[0].Render(renderer, "Unlit", true);
+				g_root.m_sensorBuff[0].Render(renderer, "Unlit", true, g_root.m_cameraOffset1.GetMatrixXM());
 			}
 			else if (g_root.m_baslerCameraIdx == 1)
 			{
 				if (g_root.m_sensorBuff[1].m_isLoaded)
 					g_root.m_sensorBuff[1].Render(renderer, "Unlit", true, g_root.m_cameraOffset2.GetMatrixXM());
 			}
+			else if (g_root.m_baslerCameraIdx == 2)
+			{
+				if (g_root.m_sensorBuff[2].m_isLoaded)
+					g_root.m_sensorBuff[2].Render(renderer, "Unlit", true, g_root.m_cameraOffset3.GetMatrixXM());
+			}
 			else
 			{
-				g_root.m_sensorBuff[0].Render(renderer, "Unlit", true);
+				g_root.m_sensorBuff[0].Render(renderer, "Unlit", true, g_root.m_cameraOffset1.GetMatrixXM());
 				if (g_root.m_sensorBuff[1].m_isLoaded)
 					g_root.m_sensorBuff[1].Render(renderer, "Unlit", true, g_root.m_cameraOffset2.GetMatrixXM());
+				if (g_root.m_sensorBuff[2].m_isLoaded)
+					g_root.m_sensorBuff[2].Render(renderer, "Unlit", true, g_root.m_cameraOffset3.GetMatrixXM());
 			}
 
 			//if (g_root.m_sensorBuff[1].m_isLoaded)

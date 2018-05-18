@@ -12,6 +12,7 @@ cSensorBuffer::cSensorBuffer()
 	, m_isLoaded(false)
 	, m_time(0)
 	, m_frameId(0)
+	, m_isUpdatePointCloud(true)
 {
 	ZeroMemory(&m_diffAvrs, sizeof(m_diffAvrs));
 	m_srcImg = cv::Mat((int)g_capture3DHeight, (int)g_capture3DWidth, CV_32FC1);
@@ -121,113 +122,14 @@ bool cSensorBuffer::ReadKinectSensor(cRenderer &renderer
 
 bool cSensorBuffer::ReadPlyFile(cRenderer &renderer, const string &fileName)
 {
-	const int w = g_baslerDepthWidth;
-	const int h = g_baslerDepthHeight;
-	if (m_depthBuff.size() != (w * h))
-	{
-		m_pointCloudCount = 0;
-		m_width = w;
-		m_height = h;
-		m_vertices.resize(w * h);
-		m_colors.resize(w * h);
-		m_depthBuff.resize(w * h);
-		m_depthBuff2.resize(w * h);
-		m_vtxBuff.Clear();
-		m_vtxBuff.Create(renderer, w * h, sizeof(sVertex), D3D11_USAGE_DYNAMIC);
-	}
-
 	cPlyReader reader;
 	if (!reader.Read(fileName))
 		return false;
 
-	Transform tfm;
-	tfm.scale = Vector3(1, 1, 1)*0.1f;
-	Matrix44 tm = tfm.GetMatrix();
-
-	// plane calculation
-	if (!m_plane.N.IsEmpty())
-	{
-		Quaternion q;
-		q.SetRotationArc(m_plane.N, Vector3(0, 1, 0));
-		tm *= q.GetMatrix();
-
-		Vector3 center = m_volumeCenter * q.GetMatrix();
-		center.y = 0;
-
-		Matrix44 T;
-		T.SetPosition(Vector3(-center.x, m_plane.D, -center.z));
-
-		tm *= T;
-	}
-
-
-	float diffAvrs = 0;
-	for (u_int i = 0; i < reader.m_vertices.size(); ++i)
-	{
-		Vector3 pos = reader.m_vertices[i] * tm;
-
-		if (!isnan(m_vertices[i].x) && !isnan(reader.m_vertices[i].x))
-			diffAvrs += abs(pos.y - m_vertices[i].y);
-
-		m_vertices[i] = pos;
-	}
-	diffAvrs /= (float)m_vertices.size();
-	m_diffAvrs.AddValue(diffAvrs);
-
-	for (u_int i = reader.m_vertices.size(); i < w*h; ++i)
-		m_vertices[i] = Vector3(0,0,0);
-
-
-	// Update Point Cloud
-	m_pointCloudCount = 0;
-	if (sVertex *dst = (sVertex*)m_vtxBuff.Lock(renderer))
-	{
-		int cnt = 0;
-		for (int i = 0; i < m_height; ++i)
-		{
-			for (int k = 0; k < m_width; ++k)
-			{
-				const Vector3 p1 = GetVertex(k, i);
-				//const Vector3 p2 = GetVertex(k - 1, i);
-				//const Vector3 p3 = GetVertex(k, i - 1);
-				//const Vector3 p4 = GetVertex(k + 1, i);
-				//const Vector3 p5 = GetVertex(k, i + 1);
-
-				//const float l1 = p1.Distance(p2);
-				//const float l2 = p1.Distance(p3);
-				//const float l3 = p1.Distance(p4);
-				//const float l4 = p1.Distance(p5);
-
-				//const float maxDist = g_root.m_depthDensity;
-				//if ((l1 > maxDist)
-				//	|| (l2 > maxDist)
-				//	|| (l3 > maxDist)
-				//	|| (l4 > maxDist)
-				//	)
-				//	continue;
-
-				if (p1.IsEmpty())
-					continue;
-
-				//dst->p = p1;
-				//m_vertices[cnt++] = p1;
-
-				//dst->p = m_vertices[cnt++];
-				dst->p = p1;
-
-				++cnt;
-				++dst;
-				++m_pointCloudCount;
-			}
-		}
-
-		m_vtxBuff.Unlock(renderer);
-
-		for (u_int i = (u_int)cnt; i < m_vertices.size(); ++i)
-			m_vertices[i] = Vector3(0, 0, 0);
-	}
+	UpdatePointCloud(renderer, reader.m_vertices, {}, {});
 
 	m_isLoaded = true;
+	m_frameId++;
 	return true;
 }
 
@@ -247,6 +149,23 @@ bool cSensorBuffer::ReadDatFile(cRenderer &renderer, const string &fileName)
 
 bool cSensorBuffer::ReadDatFile(graphic::cRenderer &renderer, const cDatReader &reader)
 {
+	UpdatePointCloud(renderer, reader.m_vertices, reader.m_intensity, reader.m_confidence);
+
+	m_isLoaded = true;
+	m_time = reader.m_time;
+	m_frameId++;
+
+	return true;
+}
+
+
+// Update, verext buffer, intensity buffer, confidence buffer
+bool cSensorBuffer::UpdatePointCloud(cRenderer &renderer
+	, const vector<Vector3> &vertices
+	, const vector<unsigned short> &intensity
+	, const vector<unsigned short> &confidence
+)
+{
 	const int w = g_baslerDepthWidth;
 	const int h = g_baslerDepthHeight;
 	if (m_depthBuff.size() != (w * h))
@@ -281,55 +200,50 @@ bool cSensorBuffer::ReadDatFile(graphic::cRenderer &renderer, const cDatReader &
 
 		tm *= T;
 	}
-
-
-	float diffAvrs = 0;
-	for (u_int i = 0; i < reader.m_vertices.size(); ++i)
-	{
-		Vector3 pos = reader.m_vertices[i] * tm;
-
-		if (!isnan(m_vertices[i].x) && !isnan(reader.m_vertices[i].x))
-			diffAvrs += abs(pos.y - m_vertices[i].y);
 	
+	float diffAvrs = 0;
+	for (u_int i = 0; i < vertices.size(); ++i)
+	{
+		const Vector3 pos = vertices[i] * tm;
+		if (!isnan(pos.x) && !isnan(vertices[i].x))
+			diffAvrs += abs(pos.y - m_vertices[i].y);
 		m_vertices[i] = pos;
 	}
 	diffAvrs /= (float)m_vertices.size();
 	m_diffAvrs.AddValue(diffAvrs);
 
-	memcpy(&m_depthBuff[0], &reader.m_intensity[0], reader.m_intensity.size() * sizeof(unsigned short));
-	memcpy(&m_depthBuff2[0], &reader.m_confidence[0], reader.m_confidence.size() * sizeof(unsigned short));
-
+	memcpy(&m_depthBuff[0], &intensity[0], intensity.size() * sizeof(intensity[0]));
+	memcpy(&m_depthBuff2[0], &confidence[0], confidence.size() * sizeof(confidence[0]));
 
 	// Update Point Cloud
 	m_pointCloudCount = 0;
-	if (sVertex *dst = (sVertex*)m_vtxBuff.Lock(renderer))
+	if (m_isUpdatePointCloud)
 	{
-		int cnt = 0;
-		for (int i = 0; i < m_height; ++i)
+		if (sVertex *dst = (sVertex*)m_vtxBuff.Lock(renderer))
 		{
-			for (int k = 0; k < m_width; ++k)
+			int cnt = 0;
+			for (int i = 0; i < m_height; ++i)
 			{
-				const Vector3 p1 = GetVertex(k, i);
-				if (p1.IsEmpty())
-					continue;
+				for (int k = 0; k < m_width; ++k)
+				{
+					const Vector3 p1 = GetVertex(k, i);
+					if (p1.IsEmpty())
+						continue;
 
-				dst->p = p1;
+					dst->p = p1;
 
-				++cnt;
-				++dst;
-				++m_pointCloudCount;
+					++cnt;
+					++dst;
+					++m_pointCloudCount;
+				}
 			}
+
+			m_vtxBuff.Unlock(renderer);
+
+			for (u_int i = (u_int)cnt; i < m_vertices.size(); ++i)
+				m_vertices[i] = Vector3(0, 0, 0);
 		}
-
-		m_vtxBuff.Unlock(renderer);
-
-		for (u_int i = (u_int)cnt; i < m_vertices.size(); ++i)
-			m_vertices[i] = Vector3(0, 0, 0);
 	}
-
-	m_isLoaded = true;
-	m_time = reader.m_time;
-	m_frameId++;
 
 	return true;
 }
@@ -361,24 +275,6 @@ bool cSensorBuffer::ProcessKinectDepthBuff(cRenderer &renderer
 			for (int k = 0; k < m_height; ++k)
 			{
 				const Vector3 p1 = GetVertex(k, i);
-				//const Vector3 p2 = GetVertex(k - 1, i);
-				//const Vector3 p3 = GetVertex(k, i - 1);
-				//const Vector3 p4 = GetVertex(k + 1, i);
-				//const Vector3 p5 = GetVertex(k, i + 1);
-
-				//const float l1 = p1.Distance(p2);
-				//const float l2 = p1.Distance(p3);
-				//const float l3 = p1.Distance(p4);
-				//const float l4 = p1.Distance(p5);
-
-				//const float maxDist = g_root.m_depthDensity;
-				//if ((l1 > maxDist)
-				//	|| (l2 > maxDist)
-				//	|| (l3 > maxDist)
-				//	|| (l4 > maxDist)
-				//	)
-				//	continue;
-
 				dst->p = p1;
 				m_vertices[cnt++] = p1;
 

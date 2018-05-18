@@ -41,6 +41,7 @@ public:
 	bool m_showPointCloud;
 	bool m_showBoxAreaPointCloud;
 	bool m_showBoxVolume;
+	bool m_isUpdateOrthogonalProjection;
 
 	struct eState {
 		enum Enum {

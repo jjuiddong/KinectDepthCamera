@@ -17,20 +17,25 @@ cRoot::cRoot()
 	: m_distribCount(0)
 	, m_areaCount(0)
 	, m_areaFloorCnt(0)
-	, m_input(eInputType::FILE)
+	, m_input(eInputType::BASLER)
 	, m_isAutoSaveCapture(false)
 	, m_isTryConnectBasler(true)
 	, m_isAutoMeasure(false)
 	, m_isPalete(false)
 	, m_isConnectKinect(false)
-	, m_baslerCameraIdx(0)
+	, m_baslerCameraIdx(3)
 	, m_balserCam(true)
 {
 	ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
 	ZeroMemory(&m_hDistrib2, sizeof(m_hDistrib2));
 	ZeroMemory(&m_hDistribDifferential, sizeof(m_hDistribDifferential));
 
-	m_cameraOffset2.pos = Vector3(-57.9f, 2.8f, -71.3f);
+	//m_cameraOffset2.pos = Vector3(-57.9f, 2.8f, -71.3f);
+
+
+	m_cameraOffset1.pos = Vector3(-57.9f, 2.8f, -71.3f);
+	m_cameraOffset2.pos = -Vector3(-57.9f, 2.8f, -71.3f);
+
 }
 
 cRoot::~cRoot()
@@ -98,7 +103,6 @@ void cRoot::MeasureVolume(
 	((cViewer*)g_application)->m_3dView->Capture3D(camIdx);
 	((cViewer*)g_application)->m_filterView->Process(camIdx);
 	((cViewer*)g_application)->m_infraredView->Process(camIdx);
-
 	((cViewer*)g_application)->m_filterView->CalcBoxVolumeAverage();
 
 	//((cViewer*)g_application)->m_depthView->Process();
