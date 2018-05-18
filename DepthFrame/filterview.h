@@ -15,7 +15,7 @@ public:
 
 	bool Init(graphic::cRenderer &renderer);
 	virtual void OnRender(const float deltaSeconds) override;
-	void Process(const size_t camIdx = 0);
+	void Process();
 	void CalcBoxVolumeAverage();
 	void ClearBoxVolumeAverage();
 
@@ -35,7 +35,7 @@ public:
 
 
 protected:
-	void ProcessDepth(const size_t camIdx=0);
+	void ProcessDepth();
 	void UpdateTexture();
 	bool FindBox(cv::Mat &img, const u_int vtxCnt, OUT vector<cContour> &out);
 	void RemoveDuplicateContour(vector<sContourInfo> &contours);

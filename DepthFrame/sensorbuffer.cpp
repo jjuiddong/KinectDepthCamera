@@ -15,7 +15,6 @@ cSensorBuffer::cSensorBuffer()
 	, m_isUpdatePointCloud(true)
 {
 	ZeroMemory(&m_diffAvrs, sizeof(m_diffAvrs));
-	m_srcImg = cv::Mat((int)g_capture3DHeight, (int)g_capture3DWidth, CV_32FC1);
 }
 
 cSensorBuffer::~cSensorBuffer()
@@ -99,19 +98,18 @@ bool cSensorBuffer::ReadKinectSensor(cRenderer &renderer
 {
 	const int w = g_kinectDepthWidth;
 	const int h = g_kinectDepthHeight;
-	if (m_depthBuff.size() != (w * h))
+	if (m_intensity.size() != (w * h))
 	{
 		m_pointCloudCount = 0;
 		m_width = w;
 		m_height = h;
 		m_vertices.resize(w * h);
-		m_colors.resize(w * h);
-		m_depthBuff.resize(w * h);
+		m_intensity.resize(w * h);
 		m_vtxBuff.Clear();
 		m_vtxBuff.Create(renderer, w * h, sizeof(sVertex), D3D11_USAGE_DYNAMIC);
 	}
 
-	memcpy(&m_depthBuff[0], pBuffer, sizeof(USHORT) * w * h);
+	memcpy(&m_intensity[0], pBuffer, sizeof(USHORT) * w * h);
 
 	ProcessKinectDepthBuff(renderer, nTime, pBuffer, nMinDepth, nMaxDepth);
 
@@ -168,15 +166,14 @@ bool cSensorBuffer::UpdatePointCloud(cRenderer &renderer
 {
 	const int w = g_baslerDepthWidth;
 	const int h = g_baslerDepthHeight;
-	if (m_depthBuff.size() != (w * h))
+	if (m_intensity.size() != (w * h))
 	{
 		m_pointCloudCount = 0;
 		m_width = w;
 		m_height = h;
 		m_vertices.resize(w * h);
-		m_colors.resize(w * h);
-		m_depthBuff.resize(w * h);
-		m_depthBuff2.resize(w * h);
+		m_intensity.resize(w * h);
+		m_confidence.resize(w * h);
 		m_vtxBuff.Clear();
 		m_vtxBuff.Create(renderer, w * h, sizeof(sVertex), D3D11_USAGE_DYNAMIC);
 	}
@@ -212,8 +209,8 @@ bool cSensorBuffer::UpdatePointCloud(cRenderer &renderer
 	diffAvrs /= (float)m_vertices.size();
 	m_diffAvrs.AddValue(diffAvrs);
 
-	memcpy(&m_depthBuff[0], &intensity[0], intensity.size() * sizeof(intensity[0]));
-	memcpy(&m_depthBuff2[0], &confidence[0], confidence.size() * sizeof(confidence[0]));
+	memcpy(&m_intensity[0], &intensity[0], intensity.size() * sizeof(intensity[0]));
+	memcpy(&m_confidence[0], &confidence[0], confidence.size() * sizeof(confidence[0]));
 
 	// Update Point Cloud
 	m_pointCloudCount = 0;
@@ -299,7 +296,7 @@ inline Vector3 cSensorBuffer::Get3DPos(const int x, const int y, USHORT nMinDept
 		|| (y < 0) || (y >= m_height))
 		return Vector3(0, 0, 0);
 
-	const USHORT depth = m_depthBuff[y * m_width + x];
+	const USHORT depth = m_intensity[y * m_width + x];
 	if (depth < nMinDepth)
 		return Vector3();
 
@@ -617,10 +614,10 @@ void cSensorBuffer::AnalysisDepth()
 	// Analyze m_depthBuff
 	int buff1[50000];
 	ZeroMemory(buff1, sizeof(buff1));
-	for (u_int i = 0; i < m_depthBuff.size(); ++i)
+	for (u_int i = 0; i < m_intensity.size(); ++i)
 	{
-		if (ARRAYSIZE(buff1) > m_depthBuff[i])
-			++buff1[m_depthBuff[i]];
+		if (ARRAYSIZE(buff1) > m_intensity[i])
+			++buff1[m_intensity[i]];
 	}
 
 	ZeroMemory(&m_analysis1, sizeof(m_analysis1));
@@ -630,10 +627,10 @@ void cSensorBuffer::AnalysisDepth()
 	// Analyze m_depthBuff2
 	int buff2[50000];
 	ZeroMemory(buff2, sizeof(buff2));
-	for (u_int i = 0; i < m_depthBuff2.size(); ++i)
+	for (u_int i = 0; i < m_confidence.size(); ++i)
 	{
-		if (ARRAYSIZE(buff1) > m_depthBuff2[i])
-			++buff2[m_depthBuff2[i]];
+		if (ARRAYSIZE(buff1) > m_confidence[i])
+			++buff2[m_confidence[i]];
 	}
 
 	ZeroMemory(&m_analysis2, sizeof(m_analysis2));
@@ -644,4 +641,5 @@ void cSensorBuffer::AnalysisDepth()
 
 void cSensorBuffer::Clear()
 {
+	m_vtxBuff.Clear();
 }

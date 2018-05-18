@@ -74,28 +74,10 @@ void cBoxView::OnPreRender(const float deltaSeconds)
 			CommonStates states(renderer.GetDevice());
 			renderer.GetDevContext()->OMSetBlendState(states.NonPremultiplied(), 0, 0xffffffff);
 
-			if (g_root.m_baslerCameraIdx == 0)
-			{
-				g_root.m_sensorBuff[0].Render(renderer, "Unlit", true, g_root.m_cameraOffset1.GetMatrixXM());
-			}
-			else if (g_root.m_baslerCameraIdx == 1)
-			{
-				if (g_root.m_sensorBuff[1].m_isLoaded)
-					g_root.m_sensorBuff[1].Render(renderer, "Unlit", true, g_root.m_cameraOffset2.GetMatrixXM());
-			}
-			else if (g_root.m_baslerCameraIdx == 2)
-			{
-				if (g_root.m_sensorBuff[2].m_isLoaded)
-					g_root.m_sensorBuff[2].Render(renderer, "Unlit", true, g_root.m_cameraOffset3.GetMatrixXM());
-			}
-			else
-			{
-				g_root.m_sensorBuff[0].Render(renderer, "Unlit", true, g_root.m_cameraOffset1.GetMatrixXM());
-				if (g_root.m_sensorBuff[1].m_isLoaded)
-					g_root.m_sensorBuff[1].Render(renderer, "Unlit", true, g_root.m_cameraOffset2.GetMatrixXM());
-				if (g_root.m_sensorBuff[2].m_isLoaded)
-					g_root.m_sensorBuff[2].Render(renderer, "Unlit", true, g_root.m_cameraOffset3.GetMatrixXM());
-			}
+			for (int i = 0; i < 3; ++i)
+				if (g_root.m_showCamera[i])
+					if (g_root.m_sensorBuff[i].m_isLoaded)
+						g_root.m_sensorBuff[i].Render(renderer, "Unlit", true, g_root.m_cameraOffset[i].GetMatrixXM());
 
 			//if (g_root.m_sensorBuff[1].m_isLoaded)
 			//	g_root.m_sensorBuff[1].Render(renderer, "Unlit", true);

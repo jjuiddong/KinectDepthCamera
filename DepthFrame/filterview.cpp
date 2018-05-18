@@ -59,21 +59,18 @@ void cFilterView::OnRender(const float deltaSeconds)
 }
 
 
-void cFilterView::Process(
-	const size_t camIdx //=0
-)
+void cFilterView::Process()
 {
-	ProcessDepth(camIdx);
+	ProcessDepth();
 }
 
 
 // 영상인식해서 박스의 모양을 인식한다.
-void cFilterView::ProcessDepth(const size_t camIdx //=0
-)
+void cFilterView::ProcessDepth()
 {
 	m_contours.clear();
 	m_removeRects.clear();
-	cv::Mat &srcImg = g_root.m_sensorBuff[camIdx].m_srcImg;
+	cv::Mat &srcImg = g_root.m_projMap;
 
 	if ((srcImg.cols != m_depthTexture.Width()) || (srcImg.rows != m_depthTexture.Height()))
 	{

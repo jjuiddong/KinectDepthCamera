@@ -36,7 +36,7 @@ public:
 	bool InitSensor();
 	void Update(const float deltaSeconds);
 	bool KinectCapture();
-	void MeasureVolume(const size_t camIdx=0, const bool isUpdateSensor=false);
+	void MeasureVolume(const bool isUpdateSensor=false);
 	void Clear();
 
 
@@ -46,11 +46,11 @@ public:
 	eInputType::Enum m_input;
 	common::Vector3 m_3dEyePos;
 	common::Vector3 m_3dLookAt;
-	int m_baslerCameraIdx; // 0: camera1, 1: camera2, 2: all
+
+	bool m_showCamera[cBaslerCameraSync::MAX_CAMS];
 	cSensorBuffer m_sensorBuff[3];
-	common::Transform m_cameraOffset1; // camera1 offset
-	common::Transform m_cameraOffset2; // camera2 offset
-	common::Transform m_cameraOffset3; // camera3 offset
+	cv::Mat m_projMap; // change space, (orthogonal projection map)
+	common::Transform m_cameraOffset[3]; // camera1 offset
 
 
 	// Update Every Time
@@ -62,8 +62,8 @@ public:
 
 	struct sAreaFloor
 	{
-		int startIdx;
-		int endIdx;
+		int startIdx; // start height
+		int endIdx;  // end height
 		int maxIdx; // 가장 많이 분포한 높이 인덱스
 		int areaCnt;
 		graphic::cColor color;

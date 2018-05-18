@@ -42,7 +42,6 @@ public:
 
 	bool m_isThreadMode;
 	bool m_isSetupSuccess;
-	//CameraList m_CameraList;
 	vector<CameraInfo> m_CameraInfos;
 	vector<std::shared_ptr<CToFCamera>> m_Cameras;
 	bool m_IsMaster[MAX_CAMS];

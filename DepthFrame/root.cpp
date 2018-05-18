@@ -23,18 +23,20 @@ cRoot::cRoot()
 	, m_isAutoMeasure(false)
 	, m_isPalete(false)
 	, m_isConnectKinect(false)
-	, m_baslerCameraIdx(3)
 	, m_balserCam(true)
 {
 	ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
 	ZeroMemory(&m_hDistrib2, sizeof(m_hDistrib2));
 	ZeroMemory(&m_hDistribDifferential, sizeof(m_hDistribDifferential));
+	m_projMap = cv::Mat((int)g_capture3DHeight, (int)g_capture3DWidth, CV_32FC1);
 
 	//m_cameraOffset2.pos = Vector3(-57.9f, 2.8f, -71.3f);
 
+	m_cameraOffset[0].pos = Vector3(-57.9f, 2.8f, -71.3f);
+	m_cameraOffset[1].pos = -Vector3(-57.9f, 2.8f, -71.3f);
 
-	m_cameraOffset1.pos = Vector3(-57.9f, 2.8f, -71.3f);
-	m_cameraOffset2.pos = -Vector3(-57.9f, 2.8f, -71.3f);
+	for (int i = 0; i < cBaslerCameraSync::MAX_CAMS; ++i)
+		m_showCamera[i] = true;
 
 }
 
@@ -83,8 +85,7 @@ bool cRoot::KinectCapture()
 
 // camIdx 카메라가 인식한 영상으로 볼륨 측정한다.
 void cRoot::MeasureVolume(
-	const size_t camIdx  //=0
-	, const bool isUpdateSensor //=false
+	const bool isUpdateSensor //=false
 )
 {
 	m_areaFloorCnt = 0;
@@ -96,13 +97,13 @@ void cRoot::MeasureVolume(
 		// 포인트 클라우드에서 높이 분포를 계산한다.
 		// 높이분포를 이용해서 면적분포 메쉬를 생성한다.
 		// 높이 별로 포인트 클라우드를 생성한다.
-		m_sensorBuff[camIdx].MeasureVolume(renderer);
+		m_sensorBuff[2].MeasureVolume(renderer);
 	}
 
 	// Update FilterView, DepthView, DepthView2
-	((cViewer*)g_application)->m_3dView->Capture3D(camIdx);
-	((cViewer*)g_application)->m_filterView->Process(camIdx);
-	((cViewer*)g_application)->m_infraredView->Process(camIdx);
+	((cViewer*)g_application)->m_3dView->Capture3D();
+	((cViewer*)g_application)->m_filterView->Process();
+	((cViewer*)g_application)->m_infraredView->Process(2);
 	((cViewer*)g_application)->m_filterView->CalcBoxVolumeAverage();
 
 	//((cViewer*)g_application)->m_depthView->Process();

@@ -116,28 +116,10 @@ void c3DView::OnPreRender(const float deltaSeconds)
 		// Render Point Cloud
 		if (m_showPointCloud)
 		{
-			if (g_root.m_baslerCameraIdx == 0)
-			{
-				g_root.m_sensorBuff[0].Render(renderer, "Unlit", false, g_root.m_cameraOffset1.GetMatrixXM());
-			}
-			else if (g_root.m_baslerCameraIdx == 1)
-			{
-				if (g_root.m_sensorBuff[1].m_isLoaded)
-					g_root.m_sensorBuff[1].Render(renderer, "Unlit", false, g_root.m_cameraOffset2.GetMatrixXM());
-			}
-			else if (g_root.m_baslerCameraIdx == 2)
-			{
-				if (g_root.m_sensorBuff[2].m_isLoaded)
-					g_root.m_sensorBuff[2].Render(renderer, "Unlit", false, g_root.m_cameraOffset3.GetMatrixXM());
-			}
-			else
-			{
-				g_root.m_sensorBuff[0].Render(renderer, "Unlit", false, g_root.m_cameraOffset1.GetMatrixXM());
-				if (g_root.m_sensorBuff[1].m_isLoaded)
-					g_root.m_sensorBuff[1].Render(renderer, "Unlit", false, g_root.m_cameraOffset2.GetMatrixXM());
-				if (g_root.m_sensorBuff[2].m_isLoaded)
-					g_root.m_sensorBuff[2].Render(renderer, "Unlit", false, g_root.m_cameraOffset3.GetMatrixXM());
-			}
+			for (int i=0; i < 3; ++i)
+				if (g_root.m_showCamera[i])
+					if (g_root.m_sensorBuff[i].m_isLoaded)
+						g_root.m_sensorBuff[i].Render(renderer, "Unlit", false, g_root.m_cameraOffset[i].GetMatrixXM());
 
 			//renderer.GetDevContext()->RSSetState(states.Wireframe());
 			//g_root.m_sensorBuff.RenderTessellation(renderer);
@@ -184,8 +166,7 @@ void c3DView::OnPreRender(const float deltaSeconds)
 
 // 직교투영으로 -Y축으로 바라보면서 장면을 그린다.
 // 그린 장면을 로컬메모리에 저장한다.
-void c3DView::Capture3D(const size_t camIdx //=0
-)
+void c3DView::Capture3D()
 {
 	RET(!m_isUpdateOrthogonalProjection);
 
@@ -223,34 +204,40 @@ void c3DView::Capture3D(const size_t camIdx //=0
 		//g_root.m_sensorBuff[camIdx].Render(renderer, "Heightmap", false, tfm.GetMatrixXM());
 		//g_root.m_sensorBuff.RenderTessellation(renderer, tfm.GetMatrixXM());
 
-		if (g_root.m_baslerCameraIdx == 0)
-		{
-			g_root.m_sensorBuff[0].Render(renderer, "Heightmap", false
-				, g_root.m_cameraOffset1.GetMatrixXM() * tfm.GetMatrixXM());
-		}
-		else if (g_root.m_baslerCameraIdx == 1)
-		{
-			if (g_root.m_sensorBuff[1].m_isLoaded)
-				g_root.m_sensorBuff[1].Render(renderer, "Heightmap", false
-					, g_root.m_cameraOffset2.GetMatrixXM() * tfm.GetMatrixXM());
-		}
-		else if (g_root.m_baslerCameraIdx == 2)
-		{
-			if (g_root.m_sensorBuff[2].m_isLoaded)
-				g_root.m_sensorBuff[2].Render(renderer, "Heightmap", false
-					, g_root.m_cameraOffset3.GetMatrixXM() * tfm.GetMatrixXM());
-		}
-		else
-		{
-			g_root.m_sensorBuff[0].Render(renderer, "Heightmap", false
-				, g_root.m_cameraOffset1.GetMatrixXM() * tfm.GetMatrixXM());
-			if (g_root.m_sensorBuff[1].m_isLoaded)
-				g_root.m_sensorBuff[1].Render(renderer, "Heightmap", false
-					, g_root.m_cameraOffset2.GetMatrixXM() * tfm.GetMatrixXM());
-			if (g_root.m_sensorBuff[2].m_isLoaded)
-				g_root.m_sensorBuff[2].Render(renderer, "Heightmap", false
-					, g_root.m_cameraOffset3.GetMatrixXM() * tfm.GetMatrixXM());
-		}
+		for (int i = 0; i < 3; ++i)
+			if (g_root.m_showCamera[i])
+				if (g_root.m_sensorBuff[i].m_isLoaded)
+					g_root.m_sensorBuff[i].Render(renderer, "Heightmap", false
+						, g_root.m_cameraOffset[i].GetMatrixXM() * tfm.GetMatrixXM());
+
+		//if (g_root.m_baslerCameraIdx == 0)
+		//{
+		//	g_root.m_sensorBuff[0].Render(renderer, "Heightmap", false
+		//		, g_root.m_cameraOffset1.GetMatrixXM() * tfm.GetMatrixXM());
+		//}
+		//else if (g_root.m_baslerCameraIdx == 1)
+		//{
+		//	if (g_root.m_sensorBuff[1].m_isLoaded)
+		//		g_root.m_sensorBuff[1].Render(renderer, "Heightmap", false
+		//			, g_root.m_cameraOffset2.GetMatrixXM() * tfm.GetMatrixXM());
+		//}
+		//else if (g_root.m_baslerCameraIdx == 2)
+		//{
+		//	if (g_root.m_sensorBuff[2].m_isLoaded)
+		//		g_root.m_sensorBuff[2].Render(renderer, "Heightmap", false
+		//			, g_root.m_cameraOffset3.GetMatrixXM() * tfm.GetMatrixXM());
+		//}
+		//else
+		//{
+		//	g_root.m_sensorBuff[0].Render(renderer, "Heightmap", false
+		//		, g_root.m_cameraOffset1.GetMatrixXM() * tfm.GetMatrixXM());
+		//	if (g_root.m_sensorBuff[1].m_isLoaded)
+		//		g_root.m_sensorBuff[1].Render(renderer, "Heightmap", false
+		//			, g_root.m_cameraOffset2.GetMatrixXM() * tfm.GetMatrixXM());
+		//	if (g_root.m_sensorBuff[2].m_isLoaded)
+		//		g_root.m_sensorBuff[2].Render(renderer, "Heightmap", false
+		//			, g_root.m_cameraOffset3.GetMatrixXM() * tfm.GetMatrixXM());
+		//}
 	}
 	m_captureTarget.End(renderer);
 
@@ -267,7 +254,7 @@ void c3DView::Capture3D(const size_t camIdx //=0
 		if (FAILED(hr))
 			return;
 
-		float *dst = (float*)g_root.m_sensorBuff[camIdx].m_srcImg.data;
+		float *dst = (float*)g_root.m_projMap.data;
 		D3D11_MAPPED_SUBRESOURCE map;
 		hr = renderer.GetDevContext()->Map(pStaging.Get(), 0, D3D11_MAP_READ, 0, &map);
 		if (FAILED(hr))
@@ -337,14 +324,29 @@ void c3DView::OnRender(const float deltaSeconds)
 		//ImGui::RadioButton("Basler", (int*)&g_root.m_input, cRoot::eInputType::BASLER);
 		//ImGui::Spacing();
 
-		ImGui::RadioButton("Camera1", &g_root.m_baslerCameraIdx, 0);
-		ImGui::SameLine();
-		ImGui::RadioButton("Camera2", &g_root.m_baslerCameraIdx, 1);
-		ImGui::SameLine();
-		ImGui::RadioButton("Camera3", &g_root.m_baslerCameraIdx, 2);
-		ImGui::SameLine();
-		ImGui::RadioButton("Camera All", &g_root.m_baslerCameraIdx, 3);
+		// Show Visible Camera Flag
+		if (g_root.m_balserCam.IsConnect())
+		{
+			bool firstCheckBox = true;
+			for (u_int i = 0; i < g_root.m_balserCam.m_Cameras.size(); ++i)
+			{
+				if (!g_root.m_balserCam.m_isCameraEnable[i])
+				{
+					g_root.m_showCamera[i] = false;
+					continue;
+				}
 
+				if (!firstCheckBox)
+					ImGui::SameLine();
+
+				firstCheckBox = false;
+				ImGui::Checkbox(g_root.m_balserCam.m_CameraInfos[i].strDisplayName.c_str(), &g_root.m_showCamera[i]);
+			}
+		}
+		else
+		{
+			ImGui::Text("Try Connect Camera...");
+		}
 
 		if (ImGui::Button("Camera Origin"))
 		{

@@ -18,7 +18,7 @@ public:
 	virtual void OnResizeEnd(const framework::eDockResize::Enum type, const common::sRectf &rect) override;
 	virtual void OnEventProc(const sf::Event &evt) override;
 	virtual void OnResetDevice() override;
-	void Capture3D(const size_t camIdx=0);
+	void Capture3D();
 
 
 protected:

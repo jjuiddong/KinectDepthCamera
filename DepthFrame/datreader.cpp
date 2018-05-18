@@ -6,9 +6,6 @@ using namespace graphic;
 cDatReader::cDatReader()
 	: m_time(0)
 {
-	//ZeroMemory(m_vertices, sizeof(m_vertices));
-	//ZeroMemory(m_intensity, sizeof(m_intensity));
-	//ZeroMemory(m_confidence, sizeof(m_confidence));
 	m_vertices.resize(640 * 480);
 	m_intensity.resize(640 * 480);
 	m_confidence.resize(640 * 480);

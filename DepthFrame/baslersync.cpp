@@ -525,8 +525,6 @@ void cBaslerCameraSync::ProcessCmd()
 	{
 		if (m_oldCameraEnable[i] == m_isCameraEnable[i])
 			continue;
-		if (!m_Cameras[i]->IsConnected())
-			continue;
 
 		if (m_isCameraEnable[i])
 		{
@@ -556,7 +554,7 @@ bool cBaslerCameraSync::Grab()
 	{
 		for (size_t camIdx = 0; camIdx < m_CameraInfos.size(); camIdx++)
 		{
-			if (!m_Cameras.at(camIdx)->IsConnected())
+			if (!m_isCameraEnable[camIdx])
 				continue;
 
 			GrabResult grabResult;
@@ -625,13 +623,17 @@ bool cBaslerCameraSync::CopyCaptureBuffer(graphic::cRenderer &renderer)
 		g_root.m_sensorBuff[2].ReadDatFile(renderer, m_captureBuff[2]);
 
 	// save PCD file
-	for (int i = 0; i < 2; ++i)
+	if (g_root.m_isAutoSaveCapture)
 	{
-		if (g_root.m_isAutoSaveCapture)
+		for (int i = 0; i < 3; ++i)
 		{
-			common::StrPath fileName;
-			fileName.Format("../media/depthMulti/%d/%s.pcd", i, curTime.c_str());
-			m_captureBuff[i].Write(fileName.c_str());
+			// save only processing camera depthmap
+			if (g_root.m_showCamera[i])
+			{
+				common::StrPath fileName;
+				fileName.Format("../media/depthMulti3/%d/%s.pcd", i, curTime.c_str());
+				m_captureBuff[i].Write(fileName.c_str());
+			}
 		}
 	}
 

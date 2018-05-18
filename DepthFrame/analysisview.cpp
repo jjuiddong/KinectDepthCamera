@@ -21,7 +21,7 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 {
 	if (ImGui::Button("Volume Measure"))
 	{
-		g_root.MeasureVolume(0, true);
+		g_root.MeasureVolume(true);
 	}
 
 	ImGui::SameLine();

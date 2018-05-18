@@ -32,7 +32,7 @@ void cInfraredView::OnRender(const float deltaSeconds)
 void cInfraredView::Process(const size_t camIdx //=0
 )
 {
-	ProcessInfrared(&g_root.m_sensorBuff[camIdx].m_depthBuff[0]
+	ProcessInfrared(&g_root.m_sensorBuff[camIdx].m_intensity[0]
 		, g_root.m_sensorBuff[camIdx].m_width, g_root.m_sensorBuff[camIdx].m_height);
 }
 

@@ -49,7 +49,7 @@ void cDepthView2::OnRender(const float deltaSeconds)
 
 		if (isUpdate)
 		{
-			ProcessDepth(&g_root.m_sensorBuff[0].m_depthBuff2[0]
+			ProcessDepth(&g_root.m_sensorBuff[0].m_confidence[0]
 				, g_root.m_sensorBuff[0].m_width, g_root.m_sensorBuff[0].m_height);
 		}
 
@@ -61,7 +61,7 @@ void cDepthView2::OnRender(const float deltaSeconds)
 void cDepthView2::Process(const size_t camIdx //=0
 )
 {
-	ProcessDepth(&g_root.m_sensorBuff[camIdx].m_depthBuff2[0]
+	ProcessDepth(&g_root.m_sensorBuff[camIdx].m_confidence[0]
 		, g_root.m_sensorBuff[camIdx].m_width, g_root.m_sensorBuff[camIdx].m_height);
 }
 

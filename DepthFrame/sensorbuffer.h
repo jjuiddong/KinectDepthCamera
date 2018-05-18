@@ -1,8 +1,9 @@
 //
 // 2018-03-20, jjuiddong
 // Sensor Buffer
-//	- depth
-//	- color
+//	- Perspective Projection Vertex
+//	- Intensity map
+//	- Confidence map
 //
 #pragma once
 
@@ -17,14 +18,6 @@ public:
 	cSensorBuffer();
 	virtual ~cSensorBuffer();
 
-	void Render(graphic::cRenderer &renderer
-		, const char *techniqName = "Unlit"
-		, const bool isAphablend = false
-		, const XMMATRIX &parentTm = graphic::XMIdentity);
-
-	void RenderTessellation(graphic::cRenderer &renderer 
-		, const XMMATRIX &parentTm = graphic::XMIdentity);
-
 	bool ReadKinectSensor(graphic::cRenderer &renderer
 		, INT64 nTime
 		, const USHORT* pBuffer
@@ -34,6 +27,14 @@ public:
 	bool ReadPlyFile(graphic::cRenderer &renderer, const string &fileName);
 	bool ReadDatFile(graphic::cRenderer &renderer, const string &fileName);
 	bool ReadDatFile(graphic::cRenderer &renderer, const cDatReader &reader);
+
+	void Render(graphic::cRenderer &renderer
+		, const char *techniqName = "Unlit"
+		, const bool isAphablend = false
+		, const XMMATRIX &parentTm = graphic::XMIdentity);
+
+	void RenderTessellation(graphic::cRenderer &renderer 
+		, const XMMATRIX &parentTm = graphic::XMIdentity);
 
 	inline common::Vector3 Get3DPos(const int x, const int y, USHORT nMinDepth, USHORT nMaxDepth);
 	inline common::Vector3 GetVertex(const int x, const int y);
@@ -60,17 +61,15 @@ protected:
 
 public:
 	bool m_isLoaded;
+	int m_width;
+	int m_height;
 	bool m_isUpdatePointCloud;
 	double m_time; // update time
 	int m_frameId;
-	int m_width;
-	int m_height;
 	int m_pointCloudCount;
-	vector<USHORT> m_depthBuff; // intensity
-	vector<USHORT> m_depthBuff2; // confidence
-	vector<common::Vector3> m_vertices; // perspectiv vertex array
-	vector<graphic::cColor> m_colors;
-	cv::Mat m_srcImg;
+	vector<common::Vector3> m_vertices; // change space, (perspectiv projection vertex)
+	vector<USHORT> m_intensity;
+	vector<USHORT> m_confidence;
 	common::Plane m_plane;
 	common::Vector3 m_volumeCenter;
 	graphic::cVertexBuffer m_vtxBuff;
