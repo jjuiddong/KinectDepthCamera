@@ -24,6 +24,7 @@ cRoot::cRoot()
 	, m_isPalete(false)
 	, m_isConnectKinect(false)
 	, m_balserCam(true)
+	, m_isGrabLog(false)
 {
 	ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
 	ZeroMemory(&m_hDistrib2, sizeof(m_hDistrib2));
@@ -34,10 +35,6 @@ cRoot::cRoot()
 
 	m_cameraOffset[0].pos = Vector3(-57.9f, 2.8f, -71.3f);
 	m_cameraOffset[1].pos = -Vector3(-57.9f, 2.8f, -71.3f);
-
-	for (int i = 0; i < cBaslerCameraSync::MAX_CAMS; ++i)
-		m_showCamera[i] = true;
-
 }
 
 cRoot::~cRoot()
@@ -61,6 +58,8 @@ bool cRoot::Create()
 
 	m_3dEyePos = common::Vector3(0.f, 380.f, -300.f);
 	m_3dLookAt = common::Vector3(0, 0, 0);
+
+	m_timer.Create();
 
 	return true;
 }

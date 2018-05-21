@@ -10,6 +10,8 @@ using namespace GenTLConsumerImplHelper;
 
 #include "datreader.h"
 
+class cSensor;
+
 class cBaslerCameraSync
 {
 public:
@@ -31,10 +33,8 @@ public:
 
 
 protected:
-	bool OpenCamera(CToFCamera *tofCam, const CameraInfo &cinfo);
-	bool InitCameraConfig(CToFCamera *tofCam);
-	int64_t GetMaxAbsGevIEEE1588OffsetFromMasterInTimeWindow(size_t camIdx, double timeToMeasureSec, double timeDeltaSec);
-	void processData(const size_t camIdx, const GrabResult& grabResult);
+	int64_t GetMaxAbsGevIEEE1588OffsetFromMasterInTimeWindow(CToFCamera *tofCam, double timeToMeasureSec, double timeDeltaSec);
+	//void processData(const size_t camIdx, const GrabResult& grabResult);
 
 
 public:
@@ -42,13 +42,9 @@ public:
 
 	bool m_isThreadMode;
 	bool m_isSetupSuccess;
-	vector<CameraInfo> m_CameraInfos;
-	vector<std::shared_ptr<CToFCamera>> m_Cameras;
-	bool m_IsMaster[MAX_CAMS];
-	bool m_isCameraEnable[MAX_CAMS];
+	vector<cSensor*> m_sensors;
 	bool m_oldCameraEnable[MAX_CAMS]; // 바뀐 값을 비교하기 위한 변수
 	bool m_isTrySyncTrigger;
-	bool m_isGrabLog;
 	uint64_t m_SyncTriggerRate;
 	int64_t m_TriggerDelay;
 	static const int64_t m_ReadoutTime = 21000000;

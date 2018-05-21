@@ -28,6 +28,7 @@
 #include "root.h"
 #include "logview.h"
 #include "contour.h"
+#include "sensor.h"
 
 extern framework::cGameMain2 * g_application;
 extern cRoot g_root;

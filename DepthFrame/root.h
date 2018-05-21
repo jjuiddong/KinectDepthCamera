@@ -47,12 +47,11 @@ public:
 	common::Vector3 m_3dEyePos;
 	common::Vector3 m_3dLookAt;
 
-	bool m_showCamera[cBaslerCameraSync::MAX_CAMS];
 	cSensorBuffer m_sensorBuff[3];
 	cv::Mat m_projMap; // change space, (orthogonal projection map)
 	common::Transform m_cameraOffset[3]; // camera1 offset
-
-
+	common::cTimer m_timer;
+	
 	// Update Every Time
 	int m_distribCount;
 	int m_areaCount;
@@ -99,6 +98,7 @@ public:
 	bool m_isAutoSaveCapture;
 	bool m_isAutoMeasure;
 	bool m_isPalete;
+	bool m_isGrabLog;
 
 	// Config
 	common::StrPath m_inputFilePath;

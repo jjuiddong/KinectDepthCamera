@@ -116,10 +116,15 @@ void c3DView::OnPreRender(const float deltaSeconds)
 		// Render Point Cloud
 		if (m_showPointCloud)
 		{
-			for (int i=0; i < 3; ++i)
-				if (g_root.m_showCamera[i])
-					if (g_root.m_sensorBuff[i].m_isLoaded)
-						g_root.m_sensorBuff[i].Render(renderer, "Unlit", false, g_root.m_cameraOffset[i].GetMatrixXM());
+			//for (int i=0; i < 3; ++i)
+			//	if (g_root.m_showCamera[i])
+			//		if (g_root.m_sensorBuff[i].m_isLoaded)
+			//			g_root.m_sensorBuff[i].Render(renderer, "Unlit", false, g_root.m_cameraOffset[i].GetMatrixXM());
+
+			for (cSensor *sensor : g_root.m_balserCam.m_sensors)
+				if (sensor->m_isShow)
+					if (sensor->m_sensorBuff.m_isLoaded)
+						sensor->m_sensorBuff.Render(renderer, "Unlit", false, sensor->m_offset.GetMatrixXM());
 
 			//renderer.GetDevContext()->RSSetState(states.Wireframe());
 			//g_root.m_sensorBuff.RenderTessellation(renderer);
@@ -204,11 +209,11 @@ void c3DView::Capture3D()
 		//g_root.m_sensorBuff[camIdx].Render(renderer, "Heightmap", false, tfm.GetMatrixXM());
 		//g_root.m_sensorBuff.RenderTessellation(renderer, tfm.GetMatrixXM());
 
-		for (int i = 0; i < 3; ++i)
-			if (g_root.m_showCamera[i])
-				if (g_root.m_sensorBuff[i].m_isLoaded)
-					g_root.m_sensorBuff[i].Render(renderer, "Heightmap", false
-						, g_root.m_cameraOffset[i].GetMatrixXM() * tfm.GetMatrixXM());
+		for (cSensor *sensor : g_root.m_balserCam.m_sensors)
+			if (sensor->m_isShow)
+				if (sensor->m_sensorBuff.m_isLoaded)
+					sensor->m_sensorBuff.Render(renderer, "Heightmap", false
+						, sensor->m_offset.GetMatrixXM() * tfm.GetMatrixXM());
 
 		//if (g_root.m_baslerCameraIdx == 0)
 		//{
@@ -328,11 +333,11 @@ void c3DView::OnRender(const float deltaSeconds)
 		if (g_root.m_balserCam.IsConnect())
 		{
 			bool firstCheckBox = true;
-			for (u_int i = 0; i < g_root.m_balserCam.m_Cameras.size(); ++i)
+			for (cSensor *sensor : g_root.m_balserCam.m_sensors)
 			{
-				if (!g_root.m_balserCam.m_isCameraEnable[i])
+				if (!sensor->IsEnable())
 				{
-					g_root.m_showCamera[i] = false;
+					sensor->m_isShow = false;
 					continue;
 				}
 
@@ -340,7 +345,7 @@ void c3DView::OnRender(const float deltaSeconds)
 					ImGui::SameLine();
 
 				firstCheckBox = false;
-				ImGui::Checkbox(g_root.m_balserCam.m_CameraInfos[i].strDisplayName.c_str(), &g_root.m_showCamera[i]);
+				ImGui::Checkbox(sensor->m_info.strDisplayName.c_str(), &sensor->m_isShow);
 			}
 		}
 		else

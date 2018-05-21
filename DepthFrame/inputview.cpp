@@ -114,7 +114,7 @@ void cInputView::OnRender(const float deltaSeconds)
 	ImGui::Checkbox("AutoMeasure", &g_root.m_isAutoMeasure);
 	ImGui::SameLine();
 	ImGui::Checkbox("Palete", &g_root.m_isPalete);
-	ImGui::Checkbox("Grab-Log", &g_root.m_balserCam.m_isGrabLog);
+	ImGui::Checkbox("Grab-Log", &g_root.m_isGrabLog);
 
 	if (m_isCaptureContinuos && g_root.m_balserCam.IsConnect())
 	{

@@ -52,6 +52,7 @@
     <ClCompile Include="cameraview.cpp">
       <Filter>view</Filter>
     </ClCompile>
+    <ClCompile Include="sensor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="depthframe.h" />
@@ -107,6 +108,7 @@
     <ClInclude Include="cameraview.h">
       <Filter>view</Filter>
     </ClInclude>
+    <ClInclude Include="sensor.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="view">

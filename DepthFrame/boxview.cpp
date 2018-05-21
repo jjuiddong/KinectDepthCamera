@@ -74,10 +74,10 @@ void cBoxView::OnPreRender(const float deltaSeconds)
 			CommonStates states(renderer.GetDevice());
 			renderer.GetDevContext()->OMSetBlendState(states.NonPremultiplied(), 0, 0xffffffff);
 
-			for (int i = 0; i < 3; ++i)
-				if (g_root.m_showCamera[i])
-					if (g_root.m_sensorBuff[i].m_isLoaded)
-						g_root.m_sensorBuff[i].Render(renderer, "Unlit", true, g_root.m_cameraOffset[i].GetMatrixXM());
+			for (cSensor *sensor : g_root.m_balserCam.m_sensors)
+				if (sensor->m_isShow)
+					if (sensor->m_sensorBuff.m_isLoaded)
+						sensor->m_sensorBuff.Render(renderer, "Unlit", true, sensor->m_offset.GetMatrixXM());
 
 			//if (g_root.m_sensorBuff[1].m_isLoaded)
 			//	g_root.m_sensorBuff[1].Render(renderer, "Unlit", true);

@@ -24,10 +24,10 @@ void cCameraView::OnRender(const float deltaSeconds)
 		return;
 
 	int camIdx = 0;
-	for (auto &cam : g_root.m_balserCam.m_CameraInfos)
+	for (auto &sensor : g_root.m_balserCam.m_sensors)
 	{
 		ImGui::SetNextTreeNodeOpen(true, ImGuiSetCond_Once);
-		if (ImGui::TreeNode((void*)&cam, cam.strDisplayName.c_str()))
+		if (ImGui::TreeNode((void*)sensor, sensor->m_info.strDisplayName.c_str()))
 		{
 			const ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick
 				| ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
@@ -35,15 +35,15 @@ void cCameraView::OnRender(const float deltaSeconds)
 
 			int idx = 0;
 			Str128 text;
-			ImGui::Checkbox("Enable", &g_root.m_balserCam.m_isCameraEnable[camIdx]);
+			ImGui::Checkbox("Enable", &sensor->m_isEnable);
 
-			text.Format("Model Name = %s", cam.strModelName.c_str());
+			text.Format("Model Name = %s", sensor->m_info.strModelName.c_str());
 			ImGui::TreeNodeEx((void*)(intptr_t)idx++, node_flags,text.c_str());
-			text.Format("Device ID = %s", cam.strDeviceID.c_str());
+			text.Format("Device ID = %s", sensor->m_info.strDeviceID.c_str());
 			ImGui::TreeNodeEx((void*)(intptr_t)idx++, node_flags, text.c_str());
-			text.Format("Serial Number = %s", cam.strSerialNumber.c_str());
+			text.Format("Serial Number = %s", sensor->m_info.strSerialNumber.c_str());
 			ImGui::TreeNodeEx((void*)(intptr_t)idx++, node_flags, text.c_str());
-			text.Format("IpAddress = %s", cam.strIpAddress.c_str());
+			text.Format("IpAddress = %s", sensor->m_info.strIpAddress.c_str());
 			ImGui::TreeNodeEx((void*)(intptr_t)idx++, node_flags, text.c_str());
 	
 			ImGui::TreePop();
