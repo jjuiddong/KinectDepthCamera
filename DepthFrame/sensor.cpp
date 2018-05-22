@@ -11,7 +11,7 @@ using namespace GenApi;
 used for grabbing. This custom allocator allocates buffers on the C++ heap.
 If the application doesn't provide an allocator, a default one is used
 that allocates memory on the heap. */
-class CustomAllocator2 : public BufferAllocator
+class CustomAllocator : public BufferAllocator
 {
 public:
 	virtual void* AllocateBuffer(size_t size_by) { return new char[size_by]; }
@@ -130,9 +130,9 @@ bool cSensor::Grab()
 				CToFCamera::Coord3D *p3DCoordinate = (CToFCamera::Coord3D*) parts[0].pData;
 				uint16_t *pIntensity = (uint16_t*)parts[1].pData;
 				const size_t nPixel = parts[0].width * parts[0].height;
-				memcpy(&m_buffer.m_vertices[0], p3DCoordinate, sizeof(float) * 3 * 640 * 480);
-				memcpy(&m_buffer.m_intensity[0], pIntensity, sizeof(unsigned short) * 640 * 480);
-				m_buffer.m_time = g_root.m_timer.GetMilliSeconds(); // Update Time
+				memcpy(&m_tempBuffer.m_vertices[0], p3DCoordinate, sizeof(float) * 3 * 640 * 480);
+				memcpy(&m_tempBuffer.m_intensity[0], pIntensity, sizeof(unsigned short) * 640 * 480);
+				m_tempBuffer.m_time = g_root.m_timer.GetMilliSeconds(); // Update Time
 			}
 		}
 
@@ -151,8 +151,20 @@ bool cSensor::Grab()
 }
 
 
-bool cSensor::CopyCaptureBuffer(cRenderer &renderer)
+bool cSensor::CopyCaptureBuffer(cRenderer &renderer, const char *saveFileName)
 {
+	common::AutoCSLock cs(m_cs);
+
+	if (m_buffer.m_time < m_tempBuffer.m_time)
+		m_buffer.ReadDatFile(renderer, m_tempBuffer);
+
+	// save PCD file
+	if (g_root.m_isAutoSaveCapture)
+	{
+		// save only processing camera depthmap
+		if (m_isShow)
+			m_tempBuffer.Write(saveFileName);
+	}
 
 	return true;
 }
@@ -167,7 +179,7 @@ void cSensor::PrepareAcquisition()
 	// Let the camera class use our allocator. 
 	// When the application doesn't provide an allocator, a default one that allocates memory buffers
 	// on the heap will be used automatically.
-	m_camera->SetBufferAllocator(new CustomAllocator2(), true); // m_Camera takes ownership and will clean-up allocator.
+	m_camera->SetBufferAllocator(new CustomAllocator(), true); // m_Camera takes ownership and will clean-up allocator.
 
 	// Allocate the memory buffers and prepare image exposure.
 	m_camera->PrepareAcquisition(nBuffers);

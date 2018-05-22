@@ -18,7 +18,7 @@ public:
 
 	bool InitCamera(const int id, const CameraInfo &cinfo);
 	bool Grab();
-	bool CopyCaptureBuffer(graphic::cRenderer &renderer);
+	bool CopyCaptureBuffer(graphic::cRenderer &renderer, const char *saveFileName);
 	void PrepareAcquisition();
 	void BeginAcquisition();
 	void EndAcquisition();
@@ -33,8 +33,8 @@ public:
 	bool m_isShow;
 	CameraInfo m_info;
 	CToFCamera *m_camera;
-	cDatReader m_buffer;
-	cSensorBuffer m_sensorBuff;
+	cDatReader m_tempBuffer; // temporary buffer
+	cSensorBuffer m_buffer;
 	common::CriticalSection m_cs;
 	common::Transform m_offset;
 };

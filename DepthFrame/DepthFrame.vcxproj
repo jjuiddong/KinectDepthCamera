@@ -165,7 +165,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="analysisview.cpp" />
-    <ClCompile Include="basler.cpp" />
     <ClCompile Include="baslersync.cpp" />
     <ClCompile Include="boxview.cpp" />
     <ClCompile Include="cameraview.cpp" />
@@ -197,7 +196,6 @@
   <ItemGroup>
     <ClInclude Include="3dview.h" />
     <ClInclude Include="analysisview.h" />
-    <ClInclude Include="basler.h" />
     <ClInclude Include="baslersync.h" />
     <ClInclude Include="boxview.h" />
     <ClInclude Include="cameraview.h" />

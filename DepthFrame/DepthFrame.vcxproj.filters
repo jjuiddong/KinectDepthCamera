@@ -46,7 +46,6 @@
     <ClCompile Include="clipper.cpp">
       <Filter>external</Filter>
     </ClCompile>
-    <ClCompile Include="basler.cpp" />
     <ClCompile Include="baslersync.cpp" />
     <ClCompile Include="kinectv2.cpp" />
     <ClCompile Include="cameraview.cpp">
@@ -101,7 +100,6 @@
     <ClInclude Include="clipper.hpp">
       <Filter>external</Filter>
     </ClInclude>
-    <ClInclude Include="basler.h" />
     <ClInclude Include="baslersync.h" />
     <ClInclude Include="StopWatch.h" />
     <ClInclude Include="kinectv2.h" />

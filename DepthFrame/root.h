@@ -4,7 +4,6 @@
 //
 #pragma once
 
-#include "basler.h"
 #include "baslersync.h"
 #include "kinectv2.h"
 
@@ -47,7 +46,6 @@ public:
 	common::Vector3 m_3dEyePos;
 	common::Vector3 m_3dLookAt;
 
-	cSensorBuffer m_sensorBuff[3];
 	cv::Mat m_projMap; // change space, (orthogonal projection map)
 	common::Transform m_cameraOffset[3]; // camera1 offset
 	common::cTimer m_timer;
@@ -91,7 +89,7 @@ public:
 
 	// Basler
 	bool m_isTryConnectBasler;
-	cBaslerCameraSync m_balserCam;
+	cBaslerCameraSync m_baslerCam;
 	//cBaslerCamera m_balserCam;
 
 	// Option

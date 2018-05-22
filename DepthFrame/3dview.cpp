@@ -121,10 +121,10 @@ void c3DView::OnPreRender(const float deltaSeconds)
 			//		if (g_root.m_sensorBuff[i].m_isLoaded)
 			//			g_root.m_sensorBuff[i].Render(renderer, "Unlit", false, g_root.m_cameraOffset[i].GetMatrixXM());
 
-			for (cSensor *sensor : g_root.m_balserCam.m_sensors)
+			for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
 				if (sensor->m_isShow)
-					if (sensor->m_sensorBuff.m_isLoaded)
-						sensor->m_sensorBuff.Render(renderer, "Unlit", false, sensor->m_offset.GetMatrixXM());
+					if (sensor->m_buffer.m_isLoaded)
+						sensor->m_buffer.Render(renderer, "Unlit", false, sensor->m_offset.GetMatrixXM());
 
 			//renderer.GetDevContext()->RSSetState(states.Wireframe());
 			//g_root.m_sensorBuff.RenderTessellation(renderer);
@@ -209,10 +209,10 @@ void c3DView::Capture3D()
 		//g_root.m_sensorBuff[camIdx].Render(renderer, "Heightmap", false, tfm.GetMatrixXM());
 		//g_root.m_sensorBuff.RenderTessellation(renderer, tfm.GetMatrixXM());
 
-		for (cSensor *sensor : g_root.m_balserCam.m_sensors)
+		for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
 			if (sensor->m_isShow)
-				if (sensor->m_sensorBuff.m_isLoaded)
-					sensor->m_sensorBuff.Render(renderer, "Heightmap", false
+				if (sensor->m_buffer.m_isLoaded)
+					sensor->m_buffer.Render(renderer, "Heightmap", false
 						, sensor->m_offset.GetMatrixXM() * tfm.GetMatrixXM());
 
 		//if (g_root.m_baslerCameraIdx == 0)
@@ -330,10 +330,10 @@ void c3DView::OnRender(const float deltaSeconds)
 		//ImGui::Spacing();
 
 		// Show Visible Camera Flag
-		if (g_root.m_balserCam.IsConnect())
+		if (g_root.m_baslerCam.IsConnect())
 		{
 			bool firstCheckBox = true;
-			for (cSensor *sensor : g_root.m_balserCam.m_sensors)
+			for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
 			{
 				if (!sensor->IsEnable())
 				{
@@ -391,19 +391,21 @@ void c3DView::OnRender(const float deltaSeconds)
 		ImGui::SameLine();
 		if (ImGui::Button("Save Plane"))
 		{
-			if (m_isGenPlane)
+			cSensor *sensor1 = g_root.m_baslerCam.m_sensors.empty()? NULL : g_root.m_baslerCam.m_sensors[0];
+
+			if (m_isGenPlane && sensor1)
 			{
-				g_root.m_config.SetValue("plane-x", g_root.m_sensorBuff[0].m_plane.N.x);
-				g_root.m_config.SetValue("plane-y", g_root.m_sensorBuff[0].m_plane.N.y);
-				g_root.m_config.SetValue("plane-z", g_root.m_sensorBuff[0].m_plane.N.z);
-				g_root.m_config.SetValue("plane-d", g_root.m_sensorBuff[0].m_plane.D);
+				g_root.m_config.SetValue("plane-x", sensor1->m_buffer.m_plane.N.x);
+				g_root.m_config.SetValue("plane-y", sensor1->m_buffer.m_plane.N.y);
+				g_root.m_config.SetValue("plane-z", sensor1->m_buffer.m_plane.N.z);
+				g_root.m_config.SetValue("plane-d", sensor1->m_buffer.m_plane.D);
 			}
 
-			if (m_isGenVolumeCenter)
+			if (m_isGenVolumeCenter && sensor1)
 			{
-				g_root.m_config.SetValue("center-x", g_root.m_sensorBuff[0].m_volumeCenter.x);
-				g_root.m_config.SetValue("center-y", g_root.m_sensorBuff[0].m_volumeCenter.y);
-				g_root.m_config.SetValue("center-z", g_root.m_sensorBuff[0].m_volumeCenter.z);
+				g_root.m_config.SetValue("center-x", sensor1->m_buffer.m_volumeCenter.x);
+				g_root.m_config.SetValue("center-y", sensor1->m_buffer.m_volumeCenter.y);
+				g_root.m_config.SetValue("center-z", sensor1->m_buffer.m_volumeCenter.z);
 			}
 
 			if (g_root.m_config.Write("config_depthframe.txt"))
@@ -421,23 +423,24 @@ void c3DView::OnRender(const float deltaSeconds)
 				if (config.GetString("plane-x", "none") != "none")
 				{
 					m_isGenPlane = true;
-					for (int i = 0; i < 3; ++i)
+					for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
+
 					{
-						g_root.m_sensorBuff[i].m_plane.N.x = config.GetFloat("plane-x");
-						g_root.m_sensorBuff[i].m_plane.N.y = config.GetFloat("plane-y");
-						g_root.m_sensorBuff[i].m_plane.N.z = config.GetFloat("plane-z");
-						g_root.m_sensorBuff[i].m_plane.D = config.GetFloat("plane-d");
+						sensor->m_buffer.m_plane.N.x = config.GetFloat("plane-x");
+						sensor->m_buffer.m_plane.N.y = config.GetFloat("plane-y");
+						sensor->m_buffer.m_plane.N.z = config.GetFloat("plane-z");
+						sensor->m_buffer.m_plane.D = config.GetFloat("plane-d");
 					}
 				}
 
 				if (config.GetString("center-x", "none") != "none")
 				{
 					m_isGenVolumeCenter = true;
-					for (int i = 0; i < 3; ++i)
+					for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
 					{
-						g_root.m_sensorBuff[i].m_volumeCenter.x = config.GetFloat("center-x");
-						g_root.m_sensorBuff[i].m_volumeCenter.y = config.GetFloat("center-y");
-						g_root.m_sensorBuff[i].m_volumeCenter.z = config.GetFloat("center-z");
+						sensor->m_buffer.m_volumeCenter.x = config.GetFloat("center-x");
+						sensor->m_buffer.m_volumeCenter.y = config.GetFloat("center-y");
+						sensor->m_buffer.m_volumeCenter.z = config.GetFloat("center-z");
 					}
 				}
 			}
@@ -454,13 +457,19 @@ void c3DView::OnRender(const float deltaSeconds)
 		{
 			m_state = eState::VCENTER;
 		}
-		const Vector3 &volumeCenter = g_root.m_sensorBuff[0].m_volumeCenter;
-		ImGui::Text("volume center = %f, %f, %f", volumeCenter.x, volumeCenter.y, volumeCenter.z);
 
-		if (ImGui::Button("Change Space"))
+		cSensor *sensor1 = g_root.m_baslerCam.m_sensors.empty() ? NULL : g_root.m_baslerCam.m_sensors[0];
+		if (sensor1)
 		{
-			g_root.m_sensorBuff[0].ChangeSpace(GetRenderer());
+			const Vector3 &volumeCenter = sensor1->m_buffer.m_volumeCenter;
+			ImGui::Text("volume center = %f, %f, %f", volumeCenter.x, volumeCenter.y, volumeCenter.z);
+
+			if (ImGui::Button("Change Space"))
+			{
+				sensor1->m_buffer.ChangeSpace(GetRenderer());
+			}
 		}
+
 
 		if (ImGui::Button("Standard Deviation"))
 		{
@@ -489,6 +498,11 @@ void c3DView::OnRender(const float deltaSeconds)
 double c3DView::CalcBasePlaneStandardDeviation(const size_t camIdx //=0
 )
 {
+	if (camIdx >= g_root.m_baslerCam.m_sensors.size())
+		return 0.f;
+
+	cSensor *sensor1 = g_root.m_baslerCam.m_sensors[camIdx];
+
 	const float xLimitLower = -40.f;
 	const float xLimitUpper = 45.f;
 	const float zLimitLower = -42.5f;
@@ -497,7 +511,7 @@ double c3DView::CalcBasePlaneStandardDeviation(const size_t camIdx //=0
 	// 높이 평균 구하기
 	int k = 0;
 	double avr = 0;
-	for (auto &vtx : g_root.m_sensorBuff[camIdx].m_vertices)
+	for (auto &vtx : sensor1->m_buffer.m_vertices)
 	{
 		if ((xLimitLower < vtx.x)
 			&& (xLimitUpper > vtx.x)
@@ -511,7 +525,7 @@ double c3DView::CalcBasePlaneStandardDeviation(const size_t camIdx //=0
 	// 표준 편차 구하기
 	k = 0;
 	double sd = 0;
-	for (auto &vtx : g_root.m_sensorBuff[camIdx].m_vertices)
+	for (auto &vtx : sensor1->m_buffer.m_vertices)
 	{
 		if ((xLimitLower < vtx.x)
 			&& (xLimitUpper > vtx.x)
@@ -643,10 +657,14 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 		Vector3 p1 = m_groundPlane1.Pick(ray.orig, ray.dir);
 		m_rotateLen = (p1 - ray.orig).Length();// min(500.f, (p1 - ray.orig).Length());
 
+		cSensor *sensor1 = g_root.m_baslerCam.m_sensors.empty() ? NULL : g_root.m_baslerCam.m_sensors[0];
+		if (!sensor1)
+			break;
+
 		// Generate Plane
 		if ((m_genPlane >= 0) && (m_genPlane < 3))
 		{
-			const Vector3 vtxPos = g_root.m_sensorBuff[0].PickVertex(ray);
+			const Vector3 vtxPos = sensor1->m_buffer.PickVertex(ray);
 			m_sphere.SetPos(vtxPos);
 			m_planePos[m_genPlane++] = vtxPos;
 
@@ -663,14 +681,14 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 				m_planeGrid.m_transform.pos = Vector3(0, 0, 0);
 				m_planeGrid.m_transform.pos = plane.N * -plane.D;
 
-				g_root.m_sensorBuff[0].GeneratePlane(m_planePos);
+				sensor1->m_buffer.GeneratePlane(m_planePos);
 			}
 		}
 
 		// Picking Vertex Pos
 		if (eState::PICKPOS == m_state)
 		{
-			const Vector3 vtxPos = g_root.m_sensorBuff[0].PickVertex(ray);
+			const Vector3 vtxPos = sensor1->m_buffer.PickVertex(ray);
 			m_pickPos = vtxPos;
 			m_sphere.SetPos(vtxPos);
 			m_state = eState::NORMAL;
@@ -679,11 +697,11 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 		// Picking Volume Center
 		if (eState::VCENTER == m_state)
 		{
-			const Vector3 vtxPos = g_root.m_sensorBuff[0].PickVertex(ray);
-			g_root.m_sensorBuff[0].m_volumeCenter = vtxPos;
+			const Vector3 vtxPos = sensor1->m_buffer.PickVertex(ray);
+			sensor1->m_buffer.m_volumeCenter = vtxPos;
 			m_isGenVolumeCenter = true;
 
-			const Plane &plane = g_root.m_sensorBuff[0].m_plane;
+			const Plane &plane = sensor1->m_buffer.m_plane;
 			const float d = plane.Distance(vtxPos) * 10.f;
 			m_volumeCenterLine.SetLine(vtxPos + plane.N*d, vtxPos - plane.N*d, 0.1f);
 			

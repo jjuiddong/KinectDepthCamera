@@ -19,9 +19,8 @@ public:
 	virtual ~cBaslerCameraSync();
 
 	bool Init();
-	bool Grab();
-	void ProcessCmd();
 	bool CopyCaptureBuffer(graphic::cRenderer &renderer);
+	bool CreateSensor(const int sensorCount);
 	void Clear();
 	bool IsConnect() const;
 
@@ -30,11 +29,12 @@ public:
 	void findMaster();
 	void syncCameras();
 	void setTriggerDelays();
+	void ProcessCmd();
+	bool Grab();
 
 
 protected:
 	int64_t GetMaxAbsGevIEEE1588OffsetFromMasterInTimeWindow(CToFCamera *tofCam, double timeToMeasureSec, double timeDeltaSec);
-	//void processData(const size_t camIdx, const GrabResult& grabResult);
 
 
 public:
@@ -56,10 +56,7 @@ public:
 	};
 
 	eThreadState::Enum m_state;
-	common::cTimer m_timer;
 	std::thread m_thread;
-	common::CriticalSection m_cs;
-	cDatReader m_captureBuff[3]; // camera1,2,3
 };
 
 

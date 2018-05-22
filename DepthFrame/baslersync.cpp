@@ -16,20 +16,6 @@ void mSleep(int sleepMs)      // Use a wrapper
 }
 
 
-/* Allocator class used by the CToFCamera class for allocating memory buffers
-used for grabbing. This custom allocator allocates buffers on the C++ heap.
-If the application doesn't provide an allocator, a default one is used
-that allocates memory on the heap. */
-class CustomAllocator : public BufferAllocator
-{
-public:
-	virtual void* AllocateBuffer(size_t size_by) { return new char[size_by]; }
-	virtual void FreeBuffer(void* pBuffer) { delete[] static_cast<char*>(pBuffer); }
-	virtual void Delete() { delete this; }
-};
-
-
-
 cBaslerCameraSync::cBaslerCameraSync(const bool isThreadMode //= false
 )
 	: m_isSetupSuccess(false)
@@ -50,7 +36,6 @@ cBaslerCameraSync::~cBaslerCameraSync()
 bool cBaslerCameraSync::Init()
 {
 	m_isSetupSuccess = false;
-	m_timer.Create();
 
 	if (m_isThreadMode)
 	{
@@ -76,6 +61,26 @@ bool cBaslerCameraSync::Init()
 
 			return false;
 		}
+	}
+
+	return true;
+}
+
+
+bool cBaslerCameraSync::CreateSensor(const int sensorCount)
+{
+	while (eThreadState::CONNECT_TRY == m_state)
+		Sleep(10);
+
+	if (m_sensors.size() >= (u_int)sensorCount)
+		return false;
+
+	const int initSensorCnt = sensorCount - m_sensors.size();
+	for (int i = 0; i < initSensorCnt; ++i)
+	{
+		cSensor *sensor = new cSensor();
+		sensor->m_info.strDisplayName = common::format("temp camera%d", i + 1);
+		m_sensors.push_back(sensor);
 	}
 
 	return true;
@@ -132,6 +137,9 @@ int cBaslerCameraSync::BaslerCameraSetup()
 
 		return EXIT_FAILURE;
 	}
+
+	if (m_sensors.empty())
+		return EXIT_FAILURE;
 
 	return EXIT_SUCCESS;
 }
@@ -456,7 +464,6 @@ bool cBaslerCameraSync::Grab()
 	RETV(!m_isSetupSuccess, false);
 	static int grabcnt = 0;
 
-	//for (size_t camIdx = 0; camIdx < m_CameraInfos.size(); camIdx++)
 	for (cSensor *sensor : m_sensors)
 	{
 		if (!sensor->IsEnable())
@@ -473,70 +480,16 @@ bool cBaslerCameraSync::Grab()
 
 bool cBaslerCameraSync::CopyCaptureBuffer(graphic::cRenderer &renderer)
 {
-	//common::AutoCSLock cs(m_cs);
-
-	//const string curTime = common::GetCurrentDateTime();
-
-	//if (g_root.m_sensorBuff[0].m_time < m_captureBuff[0].m_time)
-	//	g_root.m_sensorBuff[0].ReadDatFile(renderer, m_captureBuff[0]);
-	//if (g_root.m_sensorBuff[1].m_time < m_captureBuff[1].m_time)
-	//	g_root.m_sensorBuff[1].ReadDatFile(renderer, m_captureBuff[1]);
-	//if (g_root.m_sensorBuff[2].m_time < m_captureBuff[2].m_time)
-	//	g_root.m_sensorBuff[2].ReadDatFile(renderer, m_captureBuff[2]);
-
-	//// save PCD file
-	//if (g_root.m_isAutoSaveCapture)
-	//{
-	//	for (int i = 0; i < 3; ++i)
-	//	{
-	//		// save only processing camera depthmap
-	//		if (g_root.m_showCamera[i])
-	//		{
-	//			common::StrPath fileName;
-	//			fileName.Format("../media/depthMulti3/%d/%s.pcd", i, curTime.c_str());
-	//			m_captureBuff[i].Write(fileName.c_str());
-	//		}
-	//	}
-	//}
+	const string curTime = common::GetCurrentDateTime();
+	for (cSensor *sensor : m_sensors)
+	{
+		common::StrPath fileName;
+		fileName.Format("../media/depthMulti3/%d/%s.pcd", sensor->m_id, curTime.c_str());
+		sensor->CopyCaptureBuffer(renderer, fileName.c_str());
+	}
 
 	return true;
 }
-
-
-//void cBaslerCameraSync::processData(const size_t camIdx, const GrabResult& grabResult)
-//{
-//	BufferParts parts;
-//	m_Cameras.at(camIdx)->GetBufferParts(grabResult, parts);
-//
-//	// Retrieve the values for the center pixel
-//	CToFCamera::Coord3D *p3DCoordinate = (CToFCamera::Coord3D*) parts[0].pData;
-//	uint16_t *pIntensity = (uint16_t*)parts[1].pData;
-//	uint16_t *pConfidence = (uint16_t*)parts[2].pData;
-//	const size_t nPixel = parts[0].width * parts[0].height;
-//
-//	cDatReader reader;
-//	memcpy(&reader.m_vertices[0], p3DCoordinate, sizeof(float) * 3 * 640 * 480);
-//	memcpy(&reader.m_intensity[0], pIntensity, sizeof(unsigned short) * 640 * 480);
-//	memcpy(&reader.m_confidence[0], pConfidence, sizeof(unsigned short) * 640 * 480);
-//
-//	g_root.m_sensorBuff[camIdx].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer(), reader);
-//
-//	// save *.pcd file
-//	if (g_root.m_isAutoSaveCapture)
-//	{
-//		using namespace std;
-//		common::StrPath fileName;
-//		fileName.Format("../media/depthMulti/%d/%s.pcd", camIdx, common::GetCurrentDateTime().c_str());
-//
-//		ofstream o(fileName.c_str(), ios::binary);
-//		if (o)
-//		{
-//			o.write((char*)p3DCoordinate, sizeof(float)*nPixel * 3);
-//			o.write((char*)pIntensity, sizeof(uint16_t)*nPixel);
-//			o.write((char*)pConfidence, sizeof(uint16_t)*nPixel);
-//		}
-//	}
-//}
 
 
 void cBaslerCameraSync::Clear()
@@ -571,40 +524,37 @@ void BaslerCameraThread(cBaslerCameraSync *basler)
 	{
 		CToFCamera::InitProducer();
 
-		if (EXIT_SUCCESS != basler->BaslerCameraSetup())
+		if (EXIT_SUCCESS == basler->BaslerCameraSetup())
+		{
+			double triggerDelayTime = g_root.m_timer.GetMilliSeconds();
+
+			if (cBaslerCameraSync::eThreadState::CONNECT_TRY == basler->m_state)
+				basler->m_state = cBaslerCameraSync::eThreadState::CAPTURE;
+
+			while (cBaslerCameraSync::eThreadState::CAPTURE == basler->m_state)
+			{
+				if (g_root.m_timer.GetMilliSeconds() - triggerDelayTime > 1000)
+				{
+					//basler->setTriggerDelays();
+					triggerDelayTime = g_root.m_timer.GetMilliSeconds();
+				}
+
+				if (basler->m_isTrySyncTrigger)
+				{
+					basler->setTriggerDelays();
+					basler->m_isTrySyncTrigger = false;
+				}
+
+				basler->ProcessCmd();
+				basler->Grab();
+			}
+
+			basler->m_state = cBaslerCameraSync::eThreadState::DISCONNECT;
+		}
+		else
 		{
 			basler->m_state = cBaslerCameraSync::eThreadState::CONNECT_FAIL;
-			return;
 		}
-
-		// 플래그가 바뀌면, 카메라를 On/Off 처리한다.
-		//bool isOldCamEnable[cBaslerCameraSync::MAX_CAMS];
-		//memcpy(isOldCamEnable, basler->m_isCameraEnable, sizeof(basler->m_isCameraEnable));
-
-		double triggerDelayTime = basler->m_timer.GetMilliSeconds();
-
-		if (cBaslerCameraSync::eThreadState::CONNECT_TRY == basler->m_state)
-			basler->m_state = cBaslerCameraSync::eThreadState::CAPTURE;
-
-		while (cBaslerCameraSync::eThreadState::CAPTURE == basler->m_state)
-		{
-			if (basler->m_timer.GetMilliSeconds() - triggerDelayTime > 1000)
-			{
-				//basler->setTriggerDelays();
-				triggerDelayTime = basler->m_timer.GetMilliSeconds();
-			}
-
-			if (basler->m_isTrySyncTrigger)
-			{
-				basler->setTriggerDelays();
-				basler->m_isTrySyncTrigger = false;
-			}
-			
-			basler->ProcessCmd();
-			basler->Grab();
-		}
-
-		basler->m_state = cBaslerCameraSync::eThreadState::DISCONNECT;
 	}
 	catch (GenICam::GenericException& e)
 	{

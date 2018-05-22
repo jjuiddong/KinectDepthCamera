@@ -27,7 +27,11 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 	ImGui::SameLine();
 	if (ImGui::Button("Analysis Depth"))
 	{
-		g_root.m_sensorBuff[0].AnalysisDepth();
+		if (!g_root.m_baslerCam.m_sensors.empty())
+		{
+			cSensor *sensor1 = g_root.m_baslerCam.m_sensors[0];
+			sensor1->m_buffer.AnalysisDepth();
+		}
 	}
 
 	ImGui::Spacing();
@@ -76,9 +80,14 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 	// Diff Average
 	{
 		ImGui::Text("Height Different Average");
-		ImGui::PlotLines("Height Different Average", g_root.m_sensorBuff[0].m_diffAvrs.values
-			, g_root.m_sensorBuff[0].m_diffAvrs.size
-			, g_root.m_sensorBuff[0].m_diffAvrs.idx, "", 0, .5f, ImVec2(0, 100));
+
+		if (!g_root.m_baslerCam.m_sensors.empty())
+		{
+			cSensor *sensor1 = g_root.m_baslerCam.m_sensors[0];
+			ImGui::PlotLines("Height Different Average", sensor1->m_buffer.m_diffAvrs.values
+				, sensor1->m_buffer.m_diffAvrs.size
+				, sensor1->m_buffer.m_diffAvrs.idx, "", 0, .5f, ImVec2(0, 100));
+		}
 	}
 
 

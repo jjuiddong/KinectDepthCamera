@@ -301,10 +301,18 @@ void cFilterView::CalcBoxVolumeAverage()
 	const float max_vertex_gap = 10.f; // 10 cm
 
 	// 정보가 업데이트 되지 않았거나, 오차가 크면, 계산하지 않는다.
-	if (g_root.m_sensorBuff[0].m_diffAvrs.GetCurValue() == 0)
+	if (g_root.m_baslerCam.m_sensors.empty())
 		return;
-	if (g_root.m_sensorBuff[0].m_diffAvrs.GetCurValue() > 0.3f)
+
+	cSensor *sensor1 = g_root.m_baslerCam.m_sensors[0];
+	if (sensor1->m_buffer.m_diffAvrs.GetCurValue() == 0)
 		return;
+	if (sensor1->m_buffer.m_diffAvrs.GetCurValue() > 0.3f)
+		return;
+	//if (g_root.m_sensorBuff[0].m_diffAvrs.GetCurValue() == 0)
+	//	return;
+	//if (g_root.m_sensorBuff[0].m_diffAvrs.GetCurValue() > 0.3f)
+	//	return;
 	if (m_contours.empty())
 		return;
 	for (auto &info : m_avrContours)

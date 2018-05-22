@@ -19,12 +19,12 @@ cCameraView::~cCameraView()
 
 void cCameraView::OnRender(const float deltaSeconds)
 {
-	if ((cBaslerCameraSync::eThreadState::NONE == g_root.m_balserCam.m_state)
-		|| (cBaslerCameraSync::eThreadState::CONNECT_TRY == g_root.m_balserCam.m_state))
+	if ((cBaslerCameraSync::eThreadState::NONE == g_root.m_baslerCam.m_state)
+		|| (cBaslerCameraSync::eThreadState::CONNECT_TRY == g_root.m_baslerCam.m_state))
 		return;
 
 	int camIdx = 0;
-	for (auto &sensor : g_root.m_balserCam.m_sensors)
+	for (auto &sensor : g_root.m_baslerCam.m_sensors)
 	{
 		ImGui::SetNextTreeNodeOpen(true, ImGuiSetCond_Once);
 		if (ImGui::TreeNode((void*)sensor, sensor->m_info.strDisplayName.c_str()))

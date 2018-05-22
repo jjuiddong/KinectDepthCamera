@@ -82,12 +82,12 @@ void cInputView::OnRender(const float deltaSeconds)
 
 	case cRoot::eInputType::BASLER:
 	{
-		ImGui::Text(g_root.m_balserCam.IsConnect() ? "Basler Camera - Connect" : "Basler Camera - Off");
+		ImGui::Text(g_root.m_baslerCam.IsConnect() ? "Basler Camera - Connect" : "Basler Camera - Off");
 		ImGui::Checkbox("Basler Connect Auto", &g_root.m_isTryConnectBasler);
 
 		if (ImGui::Button("Capture Balser Camera"))
-			if (g_root.m_balserCam.IsConnect())
-				g_root.m_balserCam.CopyCaptureBuffer(((cViewer*)g_application)->m_3dView->GetRenderer());
+			if (g_root.m_baslerCam.IsConnect())
+				g_root.m_baslerCam.CopyCaptureBuffer(((cViewer*)g_application)->m_3dView->GetRenderer());
 
 		if (m_isCaptureContinuos)
 		{
@@ -101,7 +101,7 @@ void cInputView::OnRender(const float deltaSeconds)
 		}
 
 		if (ImGui::Button("Basler Trigger"))
-			g_root.m_balserCam.m_isTrySyncTrigger = true;
+			g_root.m_baslerCam.m_isTrySyncTrigger = true;
 	}
 	break;
 	}
@@ -116,13 +116,13 @@ void cInputView::OnRender(const float deltaSeconds)
 	ImGui::Checkbox("Palete", &g_root.m_isPalete);
 	ImGui::Checkbox("Grab-Log", &g_root.m_isGrabLog);
 
-	if (m_isCaptureContinuos && g_root.m_balserCam.IsConnect())
+	if (m_isCaptureContinuos && g_root.m_baslerCam.IsConnect())
 	{
 		m_captureTime += deltaSeconds;
 		m_triggerDelayTime += deltaSeconds;
 		if (m_captureTime > 0.1f)
 		{
-			if (g_root.m_balserCam.CopyCaptureBuffer( ((cViewer*)g_application)->m_3dView->GetRenderer()))
+			if (g_root.m_baslerCam.CopyCaptureBuffer( ((cViewer*)g_application)->m_3dView->GetRenderer()))
 				UpdateDelayMeasure(m_captureTime);
 			else
 				m_measureTime += m_captureTime;
@@ -154,35 +154,35 @@ void cInputView::OnRender(const float deltaSeconds)
 						m_aniIndex2 = ret.second;
 					}
 
-					if (m_aniIndex2 >= 0)
-					{
-						const bool r1 = g_root.m_sensorBuff[0].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
-							, m_files[m_aniIndex].ansi().c_str());
+					//if (m_aniIndex2 >= 0)
+					//{
+					//	const bool r1 = g_root.m_sensorBuff[0].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
+					//		, m_files[m_aniIndex].ansi().c_str());
 
-						bool r2 = false;
-						if (m_secondFileIds[m_aniIndex2] - m_fileIds[m_aniIndex] < 60)
-						{
-							r2 = g_root.m_sensorBuff[1].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
-								, m_secondFiles[m_aniIndex2].ansi().c_str());
-						}
-						else
-						{
-							g_root.m_sensorBuff[1].m_isLoaded = false;
-						}
+					//	bool r2 = false;
+					//	if (m_secondFileIds[m_aniIndex2] - m_fileIds[m_aniIndex] < 60)
+					//	{
+					//		r2 = g_root.m_sensorBuff[1].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
+					//			, m_secondFiles[m_aniIndex2].ansi().c_str());
+					//	}
+					//	else
+					//	{
+					//		g_root.m_sensorBuff[1].m_isLoaded = false;
+					//	}
 
-						if (r1 || r2)
-							UpdateDelayMeasure(m_aniTime);
-						else
-							m_measureTime += m_captureTime;
-					}
+					//	if (r1 || r2)
+					//		UpdateDelayMeasure(m_aniTime);
+					//	else
+					//		m_measureTime += m_captureTime;
+					//}
 				}
 				else
 				{
-					if (g_root.m_sensorBuff[0].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
-						, m_files[m_aniIndex].ansi().c_str()))
-						UpdateDelayMeasure(m_aniTime);
-					else
-						m_measureTime += m_captureTime;
+					//if (g_root.m_sensorBuff[0].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
+					//	, m_files[m_aniIndex].ansi().c_str()))
+					//	UpdateDelayMeasure(m_aniTime);
+					//else
+					//	m_measureTime += m_captureTime;
 				}
 
 			}
@@ -206,6 +206,16 @@ void cInputView::OnRender(const float deltaSeconds)
 		}
 	}
 
+	ImGui::Spacing();
+	ImGui::Separator();
+	
+	ImGui::Text("Camera Count ");
+	static int cameraCount = 0; // + 1
+	ImGui::SameLine(); ImGui::RadioButton("Cam1", &cameraCount, 0);
+	ImGui::SameLine(); ImGui::RadioButton("Cam2", &cameraCount, 1);
+	ImGui::SameLine(); ImGui::RadioButton("Cam3", &cameraCount, 2);	
+	ImGui::Spacing();
+
 	// File Animation
 	if (m_isFileAnimation)
 	{
@@ -219,6 +229,7 @@ void cInputView::OnRender(const float deltaSeconds)
 		if (ImGui::Button("File Animation - Play"))
 		{
 			m_isFileAnimation = true;
+			g_root.m_baslerCam.CreateSensor(cameraCount + 1);
 		}
 	}
 
@@ -357,6 +368,7 @@ void cInputView::CalcDelayMeasure(const size_t camIdx // =0
 
 	m_state = eState::NORMAL;
 }
+
 
 
 void cInputView::UpdateFileList()
@@ -556,16 +568,21 @@ bool cInputView::OpenFile(const StrPath &ansifileName
 	, const size_t camIdx //=0
 )
 {
+	if (camIdx >= g_root.m_baslerCam.m_sensors.size())
+		return false;
+
+	cSensor *sensor1 = g_root.m_baslerCam.m_sensors[camIdx];
+
 	if (string(".ply") == ansifileName.GetFileExt())
 	{
-		g_root.m_sensorBuff[camIdx].ReadPlyFile(
+		sensor1->m_buffer.ReadPlyFile(
 			((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
 
 		g_root.MeasureVolume();
 	}
 	else if (string(".pcd") == ansifileName.GetFileExt())
 	{
-		g_root.m_sensorBuff[camIdx].ReadDatFile(
+		sensor1->m_buffer.ReadDatFile(
 			((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
 		g_root.MeasureVolume();
 	}

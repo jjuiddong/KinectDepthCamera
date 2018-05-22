@@ -23,7 +23,7 @@ cRoot::cRoot()
 	, m_isAutoMeasure(false)
 	, m_isPalete(false)
 	, m_isConnectKinect(false)
-	, m_balserCam(true)
+	, m_baslerCam(true)
 	, m_isGrabLog(false)
 {
 	ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
@@ -70,8 +70,8 @@ bool cRoot::InitSensor()
 	if (m_isConnectKinect)
 		m_kinect.Init();
 	if (m_isTryConnectBasler)
-		m_balserCam.Init();
-	return m_kinect.IsConnect() || m_balserCam.IsConnect();
+		m_baslerCam.Init();
+	return m_kinect.IsConnect() || m_baslerCam.IsConnect();
 }
 
 
@@ -96,7 +96,7 @@ void cRoot::MeasureVolume(
 		// 포인트 클라우드에서 높이 분포를 계산한다.
 		// 높이분포를 이용해서 면적분포 메쉬를 생성한다.
 		// 높이 별로 포인트 클라우드를 생성한다.
-		m_sensorBuff[2].MeasureVolume(renderer);
+		//m_sensorBuff[2].MeasureVolume(renderer);
 	}
 
 	// Update FilterView, DepthView, DepthView2
@@ -125,7 +125,7 @@ void cRoot::Clear()
 	m_areaBuff.clear();
 
 	m_kinect.Clear();
-	m_balserCam.Clear();
+	m_baslerCam.Clear();
 	
 	m_config.SetValue("kinect_connect", m_isConnectKinect);
 	m_config.SetValue("basler_connect", m_isTryConnectBasler);
