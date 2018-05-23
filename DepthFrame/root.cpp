@@ -96,7 +96,9 @@ void cRoot::MeasureVolume(
 		// 포인트 클라우드에서 높이 분포를 계산한다.
 		// 높이분포를 이용해서 면적분포 메쉬를 생성한다.
 		// 높이 별로 포인트 클라우드를 생성한다.
-		//m_sensorBuff[2].MeasureVolume(renderer);
+		cSensor *sensor = (m_baslerCam.m_sensors.size() >= 3) ? m_baslerCam.m_sensors[2] : NULL;
+		if (sensor)
+			sensor->m_buffer.MeasureVolume(renderer);		
 	}
 
 	// Update FilterView, DepthView, DepthView2

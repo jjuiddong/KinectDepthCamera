@@ -25,6 +25,7 @@ cSensor::cSensor()
 	, m_isEnable(false)
 	, m_isMaster(false)
 	, m_isShow(true)
+	, m_isAnimation(true)
 	, m_id(0)
 {
 }
@@ -215,7 +216,7 @@ void cSensor::EndAcquisition()
 
 bool cSensor::IsEnable()
 {
-	RETV(!m_camera, false);
+	//RETV(!m_camera, false);
 	return m_isEnable;
 }
 

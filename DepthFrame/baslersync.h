@@ -23,6 +23,7 @@ public:
 	bool CreateSensor(const int sensorCount);
 	void Clear();
 	bool IsConnect() const;
+	bool IsReadyCapture() const;
 
 	int BaslerCameraSetup();
 	void setupCamera();

@@ -31,6 +31,7 @@ public:
 	bool m_isEnable;
 	bool m_isMaster;
 	bool m_isShow;
+	bool m_isAnimation;
 	CameraInfo m_info;
 	CToFCamera *m_camera;
 	cDatReader m_tempBuffer; // temporary buffer

@@ -79,7 +79,12 @@ bool cBaslerCameraSync::CreateSensor(const int sensorCount)
 	for (int i = 0; i < initSensorCnt; ++i)
 	{
 		cSensor *sensor = new cSensor();
+		sensor->m_id = i;
+		sensor->m_isEnable = true;
+		sensor->m_isShow = true;
+		sensor->m_isAnimation = true;
 		sensor->m_info.strDisplayName = common::format("temp camera%d", i + 1);
+		sensor->m_offset = g_root.m_cameraOffset[i];
 		m_sensors.push_back(sensor);
 	}
 
@@ -161,6 +166,8 @@ void cBaslerCameraSync::setupCamera()
 		sensor->m_offset = g_root.m_cameraOffset[camIdx];
 		m_oldCameraEnable[camIdx] = true;
 
+		m_sensors.push_back(sensor);
+
 		++camIdx;
 	}
 
@@ -175,8 +182,10 @@ void cBaslerCameraSync::findMaster()
 
 	common::dbg::Logp("waiting for cameras to negotiate master role ...\n");
 
+	int tryCount = 0;
 	do
 	{
+		common::dbg::Logp("find master camera...%d \n", tryCount++);
 
 		nMaster = 0;
 		//
@@ -483,12 +492,24 @@ bool cBaslerCameraSync::CopyCaptureBuffer(graphic::cRenderer &renderer)
 	const string curTime = common::GetCurrentDateTime();
 	for (cSensor *sensor : m_sensors)
 	{
+		if (!sensor->IsEnable())
+			continue;
+
 		common::StrPath fileName;
 		fileName.Format("../media/depthMulti3/%d/%s.pcd", sensor->m_id, curTime.c_str());
 		sensor->CopyCaptureBuffer(renderer, fileName.c_str());
 	}
 
 	return true;
+}
+
+
+bool cBaslerCameraSync::IsReadyCapture() const
+{
+	if ((eThreadState::NONE != m_state)
+		&& (eThreadState::CONNECT_TRY != m_state))
+		return true;
+	return false;
 }
 
 

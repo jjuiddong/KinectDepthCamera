@@ -17,15 +17,17 @@ cInputView::cInputView(const string &name)
 	, m_captureTime(0)
 	, m_triggerDelayTime(0)
 	, m_isFileAnimation(false)
-	, m_aniIndex(-1)
+	, m_aniIndex1(-1)
 	, m_aniIndex2(-1)
+	, m_aniIndex3(-1)
 	, m_selFileIdx(-1)
 	, m_state(eState::NORMAL)
 	, m_measureTime(0)
 	, m_comboFileIdx(0)
-	, m_isReadTwoCamera(false)
-	, m_isReadCamera2(false)
+	//, m_isReadTwoCamera(false)
+	//, m_isReadCamera2(false)
 	, m_isOnlyTwoCameraFile(false)
+	, m_aniCameraCount(2)
 {
 }
 
@@ -139,70 +141,87 @@ void cInputView::OnRender(const float deltaSeconds)
 	else if (m_isFileAnimation)
 	{
 		m_aniTime += deltaSeconds;
-		if (m_aniTime > 0.1f)
+		if ((m_aniTime > 0.1f) && !m_files.empty() && g_root.m_baslerCam.IsReadyCapture())
 		{
-			if (m_files.size() > (u_int)m_aniIndex)
+			sFileInfo &finfo1 = m_files[0];
+			sFileInfo &finfo2 = m_files[1]; // master
+			sFileInfo &finfo3 = m_files[2];
+			cSensor *sensor1 = g_root.m_baslerCam.m_sensors[0];
+			cSensor *sensor2 = g_root.m_baslerCam.m_sensors[1]; // master
+			cSensor *sensor3 = g_root.m_baslerCam.m_sensors[2];
+
+			if (finfo2.fileNames.size() > (u_int)m_aniIndex2)
 			{
-				if (m_isReadTwoCamera)
+				auto ret1 = GetOnlyTwoCameraAnimationIndex(finfo2, m_aniIndex2, finfo3, m_aniIndex3);
+				m_aniIndex2 = ret1.first;
+				m_aniIndex3 = ret1.second;
+
+				auto ret2 = GetOnlyTwoCameraAnimationIndex(finfo2, m_aniIndex2, finfo1, m_aniIndex1, true);
+				m_aniIndex1 = ret2.second;
+
+				bool r1 = false;
+				if (m_aniIndex1 >= 0)
 				{
-					m_aniIndex2 = GetTwoCameraAnimationIndex(m_aniIndex, m_aniIndex2);
-
-					if (m_isOnlyTwoCameraFile)
-					{
-						auto ret = GetOnlyTwoCameraAnimationIndex(m_aniIndex, m_aniIndex2);
-						m_aniIndex = ret.first;
-						m_aniIndex2 = ret.second;
-					}
-
-					//if (m_aniIndex2 >= 0)
-					//{
-					//	const bool r1 = g_root.m_sensorBuff[0].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
-					//		, m_files[m_aniIndex].ansi().c_str());
-
-					//	bool r2 = false;
-					//	if (m_secondFileIds[m_aniIndex2] - m_fileIds[m_aniIndex] < 60)
-					//	{
-					//		r2 = g_root.m_sensorBuff[1].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
-					//			, m_secondFiles[m_aniIndex2].ansi().c_str());
-					//	}
-					//	else
-					//	{
-					//		g_root.m_sensorBuff[1].m_isLoaded = false;
-					//	}
-
-					//	if (r1 || r2)
-					//		UpdateDelayMeasure(m_aniTime);
-					//	else
-					//		m_measureTime += m_captureTime;
-					//}
+					r1 = sensor1->m_buffer.ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
+						, finfo1.fullFileNames[m_aniIndex1].ansi().c_str());
+					++m_aniIndex1;
 				}
 				else
 				{
-					//if (g_root.m_sensorBuff[0].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
-					//	, m_files[m_aniIndex].ansi().c_str()))
-					//	UpdateDelayMeasure(m_aniTime);
-					//else
-					//	m_measureTime += m_captureTime;
+					sensor1->m_buffer.m_isLoaded = false;
 				}
+
+				bool r2 = false;
+				if (m_aniIndex2 >= 0)
+				{
+					r2 = sensor2->m_buffer.ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
+					, finfo2.fullFileNames[m_aniIndex2].ansi().c_str());
+				}
+				else
+				{
+					sensor2->m_buffer.m_isLoaded = false;
+				}
+
+				bool r3 = false;
+				if (m_aniIndex3 >= 0)
+				{
+					r3 = sensor3->m_buffer.ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
+						, finfo3.fullFileNames[m_aniIndex3].ansi().c_str());
+				}
+				else
+				{
+					sensor3->m_buffer.m_isLoaded = false;
+				}
+
+
+				if (r1 || r2 || r3)
+					UpdateDelayMeasure(m_aniTime);
+				else
+					m_measureTime += m_captureTime;
 
 			}
 		
-			m_aniIndex++;
+			m_aniIndex2++;
 			m_aniTime = 0.f;
-			if ((u_int)m_aniIndex >= m_files.size())
+			if ((u_int)m_aniIndex2 >= finfo2.fileNames.size())
 			{
-				m_aniIndex = 0;
+				m_aniIndex1 = 0;
 				m_aniIndex2 = 0;
+				m_aniIndex3 = 0;
 			}
 
-			if (m_isReadTwoCamera)
+			if (m_aniIndex3 < 0)
 			{
-				if (m_aniIndex2 < 0)
-				{
-					m_aniIndex = 0;
-					m_aniIndex2 = 0;
-				}
+				m_aniIndex1 = 0;
+				m_aniIndex2 = 0;
+				m_aniIndex3 = 0;
 			}
+
+			if (m_aniIndex1 < 0)
+			{
+				m_aniIndex1 = 0;
+			}
+
 		}
 	}
 
@@ -210,10 +229,9 @@ void cInputView::OnRender(const float deltaSeconds)
 	ImGui::Separator();
 	
 	ImGui::Text("Camera Count ");
-	static int cameraCount = 0; // + 1
-	ImGui::SameLine(); ImGui::RadioButton("Cam1", &cameraCount, 0);
-	ImGui::SameLine(); ImGui::RadioButton("Cam2", &cameraCount, 1);
-	ImGui::SameLine(); ImGui::RadioButton("Cam3", &cameraCount, 2);	
+	ImGui::SameLine(); ImGui::RadioButton("Cam1", &m_aniCameraCount, 0);
+	ImGui::SameLine(); ImGui::RadioButton("Cam2", &m_aniCameraCount, 1);
+	ImGui::SameLine(); ImGui::RadioButton("Cam3", &m_aniCameraCount, 2);
 	ImGui::Spacing();
 
 	// File Animation
@@ -229,17 +247,17 @@ void cInputView::OnRender(const float deltaSeconds)
 		if (ImGui::Button("File Animation - Play"))
 		{
 			m_isFileAnimation = true;
-			g_root.m_baslerCam.CreateSensor(cameraCount + 1);
+			g_root.m_baslerCam.CreateSensor(m_aniCameraCount + 1);
 		}
 	}
 
 	ImGui::SameLine();
 	ImGui::Checkbox("Ani Only 2 Camera", &m_isOnlyTwoCameraFile);
 
-	if ((u_int)(m_aniIndex - 1) < m_files.size())
-		ImGui::Text("%s", m_files[m_aniIndex - 1].c_str());
-	if (m_isReadTwoCamera && ((u_int)m_aniIndex2 < m_secondFiles.size()))
-		ImGui::Text("%s", m_secondFiles[m_aniIndex2].c_str());
+	//if ((u_int)(m_aniIndex - 1) < m_files.size())
+	//	ImGui::Text("%s", m_files[m_aniIndex - 1].c_str());
+	//if (m_isReadTwoCamera && ((u_int)m_aniIndex2 < m_secondFiles.size()))
+	//	ImGui::Text("%s", m_secondFiles[m_aniIndex2].c_str());
 
 	ImGui::Spacing();
 	ImGui::Separator();
@@ -254,9 +272,22 @@ void cInputView::OnRender(const float deltaSeconds)
 
 void cInputView::RenderFileList()
 {
-	ImGui::Checkbox("Read Two File", &m_isReadTwoCamera);
-	ImGui::SameLine();
-	ImGui::Checkbox("Read Camera2", &m_isReadCamera2);
+	//ImGui::Checkbox("Read Two File", &m_isReadTwoCamera);
+	//ImGui::SameLine();
+	//ImGui::Checkbox("Read Camera2", &m_isReadCamera2);
+
+	if (g_root.m_baslerCam.IsReadyCapture())
+	{
+		for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
+		{
+			if (0 != sensor->m_id)
+				ImGui::SameLine();
+
+			Str32 text;
+			text.Format("ani%d", sensor->m_id + 1);
+			ImGui::Checkbox(text.c_str(), &sensor->m_isAnimation);
+		}
+	}
 
 	ImGui::PushID(10);
 	ImGui::InputText("", g_root.m_inputFilePath.m_str, g_root.m_inputFilePath.SIZE);
@@ -275,40 +306,45 @@ void cInputView::RenderFileList()
 	{
 		int i = 0;
 		bool isOpenPopup = false;
-
-		const u_int fileSize = m_files.size();
-		const u_int maxSize = (m_comboFileIdx == (m_filePages-1))? fileSize : MAX_FILEPAGE;
-
-		for (u_int i = 0; i < maxSize; ++i)
+		
+		if (!m_files.empty())
 		{
-			const u_int idx = MAX_FILEPAGE * m_comboFileIdx + i;
-			if (fileSize <= idx)
-				break;
+			sFileInfo &finfo = m_files[0];
 
-			auto &fileName = m_files2[idx];
+			const u_int fileSize = finfo.fileNames.size();
+			const u_int maxSize = (m_comboFileIdx == (m_filePages-1))? fileSize : MAX_FILEPAGE;
 
-			const ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick
-				| ((idx == m_selFileIdx) ? ImGuiTreeNodeFlags_Selected : 0);
-
-			ImGui::TreeNodeEx((void*)(intptr_t)idx, node_flags | ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
-				fileName.c_str());
-
-			if (ImGui::IsItemClicked() || ImGui::IsItemClicked(1))
+			for (u_int i = 0; i < maxSize; ++i)
 			{
-				m_selFileIdx = idx;
-				common::StrPath ansifileName = m_files[idx].ansi();// change UTF8 -> UTF16
-				m_selectPath = ansifileName;
+				const u_int idx = MAX_FILEPAGE * m_comboFileIdx + i;
+				if (fileSize <= idx)
+					break;
 
-				OpenFile(ansifileName, m_isReadCamera2? 1 : 0);
+				auto &fileName = finfo.fileNames[idx];
 
-				// Popup Menu
-				if (ImGui::IsItemClicked(1))
+				const ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick
+					| ((idx == m_selFileIdx) ? ImGuiTreeNodeFlags_Selected : 0);
+
+				ImGui::TreeNodeEx((void*)(intptr_t)idx, node_flags | ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
+					fileName.c_str());
+
+				if (ImGui::IsItemClicked() || ImGui::IsItemClicked(1))
 				{
-					isOpenPopup = true;
-				}
-			}
+					m_selFileIdx = idx;
+					common::StrPath ansifileName = finfo.fullFileNames[idx].ansi();// change UTF8 -> UTF16
+					m_selectPath = ansifileName;
 
-			ImGui::NextColumn();
+					//OpenFile(ansifileName, m_isReadCamera2? 1 : 0);
+
+					// Popup Menu
+					if (ImGui::IsItemClicked(1))
+					{
+						isOpenPopup = true;
+					}
+				}
+
+				ImGui::NextColumn();
+			}
 		}
 
 		ImGui::TreePop();
@@ -381,60 +417,103 @@ void cInputView::UpdateFileList()
 	exts.push_back(L"pcd"); exts.push_back(L"PCD");
 	exts.push_back(L"pcd2"); exts.push_back(L"PCD2");
 
-	vector<WStrPath> out;
-	out.reserve(512);
-
-	if (m_isReadTwoCamera)
+	if (g_root.m_baslerCam.IsReadyCapture())
 	{
-		// two camera는 0,1 경로에 따로 로딩한다.
-		common::CollectFiles(exts, (g_root.m_inputFilePath + "/0").wstr().c_str(), out);
+		g_root.m_baslerCam.CreateSensor(m_aniCameraCount + 1);
 
-		vector<WStrPath> out2;
-		out2.reserve(512);
-		common::CollectFiles(exts, (g_root.m_inputFilePath + "/1").wstr().c_str(), out2);
+		m_files.reserve( std::max(g_root.m_baslerCam.m_sensors.size(), (size_t)3) );
 
-		m_secondFiles.clear();
-		m_secondFiles.reserve(512);
-		for (auto &str : out2)
-			m_secondFiles.push_back(str.utf8());
+		for (auto *sensor : g_root.m_baslerCam.m_sensors)
+		{
+			if (!sensor->m_isAnimation)
+				continue;
+
+			vector<WStrPath> out;
+			out.reserve(512);
+			
+			StrPath path;
+			path.Format("%s/%d", g_root.m_inputFilePath.c_str(), sensor->m_id);
+			common::CollectFiles(exts, path.wstr().c_str(), out);
+
+			// 데이타 중복 복사를 피하기위한 꽁수
+			m_files.push_back({});
+			sFileInfo &finfos = m_files.back();
+			
+			finfos.fullFileNames.reserve(out.size());
+			for (auto &str : out)
+				finfos.fullFileNames.push_back(str.utf8());
+
+			for (auto &str : out)
+				finfos.fileNames.push_back(str.utf8().GetFileName());
+
+			// 각 0/1/2/... 폴더의 파일을 __int64 값으로 수치화해서 저장한다.
+			// 애니메이션시 값을 비교해 가장 가까운 파일을 서로 연결해 애니메이션 한다.
+			finfos.ids.reserve(out.size());
+			for (auto &fileName : finfos.fileNames)
+			{
+				const __int64 num = ConvertFileNameToInt64(fileName);
+				if (num > 0)
+					finfos.ids.push_back(num);
+			}
+		}
 	}
-	else
-	{
-		common::CollectFiles(exts, g_root.m_inputFilePath.wstr().c_str(), out);
-	}
 
-	m_files.reserve(out.size());
-	for (auto &str : out)
-		m_files.push_back(str.utf8());
+	//if (m_isReadTwoCamera)
+	//{
+	//	// two camera는 0,1 경로에 따로 로딩한다.
+	//	common::CollectFiles(exts, (g_root.m_inputFilePath + "/0").wstr().c_str(), out);
 
-	m_files2.clear();
-	m_files2.reserve(out.size());
-	for (auto &str : out)
-		m_files2.push_back(str.utf8().GetFileName());
+	//	vector<WStrPath> out2;
+	//	out2.reserve(512);
+	//	common::CollectFiles(exts, (g_root.m_inputFilePath + "/1").wstr().c_str(), out2);
+
+	//	m_secondFiles.clear();
+	//	m_secondFiles.reserve(512);
+	//	for (auto &str : out2)
+	//		m_secondFiles.push_back(str.utf8());
+	//}
+	//else
+	//{
+	//	common::CollectFiles(exts, g_root.m_inputFilePath.wstr().c_str(), out);
+	//}
+
+	//m_files.reserve(out.size());
+	//for (auto &str : out)
+	//	m_files.push_back(str.utf8());
+
+	//m_files2.clear();
+	//m_files2.reserve(out.size());
+	//for (auto &str : out)
+	//	m_files2.push_back(str.utf8().GetFileName());
 
 	// Page Combo Box를 생성한다.
 	int cnt = 0;
 	int pages = 0;
-	m_comboFileStr.clear();
-	for (u_int i = 0; i < m_files.size() / MAX_FILEPAGE; ++i)
+	if (!m_files.empty())
 	{
-		char buff[4] = { NULL, };
-		sprintf(buff, "%3d", i + 1);
+		m_comboFileStr.clear();
+		sFileInfo &finfo = m_files[0];
 
-		if (((u_int)cnt + 10) > m_comboFileStr.SIZE)
+		for (u_int i = 0; i < finfo.fullFileNames.size() / MAX_FILEPAGE; ++i)
 		{
-			m_comboFileStr.m_str[cnt++] = ' ';
-			m_comboFileStr.m_str[cnt++] = '.';
-			m_comboFileStr.m_str[cnt++] = '.';
-			m_comboFileStr.m_str[cnt++] = '.';
-			break;
-		}
-		else
-		{
-			++pages;
-			for (u_int k = 0; k < strlen(buff); ++k)
-				m_comboFileStr.m_str[cnt++] = buff[k];
-			m_comboFileStr.m_str[cnt++] = '\0';
+			char buff[4] = { NULL, };
+			sprintf(buff, "%3d", i + 1);
+
+			if (((u_int)cnt + 10) > m_comboFileStr.SIZE)
+			{
+				m_comboFileStr.m_str[cnt++] = ' ';
+				m_comboFileStr.m_str[cnt++] = '.';
+				m_comboFileStr.m_str[cnt++] = '.';
+				m_comboFileStr.m_str[cnt++] = '.';
+				break;
+			}
+			else
+			{
+				++pages;
+				for (u_int k = 0; k < strlen(buff); ++k)
+					m_comboFileStr.m_str[cnt++] = buff[k];
+				m_comboFileStr.m_str[cnt++] = '\0';
+			}
 		}
 	}
 
@@ -449,31 +528,32 @@ void cInputView::UpdateFileList()
 
 	// 2대의 카메라를 애니메이션 한다면, 각 0/1 폴더의 파일을 __int64 값으로 수치화해서 저장한다.
 	// 애니메이션시 값을 비교해 가장 가까운 파일을 서로 연결해 애니메이션 한다.
-	if (m_isReadTwoCamera)
-	{
-		m_fileIds.clear();
-		m_fileIds.reserve(m_files2.size());
-		for (auto &fileName : m_files2)
-		{
-			const __int64 num = ConvertFileNameToInt64(fileName);
-			if (num > 0)
-				m_fileIds.push_back(num);
-		}
+	//if (m_isReadTwoCamera)
+	//{
+	//	m_fileIds.clear();
+	//	m_fileIds.reserve(m_files2.size());
+	//	for (auto &fileName : m_files2)
+	//	{
+	//		const __int64 num = ConvertFileNameToInt64(fileName);
+	//		if (num > 0)
+	//			m_fileIds.push_back(num);
+	//	}
 
-		m_secondFileIds.clear();
-		m_secondFileIds.reserve(m_secondFiles.size());
-		for (auto &fileName : m_secondFiles)
-		{
-			const __int64 num = ConvertFileNameToInt64(fileName.GetFileName());
-			if (num > 0)
-				m_secondFileIds.push_back(num);
-		}
-	}
+	//	m_secondFileIds.clear();
+	//	m_secondFileIds.reserve(m_secondFiles.size());
+	//	for (auto &fileName : m_secondFiles)
+	//	{
+	//		const __int64 num = ConvertFileNameToInt64(fileName.GetFileName());
+	//		if (num > 0)
+	//			m_secondFileIds.push_back(num);
+	//	}
+	//}
 
 	m_filePages = pages + 1;
 	m_comboFileIdx = 0;
-	m_aniIndex = -1;
+	m_aniIndex1 = -1;
 	m_aniIndex2 = -1;
+	m_aniIndex3 = -1;
 }
 
 
@@ -516,36 +596,46 @@ __int64 cInputView::ConvertFileNameToInt64(const common::StrPath &fileName)
 // 두 번째 카메라 애니메이션 파일을 선택한다.
 // 이 때, 파일명이 시간을 나타내므로, 가장 가까운 시간에 있는 파일을 선택해
 // 인덱스값을 리턴한다.
-int cInputView::GetTwoCameraAnimationIndex(int aniIdx1, int aniIdx2)
-{
-	RETV(aniIdx1 < 0, -1);
-	RETV(aniIdx2 < 0, -1);
-	RETV((int)m_fileIds.size() <= aniIdx1, -1);
-	RETV((int)m_secondFileIds.size() <= aniIdx2, -1);
-
-	while (m_fileIds[aniIdx1] > m_secondFileIds[aniIdx2])
-	{
-		++aniIdx2;
-
-		if ((int)m_secondFileIds.size() <= aniIdx2)
-			return -1;
-	}
-
-	return aniIdx2;
-}
+//int cInputView::GetTwoCameraAnimationIndex(int aniIdx1, int aniIdx2)
+//{
+//	RETV(aniIdx1 < 0, -1);
+//	RETV(aniIdx2 < 0, -1);
+//	RETV((int)m_fileIds.size() <= aniIdx1, -1);
+//	RETV((int)m_secondFileIds.size() <= aniIdx2, -1);
+//
+//	while (m_fileIds[aniIdx1] > m_secondFileIds[aniIdx2])
+//	{
+//		++aniIdx2;
+//
+//		if ((int)m_secondFileIds.size() <= aniIdx2)
+//			return -1;
+//	}
+//
+//	return aniIdx2;
+//}
 
 
 // 2개의 카메라 정보가 있는 파일만 애니메이션 한다.
-std::pair<int, int> cInputView::GetOnlyTwoCameraAnimationIndex(int aniIdx1, int aniIdx2)
+std::pair<int, int> cInputView::GetOnlyTwoCameraAnimationIndex(const sFileInfo &finfo1, int aniIdx1
+	, const sFileInfo &finfo2, int aniIdx2
+	, const bool isSkip //= false
+)
 {
 	RETV(aniIdx1 < 0, std::make_pair(-1, -1) );
 	RETV(aniIdx2 < 0, std::make_pair(-1, -1));
-	RETV((int)m_fileIds.size() <= aniIdx1, std::make_pair(-1, -1));
-	RETV((int)m_secondFileIds.size() <= aniIdx2, std::make_pair(-1, -1));
+	RETV((int)finfo1.ids.size() <= aniIdx1, std::make_pair(-1, -1));
+	RETV((int)finfo2.ids.size() <= aniIdx2, std::make_pair(-1, -1));
 
-	while (m_secondFileIds[aniIdx2] - m_fileIds[aniIdx1] > 60)
+	while (abs(finfo2.ids[aniIdx2] - finfo1.ids[aniIdx1]) > 60)
 	{
-		if (m_fileIds[aniIdx1] > m_secondFileIds[aniIdx2])
+		if (isSkip)
+		{
+			// 시간차가 크면, 스킵한다.
+			aniIdx2 = -1;
+			break;
+		}
+
+		if (finfo1.ids[aniIdx1] > finfo2.ids[aniIdx2])
 		{
 			++aniIdx2;
 		}
@@ -554,9 +644,9 @@ std::pair<int, int> cInputView::GetOnlyTwoCameraAnimationIndex(int aniIdx1, int 
 			++aniIdx1;
 		}
 
-		if ((int)m_fileIds.size() <= aniIdx1)
+		if ((int)finfo1.ids.size() <= aniIdx1)
 			return { -1,-1 };
-		if ((int)m_secondFileIds.size() <= aniIdx2)
+		if ((int)finfo2.ids.size() <= aniIdx2)
 			return { -1,-1 };
 	}
 
@@ -598,25 +688,33 @@ void cInputView::OnEventProc(const sf::Event &evt)
 		switch (evt.key.code)
 		{
 		case sf::Keyboard::Key::Down:
+		{
+			sFileInfo &finfo = m_files[0];
+
 			++m_selFileIdx;
-			if ((int)m_files.size() <= m_selFileIdx)
-				m_selFileIdx = (int)m_files.size() - 1;
+			if ((int)finfo.fullFileNames.size() <= m_selFileIdx)
+				m_selFileIdx = (int)finfo.fullFileNames.size() - 1;
 
 			if (m_selFileIdx >= 0)
-				OpenFile(m_files[m_selFileIdx].ansi());
-			break;
+				OpenFile(finfo.fullFileNames[m_selFileIdx].ansi());
+		}
+		break;
 
 		case sf::Keyboard::Key::Up:
+		{
+			sFileInfo &finfo = m_files[0];
+
 			if (m_selFileIdx < 0)
 				break;
 
 			--m_selFileIdx;
 			if (m_selFileIdx < 0)
-				m_selFileIdx = m_files.empty()? -1 : 0;
+				m_selFileIdx = finfo.fullFileNames.empty() ? -1 : 0;
 
 			if (m_selFileIdx >= 0)
-				OpenFile(m_files[m_selFileIdx].ansi());
-			break;
+				OpenFile(finfo.fullFileNames[m_selFileIdx].ansi());
+		}
+		break;
 		}
 	}
 }

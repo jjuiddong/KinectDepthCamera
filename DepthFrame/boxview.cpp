@@ -37,7 +37,7 @@ bool cBoxView::Init(cRenderer &renderer)
 		, DXGI_FORMAT_D24_UNORM_S8_UINT);
 
 	m_ground.Create(renderer, 100, 100, 10, 10);
-	m_boxLine.Create(renderer);
+	m_boxLine.Create(renderer, Vector3(0,0,0), Vector3(1,1,1), 1, eVertexType::POSITION);
 
 	return true;
 }
@@ -67,8 +67,6 @@ void cBoxView::OnPreRender(const float deltaSeconds)
 		if (m_showGround)
 			m_ground.Render(renderer);
 
-		RenderBoxVolume3D(renderer);
-
 		if (m_showPointCloud)
 		{
 			CommonStates states(renderer.GetDevice());
@@ -79,11 +77,11 @@ void cBoxView::OnPreRender(const float deltaSeconds)
 					if (sensor->m_buffer.m_isLoaded)
 						sensor->m_buffer.Render(renderer, "Unlit", true, sensor->m_offset.GetMatrixXM());
 
-			//if (g_root.m_sensorBuff[1].m_isLoaded)
-			//	g_root.m_sensorBuff[1].Render(renderer, "Unlit", true);
-
 			renderer.GetDevContext()->OMSetBlendState(states.Opaque(), 0, 0xffffffff);
 		}
+
+		RenderBoxVolume3D(renderer);
+
 	}
 	m_renderTarget.End(renderer);
 }
@@ -95,7 +93,8 @@ void cBoxView::RenderBoxVolume3D(graphic::cRenderer &renderer)
 	{
 		const float width = 0.2f;
 		common::Vector4 color = box.color.GetColor();
-		color = color * 0.7f;
+		color = color * 0.4f;
+		color.w = 1.f;
 		const cColor newColor(color);
 		m_boxLine.SetColor(newColor);
 		//m_boxLine.SetColor(cColor(0.f,1.f,1.f));
