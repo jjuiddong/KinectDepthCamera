@@ -124,7 +124,7 @@ void c3DView::OnPreRender(const float deltaSeconds)
 			for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
 				if (sensor->m_isShow)
 					if (sensor->m_buffer.m_isLoaded)
-						sensor->m_buffer.Render(renderer, "Unlit", false, sensor->m_offset.GetMatrixXM());
+						sensor->m_buffer.Render(renderer, "Unlit", false);
 
 			//renderer.GetDevContext()->RSSetState(states.Wireframe());
 			//g_root.m_sensorBuff.RenderTessellation(renderer);
@@ -213,7 +213,7 @@ void c3DView::Capture3D()
 			if (sensor->m_isShow)
 				if (sensor->m_buffer.m_isLoaded)
 					sensor->m_buffer.Render(renderer, "Heightmap", false
-						, sensor->m_offset.GetMatrixXM() * tfm.GetMatrixXM());
+						, tfm.GetMatrixXM());
 
 		//if (g_root.m_baslerCameraIdx == 0)
 		//{
@@ -330,7 +330,7 @@ void c3DView::OnRender(const float deltaSeconds)
 		//ImGui::Spacing();
 
 		// Show Visible Camera Flag
-		if (g_root.m_baslerCam.IsConnect())
+		if (g_root.m_baslerCam.IsReadyCapture())
 		{
 			bool firstCheckBox = true;
 			for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
@@ -345,7 +345,10 @@ void c3DView::OnRender(const float deltaSeconds)
 					ImGui::SameLine();
 
 				firstCheckBox = false;
-				ImGui::Checkbox(sensor->m_info.strDisplayName.c_str(), &sensor->m_isShow);
+				if (ImGui::Checkbox(sensor->m_info.strDisplayName.c_str(), &sensor->m_isShow))
+				{
+					g_root.MeasureVolume();
+				}
 			}
 		}
 		else

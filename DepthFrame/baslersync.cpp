@@ -18,8 +18,7 @@ void mSleep(int sleepMs)      // Use a wrapper
 
 cBaslerCameraSync::cBaslerCameraSync(const bool isThreadMode //= false
 )
-	: m_isSetupSuccess(false)
-	, m_isThreadMode(isThreadMode)
+	: m_isThreadMode(isThreadMode)
 	, m_state(eThreadState::NONE)
 	, m_isTrySyncTrigger(false)
 {
@@ -35,8 +34,6 @@ cBaslerCameraSync::~cBaslerCameraSync()
 
 bool cBaslerCameraSync::Init()
 {
-	m_isSetupSuccess = false;
-
 	if (m_isThreadMode)
 	{
 		m_state = eThreadState::CONNECT_TRY;
@@ -82,9 +79,8 @@ bool cBaslerCameraSync::CreateSensor(const int sensorCount)
 		sensor->m_id = i;
 		sensor->m_isEnable = true;
 		sensor->m_isShow = true;
-		sensor->m_isAnimation = true;
 		sensor->m_info.strDisplayName = common::format("temp camera%d", i + 1);
-		sensor->m_offset = g_root.m_cameraOffset[i];
+		sensor->m_buffer.m_offset = g_root.m_cameraOffset[i];
 		m_sensors.push_back(sensor);
 	}
 
@@ -105,6 +101,10 @@ int cBaslerCameraSync::BaslerCameraSetup()
 		//
 
 		setupCamera();
+
+		if (!m_sensors.empty() 
+			&& (cBaslerCameraSync::eThreadState::CONNECT_TRY == m_state))
+			m_state = eThreadState::CONNECT_CONFIG;
 
 		findMaster();
 
@@ -160,18 +160,19 @@ void cBaslerCameraSync::setupCamera()
 	size_t camIdx = 0;
 	for (CameraInfo &cInfo : camList)
 	{
+		if (eThreadState::CONNECT_TRY != m_state)
+			continue;
+
 		cSensor *sensor = new cSensor;
 		sensor->InitCamera(camIdx, cInfo);
 
-		sensor->m_offset = g_root.m_cameraOffset[camIdx];
+		sensor->m_buffer.m_offset = g_root.m_cameraOffset[camIdx];
 		m_oldCameraEnable[camIdx] = true;
 
 		m_sensors.push_back(sensor);
 
 		++camIdx;
 	}
-
-	m_isSetupSuccess = true;
 }
 
 
@@ -321,8 +322,6 @@ int64_t cBaslerCameraSync::GetMaxAbsGevIEEE1588OffsetFromMasterInTimeWindow(CToF
 
 void cBaslerCameraSync::setTriggerDelays() 
 {
-	RET(!m_isSetupSuccess);
-
 	// Current timestamp
 	uint64_t timestamp, syncStartTimestamp;
 
@@ -470,7 +469,6 @@ void cBaslerCameraSync::ProcessCmd()
 // Grab
 bool cBaslerCameraSync::Grab()
 {
-	RETV(!m_isSetupSuccess, false);
 	static int grabcnt = 0;
 
 	for (cSensor *sensor : m_sensors)
@@ -504,12 +502,28 @@ bool cBaslerCameraSync::CopyCaptureBuffer(graphic::cRenderer &renderer)
 }
 
 
+bool cBaslerCameraSync::IsTryConnect() const
+{
+	switch (m_state)
+	{
+	case eThreadState::CONNECT_TRY:
+	case eThreadState::CONNECT_CONFIG:
+		return true;
+	}
+	return false;
+}
+
+
 bool cBaslerCameraSync::IsReadyCapture() const
 {
-	if ((eThreadState::NONE != m_state)
-		&& (eThreadState::CONNECT_TRY != m_state))
-		return true;
-	return false;
+	switch (m_state)
+	{
+	case eThreadState::NONE:
+	case eThreadState::CONNECT_TRY:
+	case eThreadState::CONNECT_CONFIG:
+		return false;
+	}
+	return true;
 }
 
 
@@ -549,7 +563,7 @@ void BaslerCameraThread(cBaslerCameraSync *basler)
 		{
 			double triggerDelayTime = g_root.m_timer.GetMilliSeconds();
 
-			if (cBaslerCameraSync::eThreadState::CONNECT_TRY == basler->m_state)
+			if (cBaslerCameraSync::eThreadState::CONNECT_CONFIG == basler->m_state)
 				basler->m_state = cBaslerCameraSync::eThreadState::CAPTURE;
 
 			while (cBaslerCameraSync::eThreadState::CAPTURE == basler->m_state)
@@ -593,10 +607,10 @@ void BaslerCameraThread(cBaslerCameraSync *basler)
 	if (!basler->m_sensors.empty())
 	{
 		basler->m_sensors.clear();
-
-		if (CToFCamera::IsProducerInitialized())
-			CToFCamera::TerminateProducer();  // Won't throw any exceptions
 	}
+
+	if (CToFCamera::IsProducerInitialized())
+		CToFCamera::TerminateProducer();  // Won't throw any exceptions
 
 	basler->m_state = cBaslerCameraSync::eThreadState::DISCONNECT;
 }

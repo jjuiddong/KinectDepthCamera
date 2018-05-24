@@ -51,7 +51,7 @@ public:
 	// Animation
 	bool m_isFileAnimation;
 	//bool m_isReadTwoCamera;
-	bool m_isOnlyTwoCameraFile;
+	//bool m_isOnlyTwoCameraFile;
 	int m_aniIndex1;
 	int m_aniIndex2;
 	int m_aniIndex3;

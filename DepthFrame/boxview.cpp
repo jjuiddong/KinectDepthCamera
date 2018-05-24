@@ -75,7 +75,8 @@ void cBoxView::OnPreRender(const float deltaSeconds)
 			for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
 				if (sensor->m_isShow)
 					if (sensor->m_buffer.m_isLoaded)
-						sensor->m_buffer.Render(renderer, "Unlit", true, sensor->m_offset.GetMatrixXM());
+						sensor->m_buffer.Render(renderer, "Unlit", true);
+
 
 			renderer.GetDevContext()->OMSetBlendState(states.Opaque(), 0, 0xffffffff);
 		}
@@ -94,7 +95,7 @@ void cBoxView::RenderBoxVolume3D(graphic::cRenderer &renderer)
 		const float width = 0.2f;
 		common::Vector4 color = box.color.GetColor();
 		color = color * 0.4f;
-		color.w = 1.f;
+		color.w = 0.5f;
 		const cColor newColor(color);
 		m_boxLine.SetColor(newColor);
 		//m_boxLine.SetColor(cColor(0.f,1.f,1.f));

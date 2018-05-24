@@ -35,7 +35,7 @@ void cSensorBuffer::Render(graphic::cRenderer &renderer
 	shader->Begin();
 	shader->BeginPass(renderer, 0);
 
-	renderer.m_cbPerFrame.m_v->mWorld = XMMatrixTranspose(parentTm);
+	renderer.m_cbPerFrame.m_v->mWorld = XMMatrixTranspose(m_offset.GetMatrixXM() * parentTm);
 	renderer.m_cbPerFrame.Update(renderer);
 	XMVECTOR diffuse = XMLoadFloat4((XMFLOAT4*)&common::Vector4(.7f, .7f, .7f, isAphablend? .4f : 1.f));
 	renderer.m_cbMaterial.m_v->diffuse = diffuse;
@@ -76,7 +76,7 @@ void cSensorBuffer::RenderTessellation(graphic::cRenderer &renderer
 	shader->Begin();
 	shader->BeginPass(renderer, 0);
 
-	renderer.m_cbPerFrame.m_v->mWorld = XMMatrixTranspose(parentTm);
+	renderer.m_cbPerFrame.m_v->mWorld = XMMatrixTranspose(m_offset.GetMatrixXM() * parentTm);
 	renderer.m_cbPerFrame.Update(renderer);
 	XMVECTOR diffuse = XMLoadFloat4((XMFLOAT4*)&common::Vector4(.7f, .7f, .7f, 1.f));
 	renderer.m_cbMaterial.m_v->diffuse = diffuse;
@@ -212,34 +212,60 @@ bool cSensorBuffer::UpdatePointCloud(cRenderer &renderer
 	memcpy(&m_intensity[0], &intensity[0], intensity.size() * sizeof(intensity[0]));
 	memcpy(&m_confidence[0], &confidence[0], confidence.size() * sizeof(confidence[0]));
 
+	UpdatePointCloudItBySelf(renderer);
+
+	for (u_int i = (u_int)m_pointCloudCount; i < m_vertices.size(); ++i)
+		m_vertices[i] = Vector3(0, 0, 0);
+
+	return true;
+}
+
+
+bool cSensorBuffer::UpdatePointCloudItBySelf(graphic::cRenderer &renderer)
+{
 	// Update Point Cloud
 	m_pointCloudCount = 0;
-	if (m_isUpdatePointCloud)
+	if (!m_isUpdatePointCloud)
+		return false;
+
+	if (sVertex *dst = (sVertex*)m_vtxBuff.Lock(renderer))
 	{
-		if (sVertex *dst = (sVertex*)m_vtxBuff.Lock(renderer))
+		int cnt = 0;
+		for (int i = 0; i < m_height; ++i)
 		{
-			int cnt = 0;
-			for (int i = 0; i < m_height; ++i)
+			for (int k = 0; k < m_width; ++k)
 			{
-				for (int k = 0; k < m_width; ++k)
+				const Vector3 pos = GetVertex(k, i);
+				if (pos.IsEmpty())
+					continue;
+
+				if (g_root.m_isRangeCulling)
 				{
-					const Vector3 p1 = GetVertex(k, i);
-					if (p1.IsEmpty())
+					const Vector3 gpos = pos * m_offset;
+
+					if (gpos.x < g_root.m_cullRangeMin.x)
 						continue;
-
-					dst->p = p1;
-
-					++cnt;
-					++dst;
-					++m_pointCloudCount;
+					if (gpos.y < g_root.m_cullRangeMin.y)
+						continue;
+					if (gpos.z < g_root.m_cullRangeMin.z)
+						continue;
+					if (gpos.x > g_root.m_cullRangeMax.x)
+						continue;
+					if (gpos.y > g_root.m_cullRangeMax.y)
+						continue;
+					if (gpos.z > g_root.m_cullRangeMax.z)
+						continue;
 				}
+
+				dst->p = pos;
+
+				++cnt;
+				++dst;
+				++m_pointCloudCount;
 			}
-
-			m_vtxBuff.Unlock(renderer);
-
-			for (u_int i = (u_int)cnt; i < m_vertices.size(); ++i)
-				m_vertices[i] = Vector3(0, 0, 0);
 		}
+
+		m_vtxBuff.Unlock(renderer);
 	}
 
 	return true;

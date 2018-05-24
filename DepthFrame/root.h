@@ -90,7 +90,6 @@ public:
 	// Basler
 	bool m_isTryConnectBasler;
 	cBaslerCameraSync m_baslerCam;
-	//cBaslerCamera m_balserCam;
 
 	// Option
 	bool m_isAutoSaveCapture;
@@ -100,6 +99,9 @@ public:
 
 	// Config
 	common::StrPath m_inputFilePath;
+	bool m_isRangeCulling;
+	common::Vector3 m_cullRangeMin;
+	common::Vector3 m_cullRangeMax;
 	common::cConfig m_config;
 };
 

@@ -26,7 +26,7 @@ cInputView::cInputView(const string &name)
 	, m_comboFileIdx(0)
 	//, m_isReadTwoCamera(false)
 	//, m_isReadCamera2(false)
-	, m_isOnlyTwoCameraFile(false)
+	//, m_isOnlyTwoCameraFile(false)
 	, m_aniCameraCount(2)
 {
 }
@@ -84,11 +84,20 @@ void cInputView::OnRender(const float deltaSeconds)
 
 	case cRoot::eInputType::BASLER:
 	{
-		ImGui::Text(g_root.m_baslerCam.IsConnect() ? "Basler Camera - Connect" : "Basler Camera - Off");
+		Str64 stateText;
+		switch (g_root.m_baslerCam.m_state)
+		{
+		case cBaslerCameraSync::eThreadState::CONNECT_TRY: stateText = "Basler Camera - Try Connect"; break;
+		case cBaslerCameraSync::eThreadState::CONNECT_CONFIG: stateText = "Basler Camera - Configuration"; break;
+		case cBaslerCameraSync::eThreadState::CAPTURE: stateText = "Basler Camera - Connect"; break;
+		default: stateText = "Basler Camera - Off"; break;
+		}
+
+		ImGui::Text(stateText.c_str());// g_root.m_baslerCam.IsConnect() ? "Basler Camera - Connect" : "Basler Camera - Off");
 		ImGui::Checkbox("Basler Connect Auto", &g_root.m_isTryConnectBasler);
 
 		if (ImGui::Button("Capture Balser Camera"))
-			if (g_root.m_baslerCam.IsConnect())
+			if (g_root.m_baslerCam.IsReadyCapture())
 				g_root.m_baslerCam.CopyCaptureBuffer(((cViewer*)g_application)->m_3dView->GetRenderer());
 
 		if (m_isCaptureContinuos)
@@ -118,7 +127,7 @@ void cInputView::OnRender(const float deltaSeconds)
 	ImGui::Checkbox("Palete", &g_root.m_isPalete);
 	ImGui::Checkbox("Grab-Log", &g_root.m_isGrabLog);
 
-	if (m_isCaptureContinuos && g_root.m_baslerCam.IsConnect())
+	if (m_isCaptureContinuos && g_root.m_baslerCam.IsReadyCapture())
 	{
 		m_captureTime += deltaSeconds;
 		m_triggerDelayTime += deltaSeconds;
@@ -144,23 +153,23 @@ void cInputView::OnRender(const float deltaSeconds)
 		if ((m_aniTime > 0.1f) && !m_files.empty() && g_root.m_baslerCam.IsReadyCapture())
 		{
 			sFileInfo &finfo1 = m_files[0];
-			sFileInfo &finfo2 = m_files[1]; // master
-			sFileInfo &finfo3 = m_files[2];
+			sFileInfo &finfo2 = m_files[1];
+			sFileInfo &finfo3 = m_files[2]; // master
 			cSensor *sensor1 = g_root.m_baslerCam.m_sensors[0];
-			cSensor *sensor2 = g_root.m_baslerCam.m_sensors[1]; // master
-			cSensor *sensor3 = g_root.m_baslerCam.m_sensors[2];
+			cSensor *sensor2 = g_root.m_baslerCam.m_sensors[1];
+			cSensor *sensor3 = g_root.m_baslerCam.m_sensors[2]; // master
 
-			if (finfo2.fileNames.size() > (u_int)m_aniIndex2)
+			if (finfo3.fileNames.size() > (u_int)m_aniIndex3)
 			{
-				auto ret1 = GetOnlyTwoCameraAnimationIndex(finfo2, m_aniIndex2, finfo3, m_aniIndex3);
-				m_aniIndex2 = ret1.first;
-				m_aniIndex3 = ret1.second;
+				auto ret1 = GetOnlyTwoCameraAnimationIndex(finfo3, m_aniIndex3, finfo2, m_aniIndex2);
+				m_aniIndex3 = ret1.first;
+				m_aniIndex2 = ret1.second;
 
-				auto ret2 = GetOnlyTwoCameraAnimationIndex(finfo2, m_aniIndex2, finfo1, m_aniIndex1, true);
+				auto ret2 = GetOnlyTwoCameraAnimationIndex(finfo3, m_aniIndex3, finfo1, m_aniIndex1, true);
 				m_aniIndex1 = ret2.second;
 
 				bool r1 = false;
-				if (m_aniIndex1 >= 0)
+				if ((m_aniIndex1 >= 0) && sensor1->m_isShow)
 				{
 					r1 = sensor1->m_buffer.ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
 						, finfo1.fullFileNames[m_aniIndex1].ansi().c_str());
@@ -172,7 +181,7 @@ void cInputView::OnRender(const float deltaSeconds)
 				}
 
 				bool r2 = false;
-				if (m_aniIndex2 >= 0)
+				if ((m_aniIndex2 >= 0) && sensor2->m_isShow)
 				{
 					r2 = sensor2->m_buffer.ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
 					, finfo2.fullFileNames[m_aniIndex2].ansi().c_str());
@@ -183,7 +192,7 @@ void cInputView::OnRender(const float deltaSeconds)
 				}
 
 				bool r3 = false;
-				if (m_aniIndex3 >= 0)
+				if ((m_aniIndex3 >= 0) && sensor3->m_isShow)
 				{
 					r3 = sensor3->m_buffer.ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
 						, finfo3.fullFileNames[m_aniIndex3].ansi().c_str());
@@ -201,16 +210,16 @@ void cInputView::OnRender(const float deltaSeconds)
 
 			}
 		
-			m_aniIndex2++;
+			m_aniIndex3++;
 			m_aniTime = 0.f;
-			if ((u_int)m_aniIndex2 >= finfo2.fileNames.size())
+			if ((u_int)m_aniIndex3 >= finfo3.fileNames.size())
 			{
 				m_aniIndex1 = 0;
 				m_aniIndex2 = 0;
 				m_aniIndex3 = 0;
 			}
 
-			if (m_aniIndex3 < 0)
+			if (m_aniIndex2 < 0)
 			{
 				m_aniIndex1 = 0;
 				m_aniIndex2 = 0;
@@ -251,8 +260,8 @@ void cInputView::OnRender(const float deltaSeconds)
 		}
 	}
 
-	ImGui::SameLine();
-	ImGui::Checkbox("Ani Only 2 Camera", &m_isOnlyTwoCameraFile);
+	//ImGui::SameLine();
+	//ImGui::Checkbox("Ani Only 2 Camera", &m_isOnlyTwoCameraFile);
 
 	//if ((u_int)(m_aniIndex - 1) < m_files.size())
 	//	ImGui::Text("%s", m_files[m_aniIndex - 1].c_str());
@@ -285,7 +294,7 @@ void cInputView::RenderFileList()
 
 			Str32 text;
 			text.Format("ani%d", sensor->m_id + 1);
-			ImGui::Checkbox(text.c_str(), &sensor->m_isAnimation);
+			//ImGui::Checkbox(text.c_str(), &sensor->m_isAnimation);
 		}
 	}
 
@@ -334,7 +343,7 @@ void cInputView::RenderFileList()
 					common::StrPath ansifileName = finfo.fullFileNames[idx].ansi();// change UTF8 -> UTF16
 					m_selectPath = ansifileName;
 
-					//OpenFile(ansifileName, m_isReadCamera2? 1 : 0);
+					OpenFile(ansifileName, 2);
 
 					// Popup Menu
 					if (ImGui::IsItemClicked(1))
@@ -406,7 +415,6 @@ void cInputView::CalcDelayMeasure(const size_t camIdx // =0
 }
 
 
-
 void cInputView::UpdateFileList()
 {
 	m_files.clear();
@@ -425,9 +433,6 @@ void cInputView::UpdateFileList()
 
 		for (auto *sensor : g_root.m_baslerCam.m_sensors)
 		{
-			if (!sensor->m_isAnimation)
-				continue;
-
 			vector<WStrPath> out;
 			out.reserve(512);
 			
@@ -696,7 +701,7 @@ void cInputView::OnEventProc(const sf::Event &evt)
 				m_selFileIdx = (int)finfo.fullFileNames.size() - 1;
 
 			if (m_selFileIdx >= 0)
-				OpenFile(finfo.fullFileNames[m_selFileIdx].ansi());
+				OpenFile(finfo.fullFileNames[m_selFileIdx].ansi(), 2);
 		}
 		break;
 
@@ -712,7 +717,7 @@ void cInputView::OnEventProc(const sf::Event &evt)
 				m_selFileIdx = finfo.fullFileNames.empty() ? -1 : 0;
 
 			if (m_selFileIdx >= 0)
-				OpenFile(finfo.fullFileNames[m_selFileIdx].ansi());
+				OpenFile(finfo.fullFileNames[m_selFileIdx].ansi(), 2);
 		}
 		break;
 		}

@@ -25,7 +25,6 @@ cSensor::cSensor()
 	, m_isEnable(false)
 	, m_isMaster(false)
 	, m_isShow(true)
-	, m_isAnimation(true)
 	, m_id(0)
 {
 }

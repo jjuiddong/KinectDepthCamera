@@ -42,6 +42,7 @@ public:
 	void GeneratePlane(common::Vector3 pos[3]);
 	void ChangeSpace(graphic::cRenderer &renderer);
 	void MeasureVolume(graphic::cRenderer &renderer);
+	bool UpdatePointCloudItBySelf(graphic::cRenderer &renderer);
 	void AnalysisDepth();
 	void Clear();
 
@@ -73,6 +74,7 @@ public:
 	common::Plane m_plane;
 	common::Vector3 m_volumeCenter;
 	graphic::cVertexBuffer m_vtxBuff;
+	common::Transform m_offset;
 	graphic::cShader11 m_shader;
 
 	// Analysis

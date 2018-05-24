@@ -22,7 +22,7 @@ public:
 	bool CopyCaptureBuffer(graphic::cRenderer &renderer);
 	bool CreateSensor(const int sensorCount);
 	void Clear();
-	bool IsConnect() const;
+	bool IsTryConnect() const;
 	bool IsReadyCapture() const;
 
 	int BaslerCameraSetup();
@@ -42,7 +42,6 @@ public:
 	enum { MAX_CAMS = 10 };
 
 	bool m_isThreadMode;
-	bool m_isSetupSuccess;
 	vector<cSensor*> m_sensors;
 	bool m_oldCameraEnable[MAX_CAMS]; // 바뀐 값을 비교하기 위한 변수
 	bool m_isTrySyncTrigger;
@@ -53,12 +52,10 @@ public:
 
 	// multi threading flag
 	struct eThreadState { 
-		enum Enum { NONE, CONNECT_TRY, CONNECT_FAIL, CONNECT, CAPTURE, DISCONNECT_TRY, DISCONNECT};
+		enum Enum { NONE, CONNECT_TRY, CONNECT_CONFIG, CONNECT_FAIL, CONNECT, CAPTURE, DISCONNECT_TRY, DISCONNECT};
 	};
 
 	eThreadState::Enum m_state;
 	std::thread m_thread;
 };
 
-
-inline bool cBaslerCameraSync::IsConnect() const { return m_isSetupSuccess; }

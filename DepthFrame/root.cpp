@@ -25,6 +25,9 @@ cRoot::cRoot()
 	, m_isConnectKinect(false)
 	, m_baslerCam(true)
 	, m_isGrabLog(false)
+	, m_isRangeCulling(false)
+	, m_cullRangeMin(-200,-200,-200)
+	, m_cullRangeMax(200, 200, 200)
 {
 	ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
 	ZeroMemory(&m_hDistrib2, sizeof(m_hDistrib2));
@@ -34,7 +37,7 @@ cRoot::cRoot()
 	//m_cameraOffset2.pos = Vector3(-57.9f, 2.8f, -71.3f);
 
 	m_cameraOffset[0].pos = Vector3(-57.9f, 2.8f, -71.3f);
-	m_cameraOffset[1].pos = -Vector3(-57.9f, 2.8f, -71.3f);
+	m_cameraOffset[1].pos = Vector3(56.56f, -4.2f, 77.38f);
 }
 
 cRoot::~cRoot()
@@ -69,9 +72,18 @@ bool cRoot::InitSensor()
 {
 	if (m_isConnectKinect)
 		m_kinect.Init();
+
 	if (m_isTryConnectBasler)
+	{
 		m_baslerCam.Init();
-	return m_kinect.IsConnect() || m_baslerCam.IsConnect();
+	}
+	else
+	{
+		// for BaslerCamSync::IsReadyCapture() return true
+		m_baslerCam.m_state = cBaslerCameraSync::eThreadState::CONNECT_FAIL;
+	}
+
+	return m_kinect.IsConnect();// || m_baslerCam.IsConnect();
 }
 
 

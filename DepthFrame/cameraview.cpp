@@ -19,8 +19,7 @@ cCameraView::~cCameraView()
 
 void cCameraView::OnRender(const float deltaSeconds)
 {
-	if ((cBaslerCameraSync::eThreadState::NONE == g_root.m_baslerCam.m_state)
-		|| (cBaslerCameraSync::eThreadState::CONNECT_TRY == g_root.m_baslerCam.m_state))
+	if (!g_root.m_baslerCam.IsReadyCapture())
 		return;
 
 	int camIdx = 0;
@@ -35,7 +34,11 @@ void cCameraView::OnRender(const float deltaSeconds)
 
 			int idx = 0;
 			Str128 text;
-			ImGui::Checkbox("Enable", &sensor->m_isEnable);
+			if (ImGui::Checkbox("Enable", &sensor->m_isEnable))
+			{
+				sensor->m_isShow = sensor->m_isEnable;
+				sensor->m_isAnimation = sensor->m_isEnable;
+			}
 
 			text.Format("Model Name = %s", sensor->m_info.strModelName.c_str());
 			ImGui::TreeNodeEx((void*)(intptr_t)idx++, node_flags,text.c_str());

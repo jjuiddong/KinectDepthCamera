@@ -82,7 +82,7 @@ bool cViewer::OnInit()
 	assert(result);
 
 	m_infraredView = new cInfraredView("Infrared View");
-	m_infraredView->Create(eDockState::DOCKWINDOW, eDockSlot::BOTTOM, this, m_3dView, 0.46f);
+	m_infraredView->Create(eDockState::DOCKWINDOW, eDockSlot::BOTTOM, this, m_3dView, 0.36f);
 	result = m_infraredView->Init(m_renderer);
 	assert(result);
 
