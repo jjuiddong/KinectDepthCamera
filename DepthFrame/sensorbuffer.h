@@ -68,7 +68,7 @@ public:
 	double m_time; // update time
 	int m_frameId;
 	int m_pointCloudCount;
-	vector<common::Vector3> m_vertices; // change space, (perspectiv projection vertex)
+	vector<common::Vector3> m_vertices; // change space, (perspectiv projection vertex), no apply offset
 	vector<USHORT> m_intensity;
 	vector<USHORT> m_confidence;
 	common::Plane m_plane;

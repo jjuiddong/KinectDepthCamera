@@ -22,6 +22,7 @@ c3DView::c3DView(const string &name)
 	, m_planeStandardDeviation(0)
 	, m_showBoxVolume(false)
 	, m_isUpdateOrthogonalProjection(true)
+	, m_rangeMinMax(50,50)
 {
 }
 
@@ -102,11 +103,6 @@ void c3DView::OnPreRender(const float deltaSeconds)
 			m_volumeCenterLine.Render(renderer);
 
 		m_boxLine.SetColor(cColor::BLUE);
-		//for (int i = 0; i < 4; ++i)
-		//{
-		//	m_boxLine.SetLine(g_root.m_box3DPos[i], g_root.m_box3DPos[(i + 1) % 4], 0.1f);
-		//	m_boxLine.Render(renderer);
-		//}
 
 		if (m_showBoxVolume)
 			RenderBoxVolume3D(renderer);
@@ -116,11 +112,6 @@ void c3DView::OnPreRender(const float deltaSeconds)
 		// Render Point Cloud
 		if (m_showPointCloud)
 		{
-			//for (int i=0; i < 3; ++i)
-			//	if (g_root.m_showCamera[i])
-			//		if (g_root.m_sensorBuff[i].m_isLoaded)
-			//			g_root.m_sensorBuff[i].Render(renderer, "Unlit", false, g_root.m_cameraOffset[i].GetMatrixXM());
-
 			for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
 				if (sensor->m_isShow)
 					if (sensor->m_buffer.m_isLoaded)
@@ -142,19 +133,9 @@ void c3DView::OnPreRender(const float deltaSeconds)
 			renderer.m_cbPerFrame.Update(renderer);
 			renderer.m_cbMaterial.Update(renderer, 2);
 
-			//cColor colors[] = {
-			//	cColor::YELLOW, cColor::RED, cColor::GREEN, cColor::BLUE
-			//};
-
 			for (int i=0; i < g_root.m_areaFloorCnt; ++i)		
 			{
 				auto &areaFloor = g_root.m_areaBuff[i];
-
-				//common::Vector4 color;
-				//if (i < ARRAYSIZE(colors))
-				//	color = colors[i].GetColor();
-				//else
-				//	color = common::Vector4(1,1,1,1);
 
 				XMVECTOR diffuse = XMLoadFloat4((XMFLOAT4*)&areaFloor->color.GetColor());
 				renderer.m_cbMaterial.m_v->diffuse = diffuse;
@@ -163,6 +144,39 @@ void c3DView::OnPreRender(const float deltaSeconds)
 				renderer.GetDevContext()->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
 				renderer.GetDevContext()->DrawInstanced(areaFloor->areaCnt, 1, 0, 0);
 			}
+		}
+
+		if (eState::RANGE2 == m_state)
+		{
+			// left top
+			const Vector3 offset[4] = {
+				Vector3(-m_rangeMinMax.x, -m_rangeCenter.y, -m_rangeMinMax.y) // left-top
+				, Vector3(m_rangeMinMax.x, -m_rangeCenter.y, -m_rangeMinMax.y) // right-top
+				, Vector3(m_rangeMinMax.x, -m_rangeCenter.y, m_rangeMinMax.y) // right-bottom
+				, Vector3(-m_rangeMinMax.x, -m_rangeCenter.y, m_rangeMinMax.y) // left-bottom
+			};
+
+			renderer.m_dbgLine.SetColor(cColor::RED);
+			for (int i=0; i < 4; ++i)
+			{
+				const Vector3 p0 = m_rangeCenter + offset[i];
+				const Vector3 p1 = p0 + Vector3(0, m_rangeCenter.y, 0);
+				renderer.m_dbgLine.SetLine(p0, p1, 1.f);
+				renderer.m_dbgLine.Render(renderer);
+			}
+
+			renderer.m_dbgLine.SetColor(cColor::GREEN);
+			for (int i = 0; i < 4; ++i)
+			{
+				const int next = (i + 1) % 4;
+				const Vector3 p0 = m_rangeCenter + offset[i] + Vector3(0, m_rangeCenter.y,0);
+				const Vector3 p1 = m_rangeCenter + offset[next] + Vector3(0, m_rangeCenter.y, 0);
+				renderer.m_dbgLine.SetLine(p0, p1, 1.f);
+				renderer.m_dbgLine.Render(renderer);
+			}
+
+
+			renderer.m_dbgLine.SetColor(cColor::WHITE); // recovery
 		}
 	}
 	m_renderTarget.End(renderer);
@@ -206,7 +220,6 @@ void c3DView::Capture3D()
 		tfm.scale = Vector3(1.5f, 1, 1.5f);
 		//tfm.scale = Vector3(3.f, 1, 3.f);
 		//tfm.scale = Vector3(2.f, 1, 2.f);
-		//g_root.m_sensorBuff[camIdx].Render(renderer, "Heightmap", false, tfm.GetMatrixXM());
 		//g_root.m_sensorBuff.RenderTessellation(renderer, tfm.GetMatrixXM());
 
 		for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
@@ -214,35 +227,6 @@ void c3DView::Capture3D()
 				if (sensor->m_buffer.m_isLoaded)
 					sensor->m_buffer.Render(renderer, "Heightmap", false
 						, tfm.GetMatrixXM());
-
-		//if (g_root.m_baslerCameraIdx == 0)
-		//{
-		//	g_root.m_sensorBuff[0].Render(renderer, "Heightmap", false
-		//		, g_root.m_cameraOffset1.GetMatrixXM() * tfm.GetMatrixXM());
-		//}
-		//else if (g_root.m_baslerCameraIdx == 1)
-		//{
-		//	if (g_root.m_sensorBuff[1].m_isLoaded)
-		//		g_root.m_sensorBuff[1].Render(renderer, "Heightmap", false
-		//			, g_root.m_cameraOffset2.GetMatrixXM() * tfm.GetMatrixXM());
-		//}
-		//else if (g_root.m_baslerCameraIdx == 2)
-		//{
-		//	if (g_root.m_sensorBuff[2].m_isLoaded)
-		//		g_root.m_sensorBuff[2].Render(renderer, "Heightmap", false
-		//			, g_root.m_cameraOffset3.GetMatrixXM() * tfm.GetMatrixXM());
-		//}
-		//else
-		//{
-		//	g_root.m_sensorBuff[0].Render(renderer, "Heightmap", false
-		//		, g_root.m_cameraOffset1.GetMatrixXM() * tfm.GetMatrixXM());
-		//	if (g_root.m_sensorBuff[1].m_isLoaded)
-		//		g_root.m_sensorBuff[1].Render(renderer, "Heightmap", false
-		//			, g_root.m_cameraOffset2.GetMatrixXM() * tfm.GetMatrixXM());
-		//	if (g_root.m_sensorBuff[2].m_isLoaded)
-		//		g_root.m_sensorBuff[2].Render(renderer, "Heightmap", false
-		//			, g_root.m_cameraOffset3.GetMatrixXM() * tfm.GetMatrixXM());
-		//}
 	}
 	m_captureTarget.End(renderer);
 
@@ -320,15 +304,6 @@ void c3DView::OnRender(const float deltaSeconds)
 	{
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
-		//ImGui::Text("Input Type");
-		//ImGui::SameLine();
-		//ImGui::RadioButton("File", (int*)&g_root.m_input, cRoot::eInputType::FILE);
-		//ImGui::SameLine();
-		//ImGui::RadioButton("Kinect", (int*)&g_root.m_input, cRoot::eInputType::KINECT);
-		//ImGui::SameLine();
-		//ImGui::RadioButton("Basler", (int*)&g_root.m_input, cRoot::eInputType::BASLER);
-		//ImGui::Spacing();
-
 		// Show Visible Camera Flag
 		if (g_root.m_baslerCam.IsReadyCapture())
 		{
@@ -375,16 +350,6 @@ void c3DView::OnRender(const float deltaSeconds)
 		ImGui::Checkbox("Box Aread Point Cloud", &m_showBoxAreaPointCloud);
 		ImGui::SameLine();
 		ImGui::Checkbox("Box Volume", &m_showBoxVolume);
-
-		//if (ImGui::Button("Process"))
-		//{
-		//	cRenderer &renderer = GetRenderer();
-		//	g_root.m_sensorBuff.ProcessKinectDepthBuff(renderer 
-		//		, g_root.m_nTime
-		//		, &g_root.m_sensorBuff.m_depthBuff[0]
-		//		, g_root.m_nDepthMinReliableDistance, g_root.m_nDepthMaxDistance);
-		//}
-		//ImGui::SameLine();
 
 		if (ImGui::Button("Gen Plane"))
 		{
@@ -484,17 +449,214 @@ void c3DView::OnRender(const float deltaSeconds)
 			ImGui::Text("Standard Deviation = %f", m_planeStandardDeviation);
 		}
 
+		if (ImGui::Button("Pick Range"))
+		{
+			m_state = eState::RANGE;
+		}
+
+		if (eState::RANGE2 == m_state)
+		{
+			ImGui::DragFloat2("MinMax", (float*)&m_rangeMinMax, 0.1f);
+
+			if (ImGui::Button("Calibration"))
+			{
+				cSensor *selSensor = NULL;
+				for (auto sensor : g_root.m_baslerCam.m_sensors)
+				{
+					if (sensor->m_isEnable && sensor->m_isShow 
+						&& sensor->m_buffer.m_isLoaded )
+					{
+						selSensor = sensor;
+						break;
+					}
+				}
+				if (selSensor)
+					CalcBasePlaneCalibration(selSensor);
+			}
+		}
+
 		ImGui::End();
 	}
 }
 
+
+// 바닥 평면 컬리브레이션
+// 영역이 정해진 후, 
+//        top
+//  * ----- * ----- * 
+//  |   0   |   1   | right
+//  |       |       |
+//  * ----- * ----- *
+//  |   3   |   2   |
+//  |       |       |
+//  * ----- * ----- *
+//        bottom
 //
-//// 재귀 평균
-//double CalcAverage(const int k, const double Avr, const double Xk)
-//{
-//	const double alpha = (double)(k - 1.f) / (double)k;
-//	return alpha * Avr + (1.f - alpha) * Xk;
-//}
+//   /\ Z axis
+//    |
+//    |
+//    |
+//   -------------> X Axis
+//
+// 4등분 한 후, 랜덤으로 설정된 3 영역에서, 랜덤포인트를 찍는다.
+// 3포인트로 평면을 생성하고, 그 평면에서 영역의 높이 편차를 구한 후
+// 가장 작게되는 편차가 될 때까지 반복한다.
+void c3DView::CalcBasePlaneCalibration(const cSensor *sensor)
+{
+	// 위치값을 기본 좌표계로 복원한다.
+	const Vector3 center = m_rangeCenter * sensor->m_buffer.m_offset.Inverse();
+	const sRectf range = sRectf(center.x - m_rangeMinMax.x, center.z + m_rangeMinMax.y,
+		center.x + m_rangeMinMax.x, center.z - m_rangeMinMax.y);
+
+	float offset = 5.f; // 5cm
+	sRectf rects[4] = {
+		sRectf(center.x - m_rangeMinMax.x, center.z + m_rangeMinMax.y
+			, center.x, center.z)
+		, sRectf(center.x, center.z + m_rangeMinMax.y
+			, center.x + m_rangeMinMax.x, center.z)
+		, sRectf(center.x, center.z
+			, center.x + m_rangeMinMax.x, center.z - m_rangeMinMax.y)
+		, sRectf(center.x - m_rangeMinMax.x, center.z
+			, center.x, center.z - m_rangeMinMax.y)
+	};
+
+	// 오프셋 적용
+	for (int i = 0; i < 4; ++i)
+	{
+		rects[i].left += offset;
+		rects[i].top -= offset;
+		rects[i].right -= offset;
+		rects[i].bottom += offset;
+	}
+
+	vector<Vector3> pts[4];
+	for (int i = 0; i < 4; ++i)
+		pts[i].reserve(1024*5);
+	
+	// 4분할 영역에 속하는 포인트 클라우드를 걸러낸다.
+	for (auto &vtx : sensor->m_buffer.m_vertices)
+	{
+		if (vtx.IsEmpty())
+			continue;
+
+		for (int i = 0; i < 4; ++i)
+		{
+			if ((rects[i].left < vtx.x)
+				&& (rects[i].right > vtx.x)
+				&& (rects[i].top > vtx.z)
+				&& (rects[i].bottom < vtx.z))
+			{
+				if (abs(center.y - vtx.y) < offset)
+					pts[i].push_back(vtx);
+				break;
+			}
+		}
+	}
+
+	srand(timeGetTime());
+
+	const double curSD = CalcHeightStandardDeviation(sensor, center, range, Matrix44::Identity);
+	double minSD = FLT_MAX;
+	Plane minPlane;
+	int cnt = 0;
+	while (cnt++ < 100)
+	{
+		// 4분할된 영역을 랜덤하게 3 영역을 선택한다.
+		int rectIdAr[] = { 0,1,2,3 };
+		int ids[3];
+		for (int i = 0; i < 3; ++i)
+		{
+			const int k = rand() % (4 - i);
+			ids[i] = rectIdAr[k];
+			rectIdAr[k] = rectIdAr[3 - i];
+		}
+
+		// 선택한 영역에서 랜덤하게 포인트를 선택한다.
+		const Vector3 p1 = pts[ids[0]][common::randint(0, pts[ids[0]].size() - 1)];
+		const Vector3 p2 = pts[ids[1]][common::randint(0, pts[ids[1]].size() - 1)];
+		const Vector3 p3 = pts[ids[2]][common::randint(0, pts[ids[2]].size() - 1)];
+
+		// 선택한 포인트로 평면을 만든다.
+		Plane plane(p1, p2, p3);
+		Matrix44 tm;
+		if (!plane.N.IsEmpty())
+		{
+			Quaternion q;
+			q.SetRotationArc(plane.N, Vector3(0, 1, 0));
+			tm *= q.GetMatrix();
+			//Vector3 center = m_volumeCenter * q.GetMatrix();
+			//center.y = 0;
+			//Matrix44 T;
+			//T.SetPosition(Vector3(-center.x, m_plane.D, -center.z));
+			//tm *= T;
+		}
+
+		// 편차를 구하고, 가장 낮은 편차가 될 때까지 반복한다.
+		const double sd = CalcHeightStandardDeviation(sensor, center, range, tm);
+		if (minSD > sd)
+		{
+			minSD = sd;
+			minPlane = plane;
+		}
+	}
+
+	int a = 0;
+}
+
+
+// rect영역의 높이 표준편차를 구한다.
+// rect : x-z plane rect
+//		  left-right, x axis
+//		  top-bottom, z axis
+// tm : transform matrix
+//
+double c3DView::CalcHeightStandardDeviation(const cSensor *sensor, const Vector3 &center, const sRectf &rect, const Matrix44 &tm)
+{
+	// 높이 평균 구하기
+	int k = 0;
+	double avr = 0;
+	for (auto &vtx : sensor->m_buffer.m_vertices)
+	{
+		if (vtx.IsEmpty())
+			continue;
+
+		if ((rect.left < vtx.x)
+			&& (rect.right > vtx.x)
+			&& (rect.top > vtx.z)
+			&& (rect.bottom < vtx.z))
+		{
+			if (abs(vtx.y - center.y) > 10) // 10 cm
+				continue;
+
+			const Vector3 p = vtx * tm;
+			avr = CalcAverage(++k, avr, p.y);
+		}
+	}
+
+	// 표준 편차 구하기
+	k = 0;
+	double sd = 0;
+	for (auto &vtx : sensor->m_buffer.m_vertices)
+	{
+		if (vtx.IsEmpty())
+			continue;
+
+		if ((rect.left < vtx.x)
+			&& (rect.right > vtx.x)
+			&& (rect.top > vtx.z)
+			&& (rect.bottom < vtx.z))
+		{
+			if (abs(vtx.y - center.y) > 10) // 10 cm
+				continue;
+
+			const Vector3 p = vtx * tm;
+			sd = CalcAverage(++k, sd, (p.y - avr) * (p.y - avr));
+		}
+	}
+	sd = sqrt(sd);
+
+	return sd;
+}
 
 
 // 바닥의 표준편차를 구한다.
@@ -611,6 +773,9 @@ void c3DView::OnMouseMove(const POINT mousePt)
 
 	if (m_mouseDown[0])
 	{
+		if (ImGui::IsAnyItemHovered())
+			return;
+
 		Vector3 dir = GetMainCamera().GetDirection();
 		Vector3 right = GetMainCamera().GetRight();
 		dir.y = 0;
@@ -660,14 +825,23 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 		Vector3 p1 = m_groundPlane1.Pick(ray.orig, ray.dir);
 		m_rotateLen = (p1 - ray.orig).Length();// min(500.f, (p1 - ray.orig).Length());
 
-		cSensor *sensor1 = g_root.m_baslerCam.m_sensors.empty() ? NULL : g_root.m_baslerCam.m_sensors[0];
-		if (!sensor1)
+		// 화면에 보이는 센서 중, 첫번째 센서를 선택한다.
+		cSensor *curSensor = NULL;
+		for (auto sensor : g_root.m_baslerCam.m_sensors)
+		{
+			if (sensor->m_buffer.m_isLoaded && sensor->m_isShow)
+			{
+				curSensor = sensor;
+				break;
+			}
+		}
+		if (!curSensor)
 			break;
 
 		// Generate Plane
 		if ((m_genPlane >= 0) && (m_genPlane < 3))
 		{
-			const Vector3 vtxPos = sensor1->m_buffer.PickVertex(ray);
+			const Vector3 vtxPos = curSensor->m_buffer.PickVertex(ray);
 			m_sphere.SetPos(vtxPos);
 			m_planePos[m_genPlane++] = vtxPos;
 
@@ -684,14 +858,14 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 				m_planeGrid.m_transform.pos = Vector3(0, 0, 0);
 				m_planeGrid.m_transform.pos = plane.N * -plane.D;
 
-				sensor1->m_buffer.GeneratePlane(m_planePos);
+				curSensor->m_buffer.GeneratePlane(m_planePos);
 			}
 		}
 
 		// Picking Vertex Pos
 		if (eState::PICKPOS == m_state)
 		{
-			const Vector3 vtxPos = sensor1->m_buffer.PickVertex(ray);
+			const Vector3 vtxPos = curSensor->m_buffer.PickVertex(ray);
 			m_pickPos = vtxPos;
 			m_sphere.SetPos(vtxPos);
 			m_state = eState::NORMAL;
@@ -700,15 +874,24 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 		// Picking Volume Center
 		if (eState::VCENTER == m_state)
 		{
-			const Vector3 vtxPos = sensor1->m_buffer.PickVertex(ray);
-			sensor1->m_buffer.m_volumeCenter = vtxPos;
+			const Vector3 vtxPos = curSensor->m_buffer.PickVertex(ray);
+			curSensor->m_buffer.m_volumeCenter = vtxPos;
 			m_isGenVolumeCenter = true;
 
-			const Plane &plane = sensor1->m_buffer.m_plane;
+			const Plane &plane = curSensor->m_buffer.m_plane;
 			const float d = plane.Distance(vtxPos) * 10.f;
 			m_volumeCenterLine.SetLine(vtxPos + plane.N*d, vtxPos - plane.N*d, 0.1f);
 			
 			m_state = eState::NORMAL;
+		}
+
+		// Picking Range Center
+		if (eState::RANGE == m_state)
+		{
+			const Vector3 vtxPos = curSensor->m_buffer.PickVertex(ray);
+			m_rangeCenter = vtxPos;
+			m_sphere.SetPos(vtxPos);
+			m_state = eState::RANGE2;
 		}
 
 	}

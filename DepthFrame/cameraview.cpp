@@ -37,7 +37,6 @@ void cCameraView::OnRender(const float deltaSeconds)
 			if (ImGui::Checkbox("Enable", &sensor->m_isEnable))
 			{
 				sensor->m_isShow = sensor->m_isEnable;
-				sensor->m_isAnimation = sensor->m_isEnable;
 			}
 
 			text.Format("Model Name = %s", sensor->m_info.strModelName.c_str());

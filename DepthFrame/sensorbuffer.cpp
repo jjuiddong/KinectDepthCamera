@@ -201,9 +201,11 @@ bool cSensorBuffer::UpdatePointCloud(cRenderer &renderer
 	float diffAvrs = 0;
 	for (u_int i = 0; i < vertices.size(); ++i)
 	{
-		const Vector3 pos = vertices[i] * tm;
+		Vector3 pos = vertices[i] * tm;
 		if (!isnan(pos.x) && !isnan(vertices[i].x))
 			diffAvrs += abs(pos.y - m_vertices[i].y);
+		else
+			pos = Vector3(0, 0, 0);
 		m_vertices[i] = pos;
 	}
 	diffAvrs /= (float)m_vertices.size();
@@ -235,7 +237,7 @@ bool cSensorBuffer::UpdatePointCloudItBySelf(graphic::cRenderer &renderer)
 		{
 			for (int k = 0; k < m_width; ++k)
 			{
-				const Vector3 pos = GetVertex(k, i);
+				Vector3 pos = GetVertex(k, i);
 				if (pos.IsEmpty())
 					continue;
 
@@ -362,13 +364,13 @@ Vector3 cSensorBuffer::PickVertex(const Ray &ray)
 	for (int i=0; i < m_pointCloudCount; ++i)
 	{
 		auto &vtx = m_vertices[i];
-		const Vector3 p = vtx;
+		const Vector3 p = vtx * m_offset;
 		const Vector3 v = (p - ray.orig).Normal();
 		const float d = abs(ray.dir.DotProduct(v));
 		if (maxDot < d)
 		{
 			maxDot = d;
-			mostNearVertex = vtx;
+			mostNearVertex = p;
 		}
 	}
 

@@ -24,10 +24,8 @@ cInputView::cInputView(const string &name)
 	, m_state(eState::NORMAL)
 	, m_measureTime(0)
 	, m_comboFileIdx(0)
-	//, m_isReadTwoCamera(false)
-	//, m_isReadCamera2(false)
-	//, m_isOnlyTwoCameraFile(false)
 	, m_aniCameraCount(2)
+	, m_explorerFolderIndex(2)
 {
 }
 
@@ -281,20 +279,16 @@ void cInputView::OnRender(const float deltaSeconds)
 
 void cInputView::RenderFileList()
 {
-	//ImGui::Checkbox("Read Two File", &m_isReadTwoCamera);
-	//ImGui::SameLine();
-	//ImGui::Checkbox("Read Camera2", &m_isReadCamera2);
-
 	if (g_root.m_baslerCam.IsReadyCapture())
 	{
+		ImGui::Text("Folder Select ");
+
 		for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
 		{
-			if (0 != sensor->m_id)
-				ImGui::SameLine();
-
 			Str32 text;
-			text.Format("ani%d", sensor->m_id + 1);
-			//ImGui::Checkbox(text.c_str(), &sensor->m_isAnimation);
+			text.Format("./%d/", sensor->m_id);
+			ImGui::SameLine();
+			ImGui::RadioButton(text.c_str(), &m_explorerFolderIndex, sensor->m_id);
 		}
 	}
 
@@ -318,7 +312,7 @@ void cInputView::RenderFileList()
 		
 		if (!m_files.empty())
 		{
-			sFileInfo &finfo = m_files[0];
+			sFileInfo &finfo = m_files[m_explorerFolderIndex];
 
 			const u_int fileSize = finfo.fileNames.size();
 			const u_int maxSize = (m_comboFileIdx == (m_filePages-1))? fileSize : MAX_FILEPAGE;
@@ -343,7 +337,7 @@ void cInputView::RenderFileList()
 					common::StrPath ansifileName = finfo.fullFileNames[idx].ansi();// change UTF8 -> UTF16
 					m_selectPath = ansifileName;
 
-					OpenFile(ansifileName, 2);
+					OpenFile(ansifileName, m_explorerFolderIndex);
 
 					// Popup Menu
 					if (ImGui::IsItemClicked(1))
@@ -694,20 +688,20 @@ void cInputView::OnEventProc(const sf::Event &evt)
 		{
 		case sf::Keyboard::Key::Down:
 		{
-			sFileInfo &finfo = m_files[0];
+			sFileInfo &finfo = m_files[m_explorerFolderIndex];
 
 			++m_selFileIdx;
 			if ((int)finfo.fullFileNames.size() <= m_selFileIdx)
 				m_selFileIdx = (int)finfo.fullFileNames.size() - 1;
 
 			if (m_selFileIdx >= 0)
-				OpenFile(finfo.fullFileNames[m_selFileIdx].ansi(), 2);
+				OpenFile(finfo.fullFileNames[m_selFileIdx].ansi(), m_explorerFolderIndex);
 		}
 		break;
 
 		case sf::Keyboard::Key::Up:
 		{
-			sFileInfo &finfo = m_files[0];
+			sFileInfo &finfo = m_files[m_explorerFolderIndex];
 
 			if (m_selFileIdx < 0)
 				break;
@@ -717,7 +711,7 @@ void cInputView::OnEventProc(const sf::Event &evt)
 				m_selFileIdx = finfo.fullFileNames.empty() ? -1 : 0;
 
 			if (m_selFileIdx >= 0)
-				OpenFile(finfo.fullFileNames[m_selFileIdx].ansi(), 2);
+				OpenFile(finfo.fullFileNames[m_selFileIdx].ansi(), m_explorerFolderIndex);
 		}
 		break;
 		}
