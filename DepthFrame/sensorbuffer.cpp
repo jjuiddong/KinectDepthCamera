@@ -35,7 +35,7 @@ void cSensorBuffer::Render(graphic::cRenderer &renderer
 	shader->Begin();
 	shader->BeginPass(renderer, 0);
 
-	renderer.m_cbPerFrame.m_v->mWorld = XMMatrixTranspose(m_offset.GetMatrixXM() * parentTm);
+	renderer.m_cbPerFrame.m_v->mWorld = XMMatrixTranspose(parentTm);
 	renderer.m_cbPerFrame.Update(renderer);
 	XMVECTOR diffuse = XMLoadFloat4((XMFLOAT4*)&common::Vector4(.7f, .7f, .7f, isAphablend? .4f : 1.f));
 	renderer.m_cbMaterial.m_v->diffuse = diffuse;
@@ -76,7 +76,7 @@ void cSensorBuffer::RenderTessellation(graphic::cRenderer &renderer
 	shader->Begin();
 	shader->BeginPass(renderer, 0);
 
-	renderer.m_cbPerFrame.m_v->mWorld = XMMatrixTranspose(m_offset.GetMatrixXM() * parentTm);
+	renderer.m_cbPerFrame.m_v->mWorld = XMMatrixTranspose(parentTm);
 	renderer.m_cbPerFrame.Update(renderer);
 	XMVECTOR diffuse = XMLoadFloat4((XMFLOAT4*)&common::Vector4(.7f, .7f, .7f, 1.f));
 	renderer.m_cbMaterial.m_v->diffuse = diffuse;
@@ -197,15 +197,37 @@ bool cSensorBuffer::UpdatePointCloud(cRenderer &renderer
 
 		tm *= T;
 	}
+
+	{
+		Quaternion q;
+		q.SetRotationArc(m_planeSub.N, Vector3(0, 1, 0));
+		tm *= q.GetMatrix();
+	}
+
+	tm *= m_offset.GetMatrix();
 	
+	float maxDiff = 0.f;
 	float diffAvrs = 0;
 	for (u_int i = 0; i < vertices.size(); ++i)
 	{
+		const Vector3 &vtx = m_vertices[i];
 		Vector3 pos = vertices[i] * tm;
 		if (!isnan(pos.x) && !isnan(vertices[i].x))
-			diffAvrs += abs(pos.y - m_vertices[i].y);
+		{
+			const float diff = abs(pos.y - vtx.y);
+			if (!vtx.IsEmpty())
+			{
+				diffAvrs += diff;
+				if (diff > maxDiff)
+				{
+					maxDiff = diff;
+				}
+			}
+		}
 		else
+		{
 			pos = Vector3(0, 0, 0);
+		}
 		m_vertices[i] = pos;
 	}
 	diffAvrs /= (float)m_vertices.size();
@@ -243,7 +265,7 @@ bool cSensorBuffer::UpdatePointCloudItBySelf(graphic::cRenderer &renderer)
 
 				if (g_root.m_isRangeCulling)
 				{
-					const Vector3 gpos = pos * m_offset;
+					const Vector3 gpos = pos;
 
 					if (gpos.x < g_root.m_cullRangeMin.x)
 						continue;
@@ -364,7 +386,7 @@ Vector3 cSensorBuffer::PickVertex(const Ray &ray)
 	for (int i=0; i < m_pointCloudCount; ++i)
 	{
 		auto &vtx = m_vertices[i];
-		const Vector3 p = vtx * m_offset;
+		const Vector3 p = vtx;
 		const Vector3 v = (p - ray.orig).Normal();
 		const float d = abs(ray.dir.DotProduct(v));
 		if (maxDot < d)

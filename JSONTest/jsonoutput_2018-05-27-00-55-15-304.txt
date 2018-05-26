@@ -1,0 +1,18 @@
+{ "VOLUME" : [
+	{
+		 "horz" : 101.797
+		 ,"vert" : 99.7268
+		 ,"height" : 102.7
+		 ,"volume" : 1.04259e+06
+		 ,"vw" : 173.766
+		 ,"pointcount" : 4
+	}
+	, {
+		 "horz" : 51.9844
+		 ,"vert" : 49.8821
+		 ,"height" : 50.8
+		 ,"volume" : 131729
+		 ,"vw" : 21.9548
+		 ,"pointcount" : 4
+	}
+] }

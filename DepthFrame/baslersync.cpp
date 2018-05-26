@@ -81,6 +81,7 @@ bool cBaslerCameraSync::CreateSensor(const int sensorCount)
 		sensor->m_isShow = true;
 		sensor->m_info.strDisplayName = common::format("temp camera%d", i + 1);
 		sensor->m_buffer.m_offset = g_root.m_cameraOffset[i];
+		sensor->m_buffer.m_planeSub = g_root.m_planeSub[i];
 		m_sensors.push_back(sensor);
 	}
 
@@ -167,6 +168,7 @@ void cBaslerCameraSync::setupCamera()
 		sensor->InitCamera(camIdx, cInfo);
 
 		sensor->m_buffer.m_offset = g_root.m_cameraOffset[camIdx];
+		sensor->m_buffer.m_planeSub = g_root.m_planeSub[camIdx];
 		m_oldCameraEnable[camIdx] = true;
 
 		m_sensors.push_back(sensor);

@@ -20,9 +20,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{9848A7A5-7FCF-4150-A483-74E30A3AF393}</ProjectGuid>
+    <ProjectGuid>{E08F4FBF-C885-4BAF-B86B-7A223E761DA2}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>DepthFrame</RootNamespace>
+    <RootNamespace>JSONTest</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -72,46 +72,33 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)..\Bin\</OutDir>
-    <IntDir>$(SolutionDir)../Obj/$(ProjectName)/$(Configuration)/</IntDir>
-    <TargetName>$(ProjectName)d</TargetName>
-    <IncludePath>$(KINECTSDK20_DIR)\inc;$(IncludePath)</IncludePath>
-    <LibraryPath>$(KINECTSDK20_DIR)\lib\x86;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)..\Bin\</OutDir>
-    <IntDir>$(SolutionDir)../Obj/$(ProjectName)/$(Configuration)/</IntDir>
-    <IncludePath>$(KINECTSDK20_DIR)\inc;$(IncludePath)</IncludePath>
-    <LibraryPath>$(KINECTSDK20_DIR)\lib\x86;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_HAS_ITERATOR_DEBUGGING=0;_CONSOLE;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../../Common/Framework/external/sfml/include;../../Common/Framework/external/sfml/src/;$(BASLER_TOF_INC);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Windows</SubSystem>
-      <AdditionalLibraryDirectories>../../Common/external;$(BASLER_TOF_LIB)\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>kinect20.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <DelayLoadDLLs>GCBase_MD_VC120_v3_0_Basler_pylon_v5_0.dll;GenApi_MD_VC120_v3_0_Basler_pylon_v5_0.dll</DelayLoadDLLs>
-      <LargeAddressAware>true</LargeAddressAware>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
@@ -119,12 +106,13 @@
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -132,22 +120,17 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../../Common/Framework/external/sfml/include;../../Common/Framework/external/sfml/src/;$(BASLER_TOF_INC);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
+      <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Windows</SubSystem>
-      <AdditionalLibraryDirectories>../../Common/external;$(BASLER_TOF_LIB)\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>kinect20.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <DelayLoadDLLs>GCBase_MD_VC120_v3_0_Basler_pylon_v5_0.dll;GenApi_MD_VC120_v3_0_Basler_pylon_v5_0.dll</DelayLoadDLLs>
-      <LargeAddressAware>true</LargeAddressAware>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -157,99 +140,24 @@
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
+      <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="analysisview.cpp" />
-    <ClCompile Include="baslersync.cpp" />
-    <ClCompile Include="boxview.cpp" />
-    <ClCompile Include="calibration.cpp" />
-    <ClCompile Include="calibrationview.cpp" />
-    <ClCompile Include="cameraview.cpp" />
-    <ClCompile Include="clipper.cpp" />
-    <ClCompile Include="colorview.cpp" />
-    <ClCompile Include="contour.cpp" />
-    <ClCompile Include="cvutil.cpp" />
-    <ClCompile Include="datreader.cpp" />
-    <ClCompile Include="dbclient.cpp" />
-    <ClCompile Include="depthframe.cpp" />
-    <ClCompile Include="depthview.cpp" />
-    <ClCompile Include="depthview2.cpp" />
-    <ClCompile Include="filterview.cpp" />
-    <ClCompile Include="infraredview.cpp" />
-    <ClCompile Include="inputview.cpp" />
-    <ClCompile Include="kinectv2.cpp" />
-    <ClCompile Include="logview.cpp" />
-    <ClCompile Include="plyreader.cpp" />
-    <ClCompile Include="rectcontour.cpp" />
-    <ClCompile Include="resultview.cpp" />
-    <ClCompile Include="root.cpp" />
-    <ClCompile Include="sensor.cpp" />
-    <ClCompile Include="sensorbuffer.cpp" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="JSONTest.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="3dview.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="3dview.h" />
-    <ClInclude Include="analysisview.h" />
-    <ClInclude Include="baslersync.h" />
-    <ClInclude Include="boxview.h" />
-    <ClInclude Include="calibration.h" />
-    <ClInclude Include="calibrationview.h" />
-    <ClInclude Include="cameraview.h" />
-    <ClInclude Include="clipper.hpp" />
-    <ClInclude Include="colorview.h" />
-    <ClInclude Include="contour.h" />
-    <ClInclude Include="cvutil.h" />
-    <ClInclude Include="datreader.h" />
-    <ClInclude Include="dbclient.h" />
-    <ClInclude Include="depthframe.h" />
-    <ClInclude Include="depthview.h" />
-    <ClInclude Include="depthview2.h" />
-    <ClInclude Include="filterview.h" />
-    <ClInclude Include="graphbuff.h" />
-    <ClInclude Include="infraredview.h" />
-    <ClInclude Include="inputview.h" />
-    <ClInclude Include="kinectv2.h" />
-    <ClInclude Include="logview.h" />
-    <ClInclude Include="plyreader.h" />
-    <ClInclude Include="rectcontour.h" />
-    <ClInclude Include="resultview.h" />
-    <ClInclude Include="root.h" />
-    <ClInclude Include="sensor.h" />
-    <ClInclude Include="sensorbuffer.h" />
-    <ClInclude Include="stdafx.h" />
-    <ClInclude Include="StopWatch.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\Common\AI\AI.vcxproj">
-      <Project>{c7f9eba2-b553-483b-bc34-d25f1c718255}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Common\Common\Common.vcxproj">
-      <Project>{ef9ca22d-0c8f-42e9-ab66-98bc1a640f10}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Common\Framework11\Framework11.vcxproj">
-      <Project>{89878d3e-85ac-4e0b-87eb-2de34a18eadf}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Common\Graphic11\Graphic11.vcxproj">
-      <Project>{6e994653-a69c-4be2-b830-97676e805f29}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Common\Network\Network_VS2017.vcxproj">
-      <Project>{a202aa06-f0ee-4b05-86de-da63b9f146d4}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\DirectXTK\DirectXTK_Desktop_2017_Win10.vcxproj">
-      <Project>{e0b52ae7-e160-4d32-bf3f-910b785e5a8e}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\ZipLib\ZipLib.vcxproj">
-      <Project>{5c9fd859-ddf9-4510-8397-b329b0ae8c48}</Project>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

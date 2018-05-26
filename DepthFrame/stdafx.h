@@ -5,6 +5,7 @@
 //using namespace common;
 #include "../../Common/Graphic11/graphic11.h"
 #include "../../Common/Framework11/framework11.h"
+#include "../../Common/Network/network.h"
 
 #include <Shlobj.h>
 
@@ -29,6 +30,8 @@
 #include "logview.h"
 #include "contour.h"
 #include "sensor.h"
+#include "calibration.h"
+#include "dbclient.h"
 
 extern framework::cGameMain2 * g_application;
 extern cRoot g_root;

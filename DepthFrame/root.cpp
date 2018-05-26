@@ -34,10 +34,14 @@ cRoot::cRoot()
 	ZeroMemory(&m_hDistribDifferential, sizeof(m_hDistribDifferential));
 	m_projMap = cv::Mat((int)g_capture3DHeight, (int)g_capture3DWidth, CV_32FC1);
 
-	//m_cameraOffset2.pos = Vector3(-57.9f, 2.8f, -71.3f);
-
 	m_cameraOffset[0].pos = Vector3(-57.9f, 2.8f, -71.3f);
-	m_cameraOffset[1].pos = Vector3(56.56f, -4.2f, 77.38f);
+	//m_cameraOffset[1].pos = Vector3(56.56f, -4.2f, 77.38f);
+	m_cameraOffset[1].pos = Vector3(56.56f, -2.2f, 77.38f);
+	m_cameraOffset[2].pos = Vector3(0, 0, 0);
+
+	m_planeSub[0] = Plane(Vector3(0,1,0), 0);
+	m_planeSub[1] = Plane(Vector3(0.010194f, 0.999914f, 0.008305f), 0);
+	m_planeSub[2] = Plane(Vector3(0.01611f, 0.999722f, 0.014008f), 0);
 }
 
 cRoot::~cRoot()
@@ -108,7 +112,13 @@ void cRoot::MeasureVolume(
 		// 포인트 클라우드에서 높이 분포를 계산한다.
 		// 높이분포를 이용해서 면적분포 메쉬를 생성한다.
 		// 높이 별로 포인트 클라우드를 생성한다.
-		cSensor *sensor = (m_baslerCam.m_sensors.size() >= 3) ? m_baslerCam.m_sensors[2] : NULL;
+		cSensor *sensor = NULL;
+		for (auto s : m_baslerCam.m_sensors)
+		{
+			if (s->IsEnable() && s->m_isShow)
+				sensor = s;
+		}
+		//cSensor *sensor = (m_baslerCam.m_sensors.size() >= 3) ? m_baslerCam.m_sensors[2] : NULL;
 		if (sensor)
 			sensor->m_buffer.MeasureVolume(renderer);		
 	}

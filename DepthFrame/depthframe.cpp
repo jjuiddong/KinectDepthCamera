@@ -15,6 +15,7 @@
 #include "resultview.h"
 #include "boxview.h"
 #include "cameraview.h"
+#include "calibrationview.h"
 #include "../ZipLib/ZipFile.h"
 #include "../ZipLib/streams/memstream.h"
 #include "../ZipLib/methods/Bzip2Method.h"
@@ -125,6 +126,8 @@ bool cViewer::OnInit()
 	m_camView = new cCameraView("Camera");
 	m_camView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_inputView);
 
+	m_calibView = new cCalibrationView("Calibration");
+	m_calibView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_analysisView);
 
 	g_root.InitSensor();
 

@@ -1,0 +1,10 @@
+{ "VOLUME" : [
+	{
+		 "HORZ" : 50.5511
+		 ,"VERT" : 49.8821
+		 ,"HEIGHT" : 50.7
+		 ,"VOLUME" : 127845
+		 ,"VW" : 21.3075
+		 ,"POINTCOUNT" : 4
+	}
+] }

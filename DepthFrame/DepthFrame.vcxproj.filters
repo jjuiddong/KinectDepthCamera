@@ -52,6 +52,11 @@
       <Filter>view</Filter>
     </ClCompile>
     <ClCompile Include="sensor.cpp" />
+    <ClCompile Include="calibration.cpp" />
+    <ClCompile Include="calibrationview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="dbclient.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="depthframe.h" />
@@ -107,6 +112,11 @@
       <Filter>view</Filter>
     </ClInclude>
     <ClInclude Include="sensor.h" />
+    <ClInclude Include="calibration.h" />
+    <ClInclude Include="calibrationview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="dbclient.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="view">

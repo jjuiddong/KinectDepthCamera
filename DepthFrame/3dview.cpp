@@ -23,6 +23,7 @@ c3DView::c3DView(const string &name)
 	, m_showBoxVolume(false)
 	, m_isUpdateOrthogonalProjection(true)
 	, m_rangeMinMax(50,50)
+	, m_isContinuousCalibrationPlane(false)
 {
 }
 
@@ -148,7 +149,6 @@ void c3DView::OnPreRender(const float deltaSeconds)
 
 		if (eState::RANGE2 == m_state)
 		{
-			// left top
 			const Vector3 offset[4] = {
 				Vector3(-m_rangeMinMax.x, -m_rangeCenter.y, -m_rangeMinMax.y) // left-top
 				, Vector3(m_rangeMinMax.x, -m_rangeCenter.y, -m_rangeMinMax.y) // right-top
@@ -156,6 +156,7 @@ void c3DView::OnPreRender(const float deltaSeconds)
 				, Vector3(-m_rangeMinMax.x, -m_rangeCenter.y, m_rangeMinMax.y) // left-bottom
 			};
 
+			// render vertical range line
 			renderer.m_dbgLine.SetColor(cColor::RED);
 			for (int i=0; i < 4; ++i)
 			{
@@ -165,6 +166,7 @@ void c3DView::OnPreRender(const float deltaSeconds)
 				renderer.m_dbgLine.Render(renderer);
 			}
 
+			// render horizontal range line
 			renderer.m_dbgLine.SetColor(cColor::GREEN);
 			for (int i = 0; i < 4; ++i)
 			{
@@ -175,6 +177,18 @@ void c3DView::OnPreRender(const float deltaSeconds)
 				renderer.m_dbgLine.Render(renderer);
 			}
 
+			// render plane normals
+			renderer.m_dbgLine.SetColor(cColor::BLUE);
+			if (m_isContinuousCalibrationPlane)
+			{
+				for (auto &plane : m_calib.m_planes)
+				{
+					const Vector3 p0 = m_rangeCenter;
+					const Vector3 p1 = m_rangeCenter + plane.N * 30.f;
+					renderer.m_dbgLine.SetLine(p0, p1, 0.3f);
+					renderer.m_dbgLine.Render(renderer);
+				}
+			}
 
 			renderer.m_dbgLine.SetColor(cColor::WHITE); // recovery
 		}
@@ -299,8 +313,8 @@ void c3DView::OnRender(const float deltaSeconds)
 	bool isOpen = true;
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 	ImGui::SetNextWindowPos(pos);
-	ImGui::SetNextWindowSize(ImVec2(std::min(m_viewRect.Width(), 800.f), std::min(m_viewRect.Height(), 500.f)));
-	if (ImGui::Begin("Information", &isOpen, ImVec2(m_viewRect.Width(), 800.f), windowAlpha, flags))
+	ImGui::SetNextWindowSize(ImVec2(std::min(m_viewRect.Width(), 800.f), std::min(m_viewRect.Height(), 800.f)));
+	if (ImGui::Begin("Information", &isOpen, ImVec2(m_viewRect.Width(), std::min(m_viewRect.Height(), 800.f)), windowAlpha, flags))
 	{
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
@@ -392,7 +406,6 @@ void c3DView::OnRender(const float deltaSeconds)
 				{
 					m_isGenPlane = true;
 					for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
-
 					{
 						sensor->m_buffer.m_plane.N.x = config.GetFloat("plane-x");
 						sensor->m_buffer.m_plane.N.y = config.GetFloat("plane-y");
@@ -449,14 +462,16 @@ void c3DView::OnRender(const float deltaSeconds)
 			ImGui::Text("Standard Deviation = %f", m_planeStandardDeviation);
 		}
 
-		if (ImGui::Button("Pick Range"))
+		if (ImGui::Button("BasePlane Calibration"))
 		{
 			m_state = eState::RANGE;
 		}
 
 		if (eState::RANGE2 == m_state)
 		{
+			ImGui::DragFloat3("Range Center", (float*)&m_rangeCenter, 0.01f);
 			ImGui::DragFloat2("MinMax", (float*)&m_rangeMinMax, 0.1f);
+			ImGui::Checkbox("Continuous Calibration", &m_isContinuousCalibrationPlane);
 
 			if (ImGui::Button("Calibration"))
 			{
@@ -470,192 +485,35 @@ void c3DView::OnRender(const float deltaSeconds)
 						break;
 					}
 				}
+
 				if (selSensor)
-					CalcBasePlaneCalibration(selSensor);
+				{
+					m_calib.CalibrationBasePlane(m_rangeCenter, m_rangeMinMax, selSensor);
+
+					dbg::Logp("calib plane xyzd, %f, %f, %f, %f\n"
+						, m_calib.m_result.plane.N.x, m_calib.m_result.plane.N.y, m_calib.m_result.plane.N.z, m_calib.m_result.plane.D);
+				}
 			}
+
+			ImGui::Text("current sd = %f", m_calib.m_result.curSD);
+			ImGui::Text("calibration sd = %f", m_calib.m_result.minSD);
+			ImGui::Text("plane x=%f, y=%f, z=%f, d=%f"
+				, m_calib.m_result.plane.N.x, m_calib.m_result.plane.N.y, m_calib.m_result.plane.N.z, m_calib.m_result.plane.D);
+
+			if (m_isContinuousCalibrationPlane)
+				ImGui::Text("avr plane x=%f, y=%f, z=%f, d=%f"
+					, m_calib.m_avrPlane.N.x, m_calib.m_avrPlane.N.y, m_calib.m_avrPlane.N.z, m_calib.m_avrPlane.D);
+
+			if (ImGui::Button("Clear Base Plane Calibration"))
+			{
+				dbg::Logp("Clear Base Plane Calibration \n");
+				m_calib.Clear();
+			}
+
 		}
 
 		ImGui::End();
 	}
-}
-
-
-// 바닥 평면 컬리브레이션
-// 영역이 정해진 후, 
-//        top
-//  * ----- * ----- * 
-//  |   0   |   1   | right
-//  |       |       |
-//  * ----- * ----- *
-//  |   3   |   2   |
-//  |       |       |
-//  * ----- * ----- *
-//        bottom
-//
-//   /\ Z axis
-//    |
-//    |
-//    |
-//   -------------> X Axis
-//
-// 4등분 한 후, 랜덤으로 설정된 3 영역에서, 랜덤포인트를 찍는다.
-// 3포인트로 평면을 생성하고, 그 평면에서 영역의 높이 편차를 구한 후
-// 가장 작게되는 편차가 될 때까지 반복한다.
-void c3DView::CalcBasePlaneCalibration(const cSensor *sensor)
-{
-	// 위치값을 기본 좌표계로 복원한다.
-	const Vector3 center = m_rangeCenter * sensor->m_buffer.m_offset.Inverse();
-	const sRectf range = sRectf(center.x - m_rangeMinMax.x, center.z + m_rangeMinMax.y,
-		center.x + m_rangeMinMax.x, center.z - m_rangeMinMax.y);
-
-	float offset = 5.f; // 5cm
-	sRectf rects[4] = {
-		sRectf(center.x - m_rangeMinMax.x, center.z + m_rangeMinMax.y
-			, center.x, center.z)
-		, sRectf(center.x, center.z + m_rangeMinMax.y
-			, center.x + m_rangeMinMax.x, center.z)
-		, sRectf(center.x, center.z
-			, center.x + m_rangeMinMax.x, center.z - m_rangeMinMax.y)
-		, sRectf(center.x - m_rangeMinMax.x, center.z
-			, center.x, center.z - m_rangeMinMax.y)
-	};
-
-	// 오프셋 적용
-	for (int i = 0; i < 4; ++i)
-	{
-		rects[i].left += offset;
-		rects[i].top -= offset;
-		rects[i].right -= offset;
-		rects[i].bottom += offset;
-	}
-
-	vector<Vector3> pts[4];
-	for (int i = 0; i < 4; ++i)
-		pts[i].reserve(1024*5);
-	
-	// 4분할 영역에 속하는 포인트 클라우드를 걸러낸다.
-	for (auto &vtx : sensor->m_buffer.m_vertices)
-	{
-		if (vtx.IsEmpty())
-			continue;
-
-		for (int i = 0; i < 4; ++i)
-		{
-			if ((rects[i].left < vtx.x)
-				&& (rects[i].right > vtx.x)
-				&& (rects[i].top > vtx.z)
-				&& (rects[i].bottom < vtx.z))
-			{
-				if (abs(center.y - vtx.y) < offset)
-					pts[i].push_back(vtx);
-				break;
-			}
-		}
-	}
-
-	srand(timeGetTime());
-
-	const double curSD = CalcHeightStandardDeviation(sensor, center, range, Matrix44::Identity);
-	double minSD = FLT_MAX;
-	Plane minPlane;
-	int cnt = 0;
-	while (cnt++ < 100)
-	{
-		// 4분할된 영역을 랜덤하게 3 영역을 선택한다.
-		int rectIdAr[] = { 0,1,2,3 };
-		int ids[3];
-		for (int i = 0; i < 3; ++i)
-		{
-			const int k = rand() % (4 - i);
-			ids[i] = rectIdAr[k];
-			rectIdAr[k] = rectIdAr[3 - i];
-		}
-
-		// 선택한 영역에서 랜덤하게 포인트를 선택한다.
-		const Vector3 p1 = pts[ids[0]][common::randint(0, pts[ids[0]].size() - 1)];
-		const Vector3 p2 = pts[ids[1]][common::randint(0, pts[ids[1]].size() - 1)];
-		const Vector3 p3 = pts[ids[2]][common::randint(0, pts[ids[2]].size() - 1)];
-
-		// 선택한 포인트로 평면을 만든다.
-		Plane plane(p1, p2, p3);
-		Matrix44 tm;
-		if (!plane.N.IsEmpty())
-		{
-			Quaternion q;
-			q.SetRotationArc(plane.N, Vector3(0, 1, 0));
-			tm *= q.GetMatrix();
-			//Vector3 center = m_volumeCenter * q.GetMatrix();
-			//center.y = 0;
-			//Matrix44 T;
-			//T.SetPosition(Vector3(-center.x, m_plane.D, -center.z));
-			//tm *= T;
-		}
-
-		// 편차를 구하고, 가장 낮은 편차가 될 때까지 반복한다.
-		const double sd = CalcHeightStandardDeviation(sensor, center, range, tm);
-		if (minSD > sd)
-		{
-			minSD = sd;
-			minPlane = plane;
-		}
-	}
-
-	int a = 0;
-}
-
-
-// rect영역의 높이 표준편차를 구한다.
-// rect : x-z plane rect
-//		  left-right, x axis
-//		  top-bottom, z axis
-// tm : transform matrix
-//
-double c3DView::CalcHeightStandardDeviation(const cSensor *sensor, const Vector3 &center, const sRectf &rect, const Matrix44 &tm)
-{
-	// 높이 평균 구하기
-	int k = 0;
-	double avr = 0;
-	for (auto &vtx : sensor->m_buffer.m_vertices)
-	{
-		if (vtx.IsEmpty())
-			continue;
-
-		if ((rect.left < vtx.x)
-			&& (rect.right > vtx.x)
-			&& (rect.top > vtx.z)
-			&& (rect.bottom < vtx.z))
-		{
-			if (abs(vtx.y - center.y) > 10) // 10 cm
-				continue;
-
-			const Vector3 p = vtx * tm;
-			avr = CalcAverage(++k, avr, p.y);
-		}
-	}
-
-	// 표준 편차 구하기
-	k = 0;
-	double sd = 0;
-	for (auto &vtx : sensor->m_buffer.m_vertices)
-	{
-		if (vtx.IsEmpty())
-			continue;
-
-		if ((rect.left < vtx.x)
-			&& (rect.right > vtx.x)
-			&& (rect.top > vtx.z)
-			&& (rect.bottom < vtx.z))
-		{
-			if (abs(vtx.y - center.y) > 10) // 10 cm
-				continue;
-
-			const Vector3 p = vtx * tm;
-			sd = CalcAverage(++k, sd, (p.y - avr) * (p.y - avr));
-		}
-	}
-	sd = sqrt(sd);
-
-	return sd;
 }
 
 
@@ -948,11 +806,6 @@ void c3DView::OnEventProc(const sf::Event &evt)
 
 		case sf::Keyboard::Space:
 			break;
-
-		//case sf::Keyboard::Left: g_root.m_cameraOffset2.pos.x -= 0.1f; break;
-		//case sf::Keyboard::Right: g_root.m_cameraOffset2.pos.x += 0.1f; break;
-		//case sf::Keyboard::Up: g_root.m_cameraOffset2.pos.z += 0.1f; break;
-		//case sf::Keyboard::Down: g_root.m_cameraOffset2.pos.z -= 0.1f; break;
 		}
 		break;
 

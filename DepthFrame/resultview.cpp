@@ -25,6 +25,8 @@ bool cResultView::Init(graphic::cRenderer &renderer)
 	const float fontSize = 50;
 	ImGuiIO& io = ImGui::GetIO();
 
+	m_dbClient.Create();
+
 	return true;
 }
 
@@ -40,8 +42,10 @@ void cResultView::OnRender(const float deltaSeconds)
 	ImGui::PushStyleVar(ImGuiStyleVar_ChildWindowRounding, 5.0f);
 	ImGui::BeginChild("Sub2", ImVec2(w, m_rect.Height() - 45), true);
 
+	static bool isMeasureVolume = false;
 	if (ImGui::Button(u8"길이 측정"))
 	{
+		isMeasureVolume = true;
 		((cViewer*)g_application)->m_inputView->DelayMeasure();
 		((cViewer*)g_application)->m_filterView->ClearBoxVolumeAverage();
 	}
@@ -50,26 +54,6 @@ void cResultView::OnRender(const float deltaSeconds)
 	ImGui::Spacing();
 	ImGui::Separator();
 	ImGui::Spacing();
-
-	//for (u_int i = 0; i < g_root.m_boxes.size(); ++i)
-	//{
-	//	auto &box = g_root.m_boxes[i];
-
-	//	// 소수 첫 번째 자리에서 반올림
-	//	// 긴쪽이 가로, 짧은 쪽이 세로
-	//	const int l1 = std::max((int)(box.volume.x + 0.5f), (int)(box.volume.z + 0.5f));
-	//	const int l2 = std::min((int)(box.volume.x + 0.5f), (int)(box.volume.z + 0.5f));
-	//	const int l3 = (int)(box.volume.y + 0.5f);
-
-	//	ImGui::Text("Box%d", i + 1);
-	//	ImGui::Text(u8"\t 가로 = %d", l1);
-	//	ImGui::Text(u8"\t 세로 = %d", l2);
-	//	ImGui::Text(u8"\t 높이 = %d", l3);
-	//	ImGui::Text(u8"\t V/W = %.1f", box.minVolume / 6000.f);
-	//	//ImGui::Text(u8"\t V/W = %.1f", (box.volume.x * box.volume.y * box.volume.z) / 6000.f);
-	//	ImGui::Spacing();
-	//	ImGui::Separator();
-	//}
 
 	vector<cFilterView::sAvrContour> &avrContours = ((cViewer*)g_application)->m_filterView->m_avrContours;
 	for (u_int i = 0; i < avrContours.size(); ++i)
@@ -108,6 +92,31 @@ void cResultView::OnRender(const float deltaSeconds)
 	// 지연 측정 결과
 	if (isSecondColumn)
 	{
+		if (isMeasureVolume && !g_root.m_boxesStored.empty())
+		{
+			isMeasureVolume = false;
+			sMeasureResult result;
+			for (auto &box : g_root.m_boxesStored)
+			{
+				const float l1 = std::max(box.volume.x, box.volume.z);
+				const float l2 = std::min(box.volume.x, box.volume.z);
+				const float l3 = box.volume.y;
+
+				sMeasureVolume info;
+				info.horz = l1;
+				info.vert = l2;
+				info.height = l3;
+				info.volume = box.minVolume;
+				info.vw = box.minVolume / 6000.f;
+				info.pointCount = box.pointCnt;
+				result.volumes.push_back(info);
+			}
+
+			if (!result.volumes.empty())
+				m_dbClient.Insert(result);
+		}
+
+
 		ImGui::SetCursorPos(ImVec2(w, pos.y));
 
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 0, 1));

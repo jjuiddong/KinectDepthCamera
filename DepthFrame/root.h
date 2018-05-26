@@ -48,6 +48,8 @@ public:
 
 	cv::Mat m_projMap; // change space, (orthogonal projection map)
 	common::Transform m_cameraOffset[3]; // camera1 offset
+	common::Plane m_planeSub[3];
+
 	common::cTimer m_timer;
 	
 	// Update Every Time

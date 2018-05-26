@@ -16,6 +16,7 @@ class cLogView;
 class cResultView;
 class cBoxView;
 class cCameraView;
+class cCalibrationView;
 
 class cViewer : public framework::cGameMain2
 {
@@ -42,4 +43,5 @@ public:
 	cResultView *m_resultView;
 	cBoxView *m_boxView;
 	cCameraView *m_camView;
+	cCalibrationView *m_calibView;
 };

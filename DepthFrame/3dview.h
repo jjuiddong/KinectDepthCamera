@@ -25,9 +25,6 @@ protected:
 	void UpdateLookAt();
 	double CalcBasePlaneStandardDeviation(const size_t camIdx = 0);
 	void RenderBoxVolume3D(graphic::cRenderer &renderer);
-	void CalcBasePlaneCalibration(const cSensor *sensor);
-	double CalcHeightStandardDeviation(const cSensor *sensor, const common::Vector3 &center
-		, const common::sRectf &rect, const common::Matrix44 &tm);
 
 	void OnWheelMove(const float delta, const POINT mousePt);
 	void OnMouseMove(const POINT mousePt);
@@ -64,9 +61,14 @@ public:
 	graphic::cDbgLine m_volumeCenterLine;
 	graphic::cDbgLine m_boxLine;
 	common::Vector3 m_pickPos;
+	
+	// base plane calibration
+	cCalibration m_calib;
 	common::Vector3 m_rangeCenter;
 	common::Vector2 m_rangeMinMax;
 	double m_planeStandardDeviation;
+	bool m_isContinuousCalibrationPlane;
+
 
 	// MouseMove Variable
 	POINT m_viewPos;

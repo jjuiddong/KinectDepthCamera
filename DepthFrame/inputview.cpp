@@ -688,6 +688,9 @@ void cInputView::OnEventProc(const sf::Event &evt)
 		{
 		case sf::Keyboard::Key::Down:
 		{
+			if ((int)m_files.size() <= m_explorerFolderIndex)
+				break;
+
 			sFileInfo &finfo = m_files[m_explorerFolderIndex];
 
 			++m_selFileIdx;
@@ -701,6 +704,9 @@ void cInputView::OnEventProc(const sf::Event &evt)
 
 		case sf::Keyboard::Key::Up:
 		{
+			if ((int)m_files.size() <= m_explorerFolderIndex)
+				break;
+
 			sFileInfo &finfo = m_files[m_explorerFolderIndex];
 
 			if (m_selFileIdx < 0)

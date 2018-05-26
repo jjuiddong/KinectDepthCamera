@@ -72,6 +72,7 @@ public:
 	vector<USHORT> m_intensity;
 	vector<USHORT> m_confidence;
 	common::Plane m_plane;
+	common::Plane m_planeSub;
 	common::Vector3 m_volumeCenter;
 	graphic::cVertexBuffer m_vtxBuff;
 	common::Transform m_offset;
