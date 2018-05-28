@@ -34,9 +34,15 @@ cRoot::cRoot()
 	ZeroMemory(&m_hDistribDifferential, sizeof(m_hDistribDifferential));
 	m_projMap = cv::Mat((int)g_capture3DHeight, (int)g_capture3DWidth, CV_32FC1);
 
-	m_cameraOffset[0].pos = Vector3(-57.9f, 2.8f, -71.3f);
+	//m_cameraOffset[0].pos = Vector3(-57.9f, 2.8f, -71.3f);
+	//m_cameraOffset[0].pos = Vector3(-61.11f, 4.17f, -72.11f);
+	m_cameraOffset[0].pos = Vector3(-59.740f, 4.170f, -75.420f);
+	m_cameraOffset[0].rot.SetRotationY(-0.02f);
+
 	//m_cameraOffset[1].pos = Vector3(56.56f, -4.2f, 77.38f);
-	m_cameraOffset[1].pos = Vector3(56.56f, -2.2f, 77.38f);
+	//m_cameraOffset[1].pos = Vector3(56.56f, -2.2f, 77.38f);
+	m_cameraOffset[1].pos = Vector3(55.030f, -2.200f, 76.460f);	
+
 	m_cameraOffset[2].pos = Vector3(0, 0, 0);
 
 	m_planeSub[0] = Plane(Vector3(0,1,0), 0);

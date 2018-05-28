@@ -491,7 +491,7 @@ void cInputView::UpdateFileList()
 	if (!m_files.empty())
 	{
 		m_comboFileStr.clear();
-		sFileInfo &finfo = m_files[0];
+		sFileInfo &finfo = m_files[2];
 
 		for (u_int i = 0; i < finfo.fullFileNames.size() / MAX_FILEPAGE; ++i)
 		{

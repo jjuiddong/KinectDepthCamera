@@ -496,7 +496,7 @@ bool cBaslerCameraSync::CopyCaptureBuffer(graphic::cRenderer &renderer)
 			continue;
 
 		common::StrPath fileName;
-		fileName.Format("../media/depthMulti4/%d/%s.pcd", sensor->m_id, curTime.c_str());
+		fileName.Format("../media/depthMulti5/%d/%s.pcd", sensor->m_id, curTime.c_str());
 		sensor->CopyCaptureBuffer(renderer, fileName.c_str());
 	}
 

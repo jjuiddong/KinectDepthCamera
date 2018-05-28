@@ -178,64 +178,12 @@ bool cSensorBuffer::UpdatePointCloud(cRenderer &renderer
 		m_vtxBuff.Create(renderer, w * h, sizeof(sVertex), D3D11_USAGE_DYNAMIC);
 	}
 
-	Transform tfm;
-	tfm.scale = Vector3(1, 1, 1)*0.1f;
-	Matrix44 tm = tfm.GetMatrix();
-
-	// plane calculation
-	if (!m_plane.N.IsEmpty())
-	{
-		Quaternion q;
-		q.SetRotationArc(m_plane.N, Vector3(0, 1, 0));
-		tm *= q.GetMatrix();
-
-		Vector3 center = m_volumeCenter * q.GetMatrix();
-		center.y = 0;
-
-		Matrix44 T;
-		T.SetPosition(Vector3(-center.x, m_plane.D, -center.z));
-
-		tm *= T;
-	}
-
-	{
-		Quaternion q;
-		q.SetRotationArc(m_planeSub.N, Vector3(0, 1, 0));
-		tm *= q.GetMatrix();
-	}
-
-	tm *= m_offset.GetMatrix();
-	
-	float maxDiff = 0.f;
-	float diffAvrs = 0;
-	for (u_int i = 0; i < vertices.size(); ++i)
-	{
-		const Vector3 &vtx = m_vertices[i];
-		Vector3 pos = vertices[i] * tm;
-		if (!isnan(pos.x) && !isnan(vertices[i].x))
-		{
-			const float diff = abs(pos.y - vtx.y);
-			if (!vtx.IsEmpty())
-			{
-				diffAvrs += diff;
-				if (diff > maxDiff)
-				{
-					maxDiff = diff;
-				}
-			}
-		}
-		else
-		{
-			pos = Vector3(0, 0, 0);
-		}
-		m_vertices[i] = pos;
-	}
-	diffAvrs /= (float)m_vertices.size();
-	m_diffAvrs.AddValue(diffAvrs);
+	m_srcVertices = vertices;
 
 	memcpy(&m_intensity[0], &intensity[0], intensity.size() * sizeof(intensity[0]));
 	memcpy(&m_confidence[0], &confidence[0], confidence.size() * sizeof(confidence[0]));
 
+	UpdatePointCloudAllConfig(renderer);
 	UpdatePointCloudItBySelf(renderer);
 
 	for (u_int i = (u_int)m_pointCloudCount; i < m_vertices.size(); ++i)
@@ -291,6 +239,68 @@ bool cSensorBuffer::UpdatePointCloudItBySelf(graphic::cRenderer &renderer)
 
 		m_vtxBuff.Unlock(renderer);
 	}
+
+	return true;
+}
+
+
+// configuration 정보를 적용해서 포인트 클라우드를 업데이트 한다.
+bool cSensorBuffer::UpdatePointCloudAllConfig(graphic::cRenderer &renderer)
+{
+	Transform tfm;
+	tfm.scale = Vector3(1, 1, 1)*0.1f;
+	Matrix44 tm = tfm.GetMatrix();
+
+	// plane calculation
+	if (!m_plane.N.IsEmpty())
+	{
+		Quaternion q;
+		q.SetRotationArc(m_plane.N, Vector3(0, 1, 0));
+		tm *= q.GetMatrix();
+
+		Vector3 center = m_volumeCenter * q.GetMatrix();
+		center.y = 0;
+
+		Matrix44 T;
+		T.SetPosition(Vector3(-center.x, m_plane.D, -center.z));
+
+		tm *= T;
+	}
+
+	{
+		Quaternion q;
+		q.SetRotationArc(m_planeSub.N, Vector3(0, 1, 0));
+		tm *= q.GetMatrix();
+	}
+
+	tm *= m_offset.GetMatrix();
+
+	float maxDiff = 0.f;
+	float diffAvrs = 0;
+	for (u_int i = 0; i < m_srcVertices.size(); ++i)
+	{
+		const Vector3 &vtx = m_vertices[i];
+		Vector3 pos = m_srcVertices[i] * tm;
+		if (!isnan(pos.x) && !isnan(m_srcVertices[i].x))
+		{
+			const float diff = abs(pos.y - vtx.y);
+			if (!vtx.IsEmpty())
+			{
+				diffAvrs += diff;
+				if (diff > maxDiff)
+				{
+					maxDiff = diff;
+				}
+			}
+		}
+		else
+		{
+			pos = Vector3(0, 0, 0);
+		}
+		m_vertices[i] = pos;
+	}
+	diffAvrs /= (float)m_vertices.size();
+	m_diffAvrs.AddValue(diffAvrs);
 
 	return true;
 }

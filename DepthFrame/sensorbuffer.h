@@ -43,6 +43,7 @@ public:
 	void ChangeSpace(graphic::cRenderer &renderer);
 	void MeasureVolume(graphic::cRenderer &renderer);
 	bool UpdatePointCloudItBySelf(graphic::cRenderer &renderer);
+	bool UpdatePointCloudAllConfig(graphic::cRenderer &renderer);
 	void AnalysisDepth();
 	void Clear();
 
@@ -68,6 +69,7 @@ public:
 	double m_time; // update time
 	int m_frameId;
 	int m_pointCloudCount;
+	vector<common::Vector3> m_srcVertices; // source vertices, (balser source vertices)
 	vector<common::Vector3> m_vertices; // change space, (perspectiv projection vertex), no apply offset
 	vector<USHORT> m_intensity;
 	vector<USHORT> m_confidence;

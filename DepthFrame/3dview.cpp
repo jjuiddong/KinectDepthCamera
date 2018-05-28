@@ -425,6 +425,13 @@ void c3DView::OnRender(const float deltaSeconds)
 					}
 				}
 			}
+
+			//g_root.MeasureVolume();
+			for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
+			{
+				sensor->m_buffer.UpdatePointCloudAllConfig(GetRenderer());
+				sensor->m_buffer.UpdatePointCloudItBySelf(GetRenderer());
+			}
 		}
 
 		ImGui::SameLine();

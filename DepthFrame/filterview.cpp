@@ -237,6 +237,7 @@ cRoot::sBoxInfo cFilterView::CalcBoxInfo(const sContourInfo &info)
 {
 	const float scale = 50.f / 73.2f;
 	//const float scale = 50.f / 74.5f;
+	const float scaleH = 0.99f;
 	const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete) ? -13.f : 3.5f;
 
 	cRoot::sBoxInfo box;
@@ -251,7 +252,7 @@ cRoot::sBoxInfo cFilterView::CalcBoxInfo(const sContourInfo &info)
 		const float l1 = std::max((v1 - v2).Length(), (v3 - v4).Length());
 		const float l2 = std::max((v2 - v3).Length(), (v4 - v1).Length());
 		box.volume.x = std::max(l1, l2); // 큰 값이 가로
-		box.volume.y = (info.upperH - info.lowerH) + offsetY;
+		box.volume.y = (info.upperH - info.lowerH) * scaleH + offsetY;
 		box.volume.z = std::min(l1, l2); // 작은 값이 세로
 
 		// average value
@@ -273,7 +274,7 @@ cRoot::sBoxInfo cFilterView::CalcBoxInfo(const sContourInfo &info)
 	else
 	{
 		box.volume.x *= 0;
-		box.volume.y = (info.upperH - info.lowerH) + offsetY;
+		box.volume.y = (info.upperH - info.lowerH) * scaleH + offsetY;
 		box.volume.z *= 0;
 
 		box.minVolume = (float)info.contour.Area() * scale * scale * box.volume.y;
@@ -308,12 +309,24 @@ void cFilterView::CalcBoxVolumeAverage()
 	for (auto s : g_root.m_baslerCam.m_sensors)
 		if (s->IsEnable() && s->m_isShow)
 			sensor1 = s;
-	//cSensor *sensor1 = g_root.m_baslerCam.m_sensors[2];
+	if (!sensor1)
+		return;
 
-	if (sensor1->m_buffer.m_diffAvrs.GetCurValue() == 0)
+	// 하나라도 다른 정보가 있다면, 계산한다.
+	// 하나라도 오차가 큰정보가 있다면, 종료한다.
+	for (auto s : g_root.m_baslerCam.m_sensors)
+		if (s->IsEnable() && s->m_isShow)
+			if (s->m_buffer.m_diffAvrs.GetCurValue() > 0.3f)
+				return;
+	
+	bool isCalc = false;
+	for (auto s : g_root.m_baslerCam.m_sensors)
+		if (s->IsEnable() && s->m_isShow)
+			isCalc |= (s->m_buffer.m_diffAvrs.GetCurValue() != 0);
+
+	if (!isCalc)
 		return;
-	if (sensor1->m_buffer.m_diffAvrs.GetCurValue() > 0.3f)
-		return;
+
 	//if (g_root.m_sensorBuff[0].m_diffAvrs.GetCurValue() == 0)
 	//	return;
 	//if (g_root.m_sensorBuff[0].m_diffAvrs.GetCurValue() > 0.3f)

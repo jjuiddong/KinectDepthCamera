@@ -104,29 +104,4 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 			, area->areaGraph.idx, "", 0, 2000, ImVec2(0, 100));
 	}
 
-
-	//--------------------------------------------------------------------------
-	// debug, offset edit
-	if (g_root.m_baslerCam.m_sensors.size() >= 2)
-	{
-		cSensor *sensor2 = g_root.m_baslerCam.m_sensors[1];
-		ImGui::DragFloat3("offset2", (float*)&sensor2->m_buffer.m_offset.pos, 0.01f);
-	}
-
-	ImGui::Checkbox("range culling", &g_root.m_isRangeCulling);
-	ImGui::SameLine();
-	if (ImGui::Button("Apply Range Culling"))
-	{
-		if (g_root.m_baslerCam.IsReadyCapture())
-		{
-			for (auto sensor : g_root.m_baslerCam.m_sensors)
-				sensor->m_buffer.UpdatePointCloudItBySelf( ((cViewer*)g_application)->m_3dView->GetRenderer() );
-			g_root.MeasureVolume();
-		}
-	}
-
-	ImGui::DragFloat3("range min", (float*)&g_root.m_cullRangeMin, 1);
-	ImGui::DragFloat3("range max", (float*)&g_root.m_cullRangeMax, 1);
-	ImGui::Spacing();
-	ImGui::Spacing();
 }
