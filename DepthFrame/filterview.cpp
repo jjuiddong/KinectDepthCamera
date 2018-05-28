@@ -100,6 +100,7 @@ void cFilterView::ProcessDepth()
 
 		bool isFindBox = false;
 		for (int vtxCnt = 4; !isFindBox && (vtxCnt < 9); ++vtxCnt)
+		//for (int vtxCnt = 4; !isFindBox && (vtxCnt < 14); ++vtxCnt)
 		{
 			int loopCnt = 0;
 			cv::Mat binImg = m_binImg.clone();
@@ -301,10 +302,6 @@ void cFilterView::CalcBoxVolumeAverage()
 	const float max_center_gap = 10.f; // 10 cm
 	const float max_vertex_gap = 10.f; // 10 cm
 
-	// 정보가 업데이트 되지 않았거나, 오차가 크면, 계산하지 않는다.
-	//if (g_root.m_baslerCam.m_sensors.size() < 3)
-	//	return;
-
 	cSensor *sensor1 = NULL;
 	for (auto s : g_root.m_baslerCam.m_sensors)
 		if (s->IsEnable() && s->m_isShow)
@@ -312,6 +309,7 @@ void cFilterView::CalcBoxVolumeAverage()
 	if (!sensor1)
 		return;
 
+	// 정보가 업데이트 되지 않았거나, 오차가 크면, 계산하지 않는다.
 	// 하나라도 다른 정보가 있다면, 계산한다.
 	// 하나라도 오차가 큰정보가 있다면, 종료한다.
 	for (auto s : g_root.m_baslerCam.m_sensors)
@@ -325,14 +323,22 @@ void cFilterView::CalcBoxVolumeAverage()
 			isCalc |= (s->m_buffer.m_diffAvrs.GetCurValue() != 0);
 
 	if (!isCalc)
-		return;
+	{
+		//dbg::Logp("Error CalcBoxVolumeAverage(), Same Data \n");
+		//return; 같은 데이타라도 검사한다. 네트워크 딜레이때문에, 정보를 못 받을 수도 있다.
+	}
 
 	//if (g_root.m_sensorBuff[0].m_diffAvrs.GetCurValue() == 0)
 	//	return;
 	//if (g_root.m_sensorBuff[0].m_diffAvrs.GetCurValue() > 0.3f)
 	//	return;
 	if (m_contours.empty())
+	{
+		static int cnt = 0;
+		//dbg::Logp("Error CalcBoxVolumeAverage(), No Detect Box %d\n", cnt++);
 		return;
+	}
+
 	for (auto &info : m_avrContours)
 		info.check = false;
 
@@ -394,22 +400,51 @@ void cFilterView::CalcBoxVolumeAverage()
 			cv::Point vtx0 = srcBox.contour[k];
 			Vector2 p0((float)vtx0.x, (float)vtx0.y);
 
+			// 가장 가까운 꼭지점 찾기
+			float minLen = FLT_MAX;
+			int vtxIdx = -1;
 			for (u_int m = 0; m < avrBox.box.contour.Size(); ++m)
 			{
 				cv::Point vtx1 = avrBox.box.contour[m];
 				Vector2 p1((float)vtx1.x, (float)vtx1.y);
-
 				const float len = (p1 - p0).Length();
-				if (len > max_vertex_gap)
-					continue; // 꼭지점 사이 거리가 멀면, 다음 꼭지점 검색
-
-				// 대응되는 꼭지점을 찾았으면, 위치를 평균해서 저장한다. 재귀평균식 적용
-				avrBox.avrVertices[m].x = (float)CalcAverage(avrBox.count, avrBox.avrVertices[m].x, p0.x);
-				avrBox.avrVertices[m].y = (float)CalcAverage(avrBox.count, avrBox.avrVertices[m].y, p0.y);
-
-				avrBox.vertices3d[m] = Vector3((avrBox.avrVertices[m].x - 320) / 1.5f, avrBox.box.upperH, (480 - avrBox.avrVertices[m].y - 240) / 1.5f);
-				avrBox.vertices3d[m + avrBox.box.contour.Size()] = Vector3((avrBox.avrVertices[m].x - 320) / 1.5f, avrBox.box.lowerH, (480 - avrBox.avrVertices[m].y - 240) / 1.5f);
+				if (minLen > len)
+				{
+					minLen = len;
+					vtxIdx = m;
+				}
 			}
+
+			if (vtxIdx < 0)
+				continue;
+			if (minLen > max_vertex_gap)
+				continue;
+
+			// 대응되는 꼭지점을 찾았으면, 위치를 평균해서 저장한다. 재귀평균식 적용
+			avrBox.avrVertices[vtxIdx].x = (float)CalcAverage(avrBox.count, avrBox.avrVertices[vtxIdx].x, p0.x);
+			avrBox.avrVertices[vtxIdx].y = (float)CalcAverage(avrBox.count, avrBox.avrVertices[vtxIdx].y, p0.y);
+
+			avrBox.vertices3d[vtxIdx] = Vector3((avrBox.avrVertices[vtxIdx].x - 320) / 1.5f
+				, avrBox.box.upperH, (480 - avrBox.avrVertices[vtxIdx].y - 240) / 1.5f);
+			avrBox.vertices3d[vtxIdx + avrBox.box.contour.Size()] = Vector3((avrBox.avrVertices[vtxIdx].x - 320) / 1.5f
+				, avrBox.box.lowerH, (480 - avrBox.avrVertices[vtxIdx].y - 240) / 1.5f);
+
+			//for (u_int m = 0; m < avrBox.box.contour.Size(); ++m)
+			//{
+			//	cv::Point vtx1 = avrBox.box.contour[m];
+			//	Vector2 p1((float)vtx1.x, (float)vtx1.y);
+
+			//	const float len = (p1 - p0).Length();
+			//	if (len > max_vertex_gap)
+			//		continue; // 꼭지점 사이 거리가 멀면, 다음 꼭지점 검색
+
+			//	// 대응되는 꼭지점을 찾았으면, 위치를 평균해서 저장한다. 재귀평균식 적용
+			//	avrBox.avrVertices[m].x = (float)CalcAverage(avrBox.count, avrBox.avrVertices[m].x, p0.x);
+			//	avrBox.avrVertices[m].y = (float)CalcAverage(avrBox.count, avrBox.avrVertices[m].y, p0.y);
+
+			//	avrBox.vertices3d[m] = Vector3((avrBox.avrVertices[m].x - 320) / 1.5f, avrBox.box.upperH, (480 - avrBox.avrVertices[m].y - 240) / 1.5f);
+			//	avrBox.vertices3d[m + avrBox.box.contour.Size()] = Vector3((avrBox.avrVertices[m].x - 320) / 1.5f, avrBox.box.lowerH, (480 - avrBox.avrVertices[m].y - 240) / 1.5f);
+			//}
 		}
 
 		// BoxInfo 정보 업데이트
@@ -439,8 +474,10 @@ bool cFilterView::FindBox(cv::Mat &img
 	findContours(img, contours, CV_RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
 	int m_minArea = 300;
-	double m_minCos = -0.4f; // 직각 체크
-	double m_maxCos = 0.4f;
+	//double m_minCos = -0.4f; // 직각 체크
+	//double m_maxCos = 0.4f;
+	double m_minCos = (vtxCnt == 4)? -0.4f : -0.3f; // 직각 체크
+	double m_maxCos = (vtxCnt == 4)? 0.4f : 0.3f;
 
 	vector<cRectContour> rects;
 	std::vector<cv::Point> approx;
@@ -448,7 +485,15 @@ bool cFilterView::FindBox(cv::Mat &img
 	{
 		// Approximate contour with accuracy proportional
 		// to the contour perimeter
-		cv::approxPolyDP(cv::Mat(contours[i]), approx, cv::arcLength(cv::Mat(contours[i]), true)*0.013f, true);
+		//double ll = cv::arcLength(cv::Mat(contours[i]), true);
+		const double area = cv::contourArea(contours[i]);
+
+		//const double epsilontAlpha = (vtxCnt == 4) ? 0.03f : 0.01f;
+		const double epsilontAlpha = (area < 3000.f) ? 0.03f : 0.01f;
+		cv::approxPolyDP(cv::Mat(contours[i]), approx
+			, cv::arcLength(cv::Mat(contours[i]), true) * epsilontAlpha, true);
+		//, cv::arcLength(cv::Mat(contours[i]), true) * 0.013f, true);
+		//, cv::arcLength(cv::Mat(contours[i]), true) * 0.03f , true);
 
 		// Skip small or non-convex objects 
 		const bool isConvex = cv::isContourConvex(approx);
@@ -456,8 +501,10 @@ bool cFilterView::FindBox(cv::Mat &img
 		if (std::fabs(cv::contourArea(contours[i])) < m_minArea)
 			continue;
 
-		//if (approx.size() == 4)
-		if (approx.size() <= vtxCnt)
+		m_minCos = (area < 3000.f) ? -0.4f : -0.23f; // 직각 체크
+		m_maxCos = (area < 3000.f) ? 0.4f : 0.23f;
+
+		if ((approx.size() <= vtxCnt) && (approx.size() >= 4))
 		{
 			// Number of vertices of polygonal curve
 			const int vtc = approx.size();

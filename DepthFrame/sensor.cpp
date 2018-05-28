@@ -48,6 +48,11 @@ bool cSensor::InitCamera(const int id, const CameraInfo &cinfo)
 
 	// Open camera with camera info.
 	m_camera->Open(cinfo);
+
+	//GenApi::CDeviceInfoPtr ptrDeviceInfo = 
+	//GenApi::CIntegerPtr ptrDeviceChannel = m_camera->GetParameter("DeviceChannel");
+	//int devChannel[4] = {1, 2, 3};
+	//ptrDeviceChannel->SetValue(devChannel[id]);
 	
 	//
 	// Configure camera for synchronous free run.

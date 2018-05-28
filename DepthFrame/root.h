@@ -45,6 +45,7 @@ public:
 	eInputType::Enum m_input;
 	common::Vector3 m_3dEyePos;
 	common::Vector3 m_3dLookAt;
+	int m_measureId; // 측정 버튼을 누를때 마다 1씩 증가
 
 	cv::Mat m_projMap; // change space, (orthogonal projection map)
 	common::Transform m_cameraOffset[3]; // camera1 offset
@@ -77,7 +78,8 @@ public:
 		float maxVolume;
 		common::Vector3 pos;
 		common::Vector3 volume;
-		common::Vector3 box3d[8*2];
+		//common::Vector3 box3d[8*2];
+		common::Vector3 box3d[13 * 2];
 		u_int pointCnt;
 		int loopCnt;
 		graphic::cColor color;
@@ -92,6 +94,9 @@ public:
 	// Basler
 	bool m_isTryConnectBasler;
 	cBaslerCameraSync m_baslerCam;
+
+	// Database
+	cDBClient m_dbClient;
 
 	// Option
 	bool m_isAutoSaveCapture;

@@ -1,0 +1,26 @@
+{ "VERSION" : 1
+	,"TYPE" : 2
+	,"VOLUME" : [
+	{
+		 "ID" : 0
+		 ,"HORZ" : 29.4033
+		 ,"VERT" : 28.721
+		 ,"HEIGHT" : 31.418
+		 ,"VOLUME" : 26532.3
+		 ,"VW" : 4.42205
+		 ,"POINTCOUNT" : 4
+	}
+	] 
+
+	,"CONTOUR" : [
+	{
+		 "ID" : 0
+		 ,"LEVEL" : 4
+		 ,"LOOP" : 0
+		 ,"LOWERH" : 0
+		 ,"UPPERH" : 28.2
+		 ,"VERTEX" : [
+		 321, 214, 279, 216, 281, 259, 322, 256 ]
+	}
+	] 
+}

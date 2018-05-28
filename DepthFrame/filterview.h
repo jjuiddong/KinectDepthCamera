@@ -4,8 +4,6 @@
 //
 #pragma once
 
-#include "rectcontour.h"
-
 
 class cFilterView : public framework::cDockWindow
 {
@@ -18,20 +16,6 @@ public:
 	void Process();
 	void CalcBoxVolumeAverage();
 	void ClearBoxVolumeAverage();
-
-
-public:
-	// BoxVolume
-	struct sContourInfo {
-		bool used; // use internal
-		int level;
-		int loop;
-		float lowerH;
-		float upperH;
-		bool duplicate;
-		graphic::cColor color;
-		cContour contour;
-	};
 
 
 protected:
@@ -55,8 +39,8 @@ public:
 		int count;
 		sContourInfo box;
 		cRoot::sBoxInfo result;
-		common::Vector2 avrVertices[8]; // 평균 버텍스 위치, 최대 8개 꼭지점
-		common::Vector3 vertices3d[8*2]; // 꼭지점 평균 버텍스 3D 위치
+		common::Vector2 avrVertices[13]; // 평균 버텍스 위치, 최대 8개 꼭지점
+		common::Vector3 vertices3d[13*2]; // 꼭지점 평균 버텍스 3D 위치
 	};
 	vector<sAvrContour> m_avrContours; // 평균으로 계산된 박스 정보
 	int m_calcAverageCount;

@@ -28,6 +28,7 @@ cRoot::cRoot()
 	, m_isRangeCulling(false)
 	, m_cullRangeMin(-200,-200,-200)
 	, m_cullRangeMax(200, 200, 200)
+	, m_measureId(0)
 {
 	ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
 	ZeroMemory(&m_hDistrib2, sizeof(m_hDistrib2));
@@ -93,6 +94,8 @@ bool cRoot::InitSensor()
 		m_baslerCam.m_state = cBaslerCameraSync::eThreadState::CONNECT_FAIL;
 	}
 
+	m_dbClient.Create();
+
 	return m_kinect.IsConnect();// || m_baslerCam.IsConnect();
 }
 
@@ -124,7 +127,6 @@ void cRoot::MeasureVolume(
 			if (s->IsEnable() && s->m_isShow)
 				sensor = s;
 		}
-		//cSensor *sensor = (m_baslerCam.m_sensors.size() >= 3) ? m_baslerCam.m_sensors[2] : NULL;
 		if (sensor)
 			sensor->m_buffer.MeasureVolume(renderer);		
 	}
@@ -134,7 +136,6 @@ void cRoot::MeasureVolume(
 	((cViewer*)g_application)->m_filterView->Process();
 	((cViewer*)g_application)->m_infraredView->Process(2);
 	((cViewer*)g_application)->m_filterView->CalcBoxVolumeAverage();
-
 	//((cViewer*)g_application)->m_depthView->Process();
 	//((cViewer*)g_application)->m_depthView2->Process();
 }

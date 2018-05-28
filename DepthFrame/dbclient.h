@@ -7,17 +7,23 @@
 
 struct sMeasureVolume
 {
+	int id;
 	float horz;
 	float vert;
 	float height;
+	common::Vector3 pos;
 	float volume;
 	float vw;
 	int pointCount;
+
+	sContourInfo contour;
 };
 
 
 struct sMeasureResult
 {
+	int id; // measure id
+	int type; // 1:delay measure, 2:snap measure
 	vector<sMeasureVolume> volumes;
 };
 

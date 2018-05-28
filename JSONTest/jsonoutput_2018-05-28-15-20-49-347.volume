@@ -1,0 +1,12 @@
+{ "VERSION" : 1
+	,"TYPE" : 1
+	,"VOLUME" : [
+	{
+		 "HORZ" : 29.4033
+		 ,"VERT" : 28.0138
+		 ,"HEIGHT" : 31.418
+		 ,"VOLUME" : 25879
+		 ,"VW" : 4.31316
+		 ,"POINTCOUNT" : 4
+	}
+] }

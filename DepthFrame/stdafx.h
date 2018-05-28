@@ -26,12 +26,14 @@
 #include "sensorbuffer.h"
 #include "plyreader.h"
 #include "datreader.h"
+#include "contour.h"
+#include "volume.h"
+#include "dbclient.h"
 #include "root.h"
 #include "logview.h"
-#include "contour.h"
 #include "sensor.h"
 #include "calibration.h"
-#include "dbclient.h"
+
 
 extern framework::cGameMain2 * g_application;
 extern cRoot g_root;

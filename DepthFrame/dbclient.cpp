@@ -26,7 +26,9 @@ public:
 		using namespace std;
 		stringstream ss;
 
-		ss << "{ \"VOLUME\" : [\n";
+		ss << "{ \"VERSION\" : 1\n";
+		ss << "\t,\"TYPE\" : " << m_result.type << "\n";
+		ss << "\t,\"VOLUME\" : [\n";
 		
 		for (u_int i = 0; i < m_result.volumes.size(); ++i)
 		{
@@ -39,7 +41,8 @@ public:
 
 			ss << "{\n";
 
-			ss << "\t\t \"HORZ\" : " << measure.horz << "\n";
+			ss << "\t\t \"ID\" : " << measure.id << "\n";
+			ss << "\t\t ,\"HORZ\" : " << measure.horz << "\n";
 			ss << "\t\t ,\"VERT\" : " << measure.vert << "\n";
 			ss << "\t\t ,\"HEIGHT\" : " << measure.height << "\n";
 			ss << "\t\t ,\"VOLUME\" : " << measure.volume << "\n";
@@ -47,9 +50,51 @@ public:
 			ss << "\t\t ,\"POINTCOUNT\" : " << measure.pointCount << "\n";
 			
 			ss << "\t}\n";
-		}		
+		}
+
+		ss << "\t] \n";
+
+		// save contour 
+		if (2 == m_result.type)
+		{
+			ss << "\n";
+			ss << "\t,\"CONTOUR\" : [\n";
+
+			for (u_int i = 0; i < m_result.volumes.size(); ++i)
+			{
+				const sMeasureVolume &measure = m_result.volumes[i];
+
+				ss << "\t";
+
+				if (0 != i)
+					ss << ", "; // comma
+
+				ss << "{\n";
+
+				ss << "\t\t \"ID\" : " << measure.id << "\n";
+				ss << "\t\t ,\"LEVEL\" : " << measure.contour.level << "\n";
+				ss << "\t\t ,\"LOOP\" : " << measure.contour.loop << "\n";
+				ss << "\t\t ,\"LOWERH\" : " << measure.contour.lowerH << "\n";
+				ss << "\t\t ,\"UPPERH\" : " << measure.contour.upperH << "\n";
+				ss << "\t\t ,\"VERTEX\" : [\n";
+				ss << "\t\t ";
+
+				for (u_int k=0; k < measure.contour.contour.m_data.size(); ++k)
+				{
+					auto &vtx = measure.contour.contour.m_data[k];
+					if (k != 0)
+						ss << ", ";
+					ss << vtx.x << ", " << vtx.y;
+				}
+
+				ss << " ]\n";
+				ss << "\t}\n";
+			}
+
+			ss << "\t] \n";
+		}
 		
-		ss << "] }";
+		ss << "}";
 
 		if (m_dbClient.m_sql.IsConnected())
 		{
@@ -61,7 +106,7 @@ public:
 		}
 
 		// 임시로 파일로 저장한다.
-		string fileName = "jsonoutput_" + common::GetCurrentDateTime() + ".txt";
+		string fileName = "jsonoutput_" + common::GetCurrentDateTime() + ".volume";
 		ofstream ofs(fileName);
 		if (ofs.is_open())
 		{

@@ -25,8 +25,6 @@ bool cResultView::Init(graphic::cRenderer &renderer)
 	const float fontSize = 50;
 	ImGuiIO& io = ImGui::GetIO();
 
-	m_dbClient.Create();
-
 	return true;
 }
 
@@ -45,6 +43,7 @@ void cResultView::OnRender(const float deltaSeconds)
 	static bool isMeasureVolume = false;
 	if (ImGui::Button(u8"길이 측정"))
 	{
+		++g_root.m_measureId;
 		isMeasureVolume = true;
 		((cViewer*)g_application)->m_inputView->DelayMeasure();
 		((cViewer*)g_application)->m_filterView->ClearBoxVolumeAverage();
@@ -96,6 +95,9 @@ void cResultView::OnRender(const float deltaSeconds)
 		{
 			isMeasureVolume = false;
 			sMeasureResult result;
+			result.id = g_root.m_measureId;
+			result.type = 1; // delay measure
+			int id = 0;
 			for (auto &box : g_root.m_boxesStored)
 			{
 				const float l1 = std::max(box.volume.x, box.volume.z);
@@ -103,9 +105,11 @@ void cResultView::OnRender(const float deltaSeconds)
 				const float l3 = box.volume.y;
 
 				sMeasureVolume info;
+				info.id = id++;
 				info.horz = l1;
 				info.vert = l2;
 				info.height = l3;
+				info.pos = box.pos;
 				info.volume = box.minVolume;
 				info.vw = box.minVolume / 6000.f;
 				info.pointCount = box.pointCnt;
@@ -113,7 +117,7 @@ void cResultView::OnRender(const float deltaSeconds)
 			}
 
 			if (!result.volumes.empty())
-				m_dbClient.Insert(result);
+				g_root.m_dbClient.Insert(result);
 		}
 
 

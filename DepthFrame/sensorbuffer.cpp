@@ -516,9 +516,12 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 	// height distribute pulse
 	ZeroMemory(&g_root.m_hDistrib2, sizeof(g_root.m_hDistrib2));
 	{
+		const float LIMIT_AREA = 30.f;
 		//const float minArea = 300.f;
-		const float minArea = 150.f;
-		const float limitLowArea = 30.f;
+		//const float minArea = 150.f;
+		const float minArea = 80.f;
+		float limitLowArea = LIMIT_AREA;
+		//float limitLowArea = 20.f;
 		int state = 0; // 0: check, rising pulse, 1: check down pulse, 2: calc low height
 		int startIdx = 0, endIdx = 0;
 		int maxArea = 0;
@@ -551,6 +554,8 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 
 			case 2:
 				state = 0;
+
+				limitLowArea = g_root.m_hDistrib[maxArea] * 0.01f;
 				// find first again
 				for (int k = startIdx; k >= 0; --k)
 				{
@@ -561,9 +566,21 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 					}
 				}
 
+				// find end again
+				//for (int k = maxArea; k <= i; ++k)
+				//{
+				//	if (g_root.m_hDistrib[k] < limitLowArea)
+				//	{
+				//		endIdx = k;
+				//		break;
+				//	}
+				//}
+
 				for (int k = startIdx; k < endIdx; ++k)
 					g_root.m_hDistrib2[k] = 1;
 				g_root.m_hDistrib2[maxArea] = 2; // 가장 분포가 큰 높이에는 2를 설정한다.
+
+				limitLowArea = LIMIT_AREA; // recovery
 				break;
 			}
 		}

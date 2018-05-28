@@ -373,6 +373,44 @@ void cInputView::UpdateDelayMeasure(const float deltaSeconds)
 	if (isUpdateVolumeCalc)
 	{
 		g_root.MeasureVolume();
+
+		if (eState::DELAY_MEASURE == m_state)
+		{
+			// 측정값을 db에 저장한다.
+			sMeasureResult result;
+			result.id = g_root.m_measureId;
+			result.type = 2; // snap measure
+			int id = 0;
+
+			cFilterView *filterView = ((cViewer*)g_application)->m_filterView;
+			if (g_root.m_boxes.size() == filterView->m_contours.size())
+			{
+				for (u_int i=0; i < filterView->m_contours.size(); ++i)
+				{
+					auto &contour = filterView->m_contours[i];
+					auto &box = g_root.m_boxes[i];
+
+					const float l1 = std::max(box.volume.x, box.volume.z);
+					const float l2 = std::min(box.volume.x, box.volume.z);
+					const float l3 = box.volume.y;
+
+					sMeasureVolume info;
+					info.id = id++;
+					info.horz = l1;
+					info.vert = l2;
+					info.height = l3;
+					info.pos = box.pos;
+					info.volume = box.minVolume;
+					info.vw = box.minVolume / 6000.f;
+					info.pointCount = box.pointCnt;
+					info.contour = contour;
+					result.volumes.push_back(info);
+				}
+			}
+
+			if (!result.volumes.empty())
+				g_root.m_dbClient.Insert(result);
+		}
 	}
 }
 
@@ -388,8 +426,7 @@ void cInputView::DelayMeasure()
 
 
 // 1초간 정보를 받아서, 가장 적은 오차가 있는 정보로 계산한다.
-void cInputView::CalcDelayMeasure(const size_t camIdx // =0
-)
+void cInputView::CalcDelayMeasure()
 {
 	// 누적된 평균값을 저장한다.
 	g_root.m_boxesStored.clear();
@@ -553,6 +590,8 @@ void cInputView::UpdateFileList()
 	m_aniIndex1 = -1;
 	m_aniIndex2 = -1;
 	m_aniIndex3 = -1;
+	//m_aniIndex2 = 9000;
+	//m_aniIndex3 = 9000;
 }
 
 

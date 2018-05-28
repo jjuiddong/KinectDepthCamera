@@ -17,5 +17,4 @@ public:
 
 protected:
 	ImFont * m_font;
-	cDBClient m_dbClient;
 };
