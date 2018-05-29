@@ -133,7 +133,7 @@ void cRoot::MeasureVolume(
 				sensor = s;
 		}
 		if (sensor)
-			sensor->m_buffer.MeasureVolume(renderer);		
+			sensor->m_buffer.MeasureVolume(renderer);
 	}
 
 	// Update FilterView, DepthView, DepthView2

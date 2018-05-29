@@ -170,7 +170,7 @@ bool cSensor::CopyCaptureBuffer(cRenderer &renderer, const char *saveFileName)
 		if (m_isShow)
 		{
 			const double curT = g_root.m_timer.GetMilliSeconds();
-			if ((curT - m_writeTime) > 1000.f) // 1초에 하나씩 저장한다.
+			if ((curT - m_writeTime) > 500.f) // 0.5 초에 하나씩 저장한다.
 			{
 				m_writeTime = curT;
 				// save only processing camera depthmap

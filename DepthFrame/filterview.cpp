@@ -65,6 +65,175 @@ void cFilterView::Process()
 }
 
 
+void ThreadFilterAllFunc(cFilterView *fview, bool isCalcHorz)
+{
+	cv::Mat &srcImg = g_root.m_projMap;
+
+	vector<sContourInfo> contours; // 현재 인식된 박스 정보
+	Mat mbinImg;
+	Mat grayscaleMat;
+	srcImg.convertTo(grayscaleMat, CV_16UC1, 500.0f);
+
+	const Mat element = cv::getStructuringElement(MORPH_RECT, Size(3, 3));
+	for (int i = 0; i < g_root.m_areaFloorCnt; ++i)
+	{
+		cRoot::sAreaFloor *areaFloor = g_root.m_areaBuff[i];
+
+		float threshold1 = areaFloor->startIdx * 0.1f;
+		//float threshold2 = areaFloor->endIdx * 0.11f;
+		float threshold2 = areaFloor->endIdx * 0.105f;
+
+		//if (g_root.m_isCalcHorz)
+		if (isCalcHorz)
+		{
+			cv::threshold(grayscaleMat, mbinImg, threshold1, 255, cv::THRESH_BINARY);
+		}
+		else
+		{
+			Mat bin1;
+			cv::threshold(grayscaleMat, bin1, threshold2, 255, cv::THRESH_BINARY_INV);
+			cv::threshold(grayscaleMat, mbinImg, threshold1, 255, cv::THRESH_BINARY);
+			mbinImg &= bin1;
+		}
+
+		mbinImg.convertTo(mbinImg, CV_8UC1);
+
+		cv::erode(mbinImg, mbinImg, element);
+		cv::dilate(mbinImg, mbinImg, element);
+		cv::erode(mbinImg, mbinImg, element);
+		cv::dilate(mbinImg, mbinImg, element);
+		cv::dilate(mbinImg, mbinImg, element);
+
+		bool isFindBox = false;
+		for (int vtxCnt = 4; !isFindBox && (vtxCnt < 9); ++vtxCnt)
+		{
+			int loopCnt = 0;
+			cv::Mat binImg = mbinImg.clone();
+			while (!isFindBox && (loopCnt < 8))
+			{
+				vector<cContour> temp;
+				if (fview->FindBox(binImg, vtxCnt, temp))
+				{
+					// 원래 크기로 되돌린다.
+					cv::Mat img2 = binImg.clone();
+					for (int k = 0; k < loopCnt; ++k)
+						cv::erode(img2, img2, element);
+
+					vector<cContour> out;
+					if (fview->FindBox(img2, vtxCnt, out))
+					{
+						for (auto &contour : out)
+						{
+							sContourInfo info;
+							info.level = vtxCnt;
+							info.loop = loopCnt;
+							info.lowerH = 0;
+							info.upperH = areaFloor->maxIdx * 0.1f;
+							info.contour = contour;
+							info.color = areaFloor->color;
+							contours.push_back(info);
+						}
+					}
+				}
+
+				cv::dilate(binImg, binImg, element);
+				++loopCnt;
+			}
+		}
+	}
+
+
+	{
+		AutoCSLock cs(fview->m_cs);
+		for (auto &ct : contours)
+			fview->m_contours.push_back(ct);
+	}
+}
+
+
+
+void ThreadFilterSubFunc(cFilterView *fview, cRoot::sAreaFloor *areaFloor, bool isCalcHorz)
+{
+	cv::Mat &srcImg = g_root.m_projMap;
+
+	vector<sContourInfo> contours; // 현재 인식된 박스 정보
+	Mat mbinImg;
+	Mat grayscaleMat;
+	srcImg.convertTo(grayscaleMat, CV_16UC1, 500.0f);
+
+	const Mat element = cv::getStructuringElement(MORPH_RECT, Size(3, 3));
+
+	float threshold1 = areaFloor->startIdx * 0.1f;
+	float threshold2 = areaFloor->endIdx * 0.11f;
+
+	//if (g_root.m_isCalcHorz)
+	if (isCalcHorz)
+	{
+		cv::threshold(grayscaleMat, mbinImg, threshold1, 255, cv::THRESH_BINARY);
+	}
+	else
+	{
+		Mat bin1;
+		cv::threshold(grayscaleMat, bin1, threshold2, 255, cv::THRESH_BINARY_INV);
+		cv::threshold(grayscaleMat, mbinImg, threshold1, 255, cv::THRESH_BINARY);
+		mbinImg &= bin1;
+	}
+
+	mbinImg.convertTo(mbinImg, CV_8UC1);
+
+	cv::erode(mbinImg, mbinImg, element);
+	cv::dilate(mbinImg, mbinImg, element);
+	cv::erode(mbinImg, mbinImg, element);
+	cv::dilate(mbinImg, mbinImg, element);
+	cv::dilate(mbinImg, mbinImg, element);
+
+	bool isFindBox = false;
+	for (int vtxCnt = 4; !isFindBox && (vtxCnt < 9); ++vtxCnt)
+	{
+		int loopCnt = 0;
+		cv::Mat binImg = mbinImg.clone();
+		while (!isFindBox && (loopCnt < 8))
+		{
+			vector<cContour> temp;
+			if (fview->FindBox(binImg, vtxCnt, temp))
+			{
+				// 원래 크기로 되돌린다.
+				cv::Mat img2 = binImg.clone();
+				for (int k = 0; k < loopCnt; ++k)
+					cv::erode(img2, img2, element);
+
+				vector<cContour> out;
+				if (fview->FindBox(img2, vtxCnt, out))
+				{
+					for (auto &contour : out)
+					{
+						sContourInfo info;
+						info.level = vtxCnt;
+						info.loop = loopCnt;
+						info.lowerH = 0;
+						info.upperH = areaFloor->maxIdx * 0.1f;
+						info.contour = contour;
+						info.color = areaFloor->color;
+						contours.push_back(info);
+					}
+				}
+			}
+
+			cv::dilate(binImg, binImg, element);
+			++loopCnt;
+		}
+	}
+
+
+	{
+		AutoCSLock cs(fview->m_cs);
+		for (auto &ct : contours)
+			fview->m_contours.push_back(ct);
+	}
+}
+
+
+
 // 영상인식해서 박스의 모양을 인식한다.
 void cFilterView::ProcessDepth()
 {
@@ -77,81 +246,105 @@ void cFilterView::ProcessDepth()
 		m_depthTexture.Create(GetRenderer(), srcImg.cols, srcImg.rows, DXGI_FORMAT_R32G32B32_FLOAT);
 	}
 
-	Mat grayscaleMat;
-	srcImg.convertTo(grayscaleMat, CV_16UC1, 500.0f);
 	srcImg.convertTo(m_dstImg, CV_8UC1, 255.0f);
 	cvtColor(m_dstImg, m_dstImg, cv::COLOR_GRAY2RGB);
 
-	const Mat element = cv::getStructuringElement(MORPH_RECT, Size(3, 3));
-	for (int i = 0; i < g_root.m_areaFloorCnt; ++i)
-	{
-		cRoot::sAreaFloor *areaFloor = g_root.m_areaBuff[i];
+	std::thread th1 = std::thread(ThreadFilterAllFunc, this, true);
+	std::thread th2 = std::thread(ThreadFilterAllFunc, this, false);
+	th1.join();
+	th2.join();
 
-		float threshold1 = areaFloor->startIdx * 0.1f;
-		float threshold2 = areaFloor->endIdx * 0.11f;
+	//vector<std::thread*> threads;
 
-		if (g_root.m_isCalcHorz)
-		{
-			cv::threshold(grayscaleMat, m_binImg, threshold1, 255, cv::THRESH_BINARY);
-		}
-		else
-		{
-			Mat bin1;
-			cv::threshold(grayscaleMat, bin1, threshold2, 255, cv::THRESH_BINARY_INV);
-			cv::threshold(grayscaleMat, m_binImg, threshold1, 255, cv::THRESH_BINARY);
-			m_binImg &= bin1;
-		}
+	//for (int i = 0; i < g_root.m_areaFloorCnt; ++i)
+	//{
+	//	cRoot::sAreaFloor *areaFloor = g_root.m_areaBuff[i];
+	//	std::thread *pth1 = new std::thread(ThreadFilterSubFunc, this, areaFloor, true);
+	//	std::thread *pth2 = new std::thread(ThreadFilterSubFunc, this, areaFloor, false);
 
-		//cv::max(grayscaleMat, threshold1, m_binImg);
-		//cv::min(m_binImg, threshold2, m_binImg);
-		m_binImg.convertTo(m_binImg, CV_8UC1);
+	//	threads.push_back(pth1);
+	//	threads.push_back(pth2);
+	//}
 
-		cv::erode(m_binImg, m_binImg, element);
-		cv::dilate(m_binImg, m_binImg, element);
-		cv::erode(m_binImg, m_binImg, element);
-		cv::dilate(m_binImg, m_binImg, element);
-		cv::dilate(m_binImg, m_binImg, element);
+	//for (auto &th : threads)
+	//	th->join();
 
-		bool isFindBox = false;
-		for (int vtxCnt = 4; !isFindBox && (vtxCnt < 9); ++vtxCnt)
-		{
-			int loopCnt = 0;
-			cv::Mat binImg = m_binImg.clone();
-			while (!isFindBox && (loopCnt < 8))
-			{
-				vector<cContour> temp;
-				if (FindBox(binImg, vtxCnt, temp))
-				{
-					// 원래 크기로 되돌린다.
-					cv::Mat img2 = binImg.clone();
-					for (int k = 0; k < loopCnt; ++k)
-						cv::erode(img2, img2, element);
+	//for (auto &th : threads)
+	//	delete th;
+	//threads.clear();
 
-					vector<cContour> out;
-					if (FindBox(img2, vtxCnt, out))
-					{
-						for (auto &contour : out)
-						{
-							//isFindBox = true;
 
-							sContourInfo info;
-							info.level = vtxCnt;
-							info.loop = loopCnt;
-							info.lowerH = 0;
-							info.upperH = areaFloor->maxIdx * 0.1f;
-							info.contour = contour;
-							info.color = areaFloor->color;
-							m_contours.push_back(info);
-						}
-					}
-					//break;
-				}
+	//Mat grayscaleMat;
+	//srcImg.convertTo(grayscaleMat, CV_16UC1, 500.0f);
+	//srcImg.convertTo(m_dstImg, CV_8UC1, 255.0f);
+	//cvtColor(m_dstImg, m_dstImg, cv::COLOR_GRAY2RGB);
 
-				cv::dilate(binImg, binImg, element);
-				++loopCnt;
-			}
-		}
-	}
+	//const Mat element = cv::getStructuringElement(MORPH_RECT, Size(3, 3));
+	//for (int i = 0; i < g_root.m_areaFloorCnt; ++i)
+	//{
+	//	cRoot::sAreaFloor *areaFloor = g_root.m_areaBuff[i];
+
+	//	float threshold1 = areaFloor->startIdx * 0.1f;
+	//	float threshold2 = areaFloor->endIdx * 0.11f;
+
+	//	if (g_root.m_isCalcHorz)
+	//	{
+	//		cv::threshold(grayscaleMat, m_binImg, threshold1, 255, cv::THRESH_BINARY);
+	//	}
+	//	else
+	//	{
+	//		Mat bin1;
+	//		cv::threshold(grayscaleMat, bin1, threshold2, 255, cv::THRESH_BINARY_INV);
+	//		cv::threshold(grayscaleMat, m_binImg, threshold1, 255, cv::THRESH_BINARY);
+	//		m_binImg &= bin1;
+	//	}
+
+	//	m_binImg.convertTo(m_binImg, CV_8UC1);
+
+	//	cv::erode(m_binImg, m_binImg, element);
+	//	cv::dilate(m_binImg, m_binImg, element);
+	//	cv::erode(m_binImg, m_binImg, element);
+	//	cv::dilate(m_binImg, m_binImg, element);
+	//	cv::dilate(m_binImg, m_binImg, element);
+
+	//	bool isFindBox = false;
+	//	for (int vtxCnt = 4; !isFindBox && (vtxCnt < 9); ++vtxCnt)
+	//	{
+	//		int loopCnt = 0;
+	//		cv::Mat binImg = m_binImg.clone();
+	//		while (!isFindBox && (loopCnt < 8))
+	//		{
+	//			vector<cContour> temp;
+	//			if (FindBox(binImg, vtxCnt, temp))
+	//			{
+	//				// 원래 크기로 되돌린다.
+	//				cv::Mat img2 = binImg.clone();
+	//				for (int k = 0; k < loopCnt; ++k)
+	//					cv::erode(img2, img2, element);
+
+	//				vector<cContour> out;
+	//				if (FindBox(img2, vtxCnt, out))
+	//				{
+	//					for (auto &contour : out)
+	//					{
+	//						sContourInfo info;
+	//						info.level = vtxCnt;
+	//						info.loop = loopCnt;
+	//						info.lowerH = 0;
+	//						info.upperH = areaFloor->maxIdx * 0.1f;
+	//						info.contour = contour;
+	//						info.color = areaFloor->color;
+	//						m_contours.push_back(info);
+	//					}
+	//				}
+	//			}
+
+	//			cv::dilate(binImg, binImg, element);
+	//			++loopCnt;
+	//		}
+	//	}
+	//}
+
 
 	RemoveDuplicateContour(m_contours);
 
@@ -170,74 +363,7 @@ void cFilterView::ProcessDepth()
 		char boxName[64];
 		sprintf(boxName, "BOX%d", i + 1);
 		setLabel(m_dstImg, boxName, info.contour.m_data, Scalar(1, 1, 1));
-		//setLabel(m_dstImg, " 1", rect.At(0), color);
-		//setLabel(m_dstImg, " 2", rect.At(1), color);
-		//setLabel(m_dstImg, " 3", rect.At(2), color);
-		//setLabel(m_dstImg, " 4", rect.At(3), color);
-
-		//cv::circle(m_dstImg, rect.At(0), 5, color);
-		//cv::circle(m_dstImg, rect.At(1), 5, color);
-		//cv::circle(m_dstImg, rect.At(2), 5, color);
-		//cv::circle(m_dstImg, rect.At(3), 5, color);
-		
-		//rect.Draw(m_dstImg, color, 1);
-		//rect.Draw(m_binImg, Scalar(255,0,0), 1); // for debugging
-
-		//const float scale = 50.f / 110.f;
-		//const float scale = 50.f / 73.2f;
-		//const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete) ? -13.f : 3.5f;
-
-		//cRoot::sBoxInfo box;
-
-		//if (info.contour.Size() == 4)
-		//{
-		//	const Vector2 v1((float)info.contour[0].x, (float)info.contour[0].y);
-		//	const Vector2 v2((float)info.contour[1].x, (float)info.contour[1].y);
-		//	const Vector2 v3((float)info.contour[2].x, (float)info.contour[2].y);
-		//	const Vector2 v4((float)info.contour[3].x, (float)info.contour[3].y);
-		//
-		//	// maximum value
-		//	const float l1 = std::max((v1 - v2).Length(), (v3 - v4).Length());
-		//	const float l2 = std::max((v2 - v3).Length(), (v4 - v1).Length());
-		//	box.volume.x = std::max(l1, l2);
-		//	box.volume.y = (info.upperH - info.lowerH) + offsetY;
-		//	box.volume.z = std::min(l1, l2);
-
-		//	// average value
-		//	//box.volume.x = (((v1 - v2).Length()) + ((v3 - v4).Length())) * 0.5f;
-		//	//box.volume.y = (info.upperH - info.lowerH) + offsetY;
-		//	//box.volume.z = (((v2 - v3).Length()) + ((v4 - v1).Length())) * 0.5f;
-
-		//	box.volume.x *= scale;
-		//	box.volume.y *= 1.f;
-		//	box.volume.z *= scale;
-
-		//	//box.volume.x -= (float)info.loop*1.4f;
-		//	//box.volume.z -= (float)info.loop*1.4f;
-
-		//	box.minVolume = box.volume.x * box.volume.y * box.volume.z;
-		//	box.maxVolume = box.minVolume;
-		//	box.loopCnt = info.loop;
-		//}
-		//else
-		//{
-		//	box.volume.x *= 0;
-		//	box.volume.y = (info.upperH - info.lowerH) + offsetY;
-		//	box.volume.z *= 0;
-
-		//	box.minVolume = (float)info.contour.Area() * scale * scale * box.volume.y;
-		//	box.maxVolume = box.minVolume;
-		//	box.loopCnt = info.loop;
-		//}
-
-		//for (u_int i = 0; i < info.contour.Size(); ++i)
-		//{
-		//	box.box3d[i] = Vector3((info.contour[i].x - 320) / 1.5f, info.upperH, (480 - info.contour[i].y - 240) / 1.5f);
-		//	box.box3d[i + info.contour.Size()] = Vector3((info.contour[i].x - 320) / 1.5f, info.lowerH, (480 - info.contour[i].y - 240) / 1.5f);
-		//}
-
-		//box.color = info.color;
-		//box.pointCnt = info.contour.Size();
+	
 		cRoot::sBoxInfo box = CalcBoxInfo(info);
 		g_root.m_boxes.push_back(box);
 	}
@@ -249,8 +375,9 @@ void cFilterView::ProcessDepth()
 // 영상에서 인식된 픽셀 정보로 박스 실제 사이즈를 계산한다.
 cRoot::sBoxInfo cFilterView::CalcBoxInfo(const sContourInfo &info)
 {
-	const float scale = 50.f / 73.2f;
+	//const float scale = 50.f / 73.2f;
 	//const float scale = 50.f / 74.5f;
+	const float scale = 50.f / 72.3f;
 	const float scaleH = 0.99f;
 	const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete) ? -13.f : 3.5f;
 
@@ -278,7 +405,7 @@ cRoot::sBoxInfo cFilterView::CalcBoxInfo(const sContourInfo &info)
 		box.volume.y *= 1.f;
 		box.volume.z *= scale;
 
-		if (box.volume.y < 40.f) // 높이가 낮으면 오차가 커져서 없애준다.
+		if ((box.volume.y < 40.f) && (box.volume.y > 1.f)) // 높이가 낮으면 오차가 커져서 없애준다.
 			box.volume.y -= 1.f;
 
 		//box.volume.x -= (float)info.loop*1.4f;
@@ -294,7 +421,7 @@ cRoot::sBoxInfo cFilterView::CalcBoxInfo(const sContourInfo &info)
 		box.volume.y = (info.upperH - info.lowerH) * scaleH + offsetY;
 		box.volume.z *= 0;
 
-		if (box.volume.y < 40.f) // 높이가 낮으면 오차가 커져서 없애준다.
+		if ((box.volume.y < 40.f) && (box.volume.y > 1.f)) // 높이가 낮으면 오차가 커져서 없애준다.
 			box.volume.y -= 1.f;
 
 		box.minVolume = (float)info.contour.Area() * scale * scale * box.volume.y;
@@ -405,6 +532,11 @@ void cFilterView::CalcBoxVolumeAverage()
 				box.vertices3d[k + box.box.contour.Size()] = Vector3((box.avrVertices[k].x - 320) / 1.5f, box.box.lowerH, (480 - box.avrVertices[k].y - 240) / 1.5f);
 			}
 
+			// BoxInfo 정보 업데이트
+			sContourInfo tempInfo = srcBox;
+			for (u_int k = 0; k < srcBox.contour.Size(); ++k)
+				tempInfo.contour.m_data[k] = cv::Point((int)box.avrVertices[k].x, (int)box.avrVertices[k].y);
+			box.result = CalcBoxInfo(tempInfo);
 			m_avrContours.push_back(box);
 			continue;
 		}
@@ -553,22 +685,6 @@ bool cFilterView::FindBox(cv::Mat &img
 				contour.m_maxCos = maxcos;
 				contour.m_minCos = mincos;
 				out.push_back(contour);
-
-				//contour.Draw(m_dstImg, Scalar(0, 255, 0), 1);
-				//AddLog("Detect Box");
-				//AddLog(common::format("pos1 = %d, %d", approx[0].x, approx[0].y));
-				//AddLog(common::format("pos2 = %d, %d", approx[1].x, approx[1].y));
-				//AddLog(common::format("pos3 = %d, %d", approx[2].x, approx[2].y));
-				//AddLog(common::format("pos4 = %d, %d", approx[3].x, approx[3].y));
-
-				//const Vector2 v1((float)approx[0].x, (float)approx[0].y);
-				//const Vector2 v2((float)approx[1].x, (float)approx[1].y);
-				//const Vector2 v3((float)approx[2].x, (float)approx[2].y);
-				//const Vector2 v4((float)approx[3].x, (float)approx[3].y);
-				//AddLog(common::format("pos1-2 len = %f", (v1 - v2).Length()));
-				//AddLog(common::format("pos2-3 len = %f", (v2 - v3).Length()));
-				//AddLog(common::format("pos3-4 len = %f", (v3 - v4).Length()));
-				//AddLog(common::format("pos4-1 len = %f", (v4 - v1).Length()));
 			}
 		}
 	}

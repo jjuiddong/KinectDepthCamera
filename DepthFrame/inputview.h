@@ -21,6 +21,8 @@ public:
 	virtual void OnRender(const float deltaSeconds) override;
 	virtual void OnEventProc(const sf::Event &evt);
 	void DelayMeasure();
+	void DelayMeasure10();
+	void CancelDelayMeasure();
 
 
 protected:
@@ -37,7 +39,8 @@ protected:
 public:
 	struct eState {
 		enum Enum { 
-			DELAY_MEASURE // 1초간 정보를 받아서, 가장 적은 오차가 있는 정보로 계산한다.
+			DELAY_MEASURE1 // 1000 번 계산해서 평균값을 저장한다.
+			, DELAY_MEASURE2 // 10 번 계산해서 평균값을 저장한다.
 			, NORMAL 
 		};
 	};
@@ -59,6 +62,7 @@ public:
 
 	// Delay Measure (minimum difference error buffer)
 	float m_measureTime;
+	int m_measureCount;
 
 	// Files
 	enum { MAX_FILEPAGE = 100 };

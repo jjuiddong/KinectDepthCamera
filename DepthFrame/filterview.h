@@ -18,7 +18,7 @@ public:
 	void ClearBoxVolumeAverage();
 
 
-protected:
+public:
 	void ProcessDepth();
 	void UpdateTexture();
 	bool FindBox(cv::Mat &img, const u_int vtxCnt, OUT vector<cContour> &out);
@@ -44,4 +44,5 @@ public:
 	};
 	vector<sAvrContour> m_avrContours; // 평균으로 계산된 박스 정보
 	int m_calcAverageCount;
+	common::CriticalSection m_cs;
 };

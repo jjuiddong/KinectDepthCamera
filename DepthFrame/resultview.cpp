@@ -41,13 +41,32 @@ void cResultView::OnRender(const float deltaSeconds)
 	ImGui::BeginChild("Sub2", ImVec2(w, m_rect.Height() - 45), true);
 
 	static bool isMeasureVolume = false;
-	if (ImGui::Button(u8"길이 측정"))
+	if (ImGui::Button(u8"측정(100)"))
 	{
 		++g_root.m_measureId;
 		isMeasureVolume = true;
 		((cViewer*)g_application)->m_inputView->DelayMeasure();
 		((cViewer*)g_application)->m_filterView->ClearBoxVolumeAverage();
 	}
+
+	ImGui::SameLine();
+	if (ImGui::Button(u8"측정(10)"))
+	{
+		++g_root.m_measureId;
+		isMeasureVolume = true;
+		((cViewer*)g_application)->m_inputView->DelayMeasure10();
+		((cViewer*)g_application)->m_filterView->ClearBoxVolumeAverage();
+	}
+
+	if (ImGui::Button(u8"취소"))
+	{
+		isMeasureVolume = false;
+		((cViewer*)g_application)->m_inputView->CancelDelayMeasure();
+		((cViewer*)g_application)->m_filterView->ClearBoxVolumeAverage();
+	}
+
+	ImGui::SameLine();
+	ImGui::Text("%d", ((cViewer*)g_application)->m_inputView->m_measureCount);
 
 	ImGui::Spacing();
 	ImGui::Spacing();

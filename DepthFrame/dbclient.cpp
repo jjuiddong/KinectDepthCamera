@@ -27,6 +27,7 @@ public:
 		stringstream ss;
 
 		ss << "{ \"VERSION\" : 1\n";
+		ss << "\t,\"MEASURE_ID\" : " << m_result.id << "\n";
 		ss << "\t,\"TYPE\" : " << m_result.type << "\n";
 		ss << "\t,\"VOLUME\" : [\n";
 		

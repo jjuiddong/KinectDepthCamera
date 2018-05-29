@@ -374,10 +374,19 @@ void cInputView::UpdateDelayMeasure(const float deltaSeconds)
 {
 	bool isUpdateVolumeCalc = true;
 
-	if (eState::DELAY_MEASURE == m_state)
+	if (eState::DELAY_MEASURE1 == m_state)
 	{
-		m_measureTime += deltaSeconds;
-		if (m_measureTime >= 3.f)
+		//m_measureTime += deltaSeconds;
+		//if (m_measureTime >= 3.f)
+		if (m_measureCount > 1000)
+		{
+			CalcDelayMeasure();
+			isUpdateVolumeCalc = false; // already show
+		}
+	}
+	else if (eState::DELAY_MEASURE2 == m_state)
+	{
+		if (m_measureCount > 10)
 		{
 			CalcDelayMeasure();
 			isUpdateVolumeCalc = false; // already show
@@ -388,42 +397,45 @@ void cInputView::UpdateDelayMeasure(const float deltaSeconds)
 	{
 		g_root.MeasureVolume();
 
-		if (eState::DELAY_MEASURE == m_state)
+		if ((eState::DELAY_MEASURE1 != m_state) && (eState::DELAY_MEASURE2 != m_state))
+			return;
+
+		// 측정값을 db에 저장한다.
+		sMeasureResult result;
+		result.id = g_root.m_measureId;
+		result.type = 2; // snap measure
+		int id = 0;
+
+		cFilterView *filterView = ((cViewer*)g_application)->m_filterView;
+		if (g_root.m_boxes.size() == filterView->m_contours.size())
 		{
-			// 측정값을 db에 저장한다.
-			sMeasureResult result;
-			result.id = g_root.m_measureId;
-			result.type = 2; // snap measure
-			int id = 0;
-
-			cFilterView *filterView = ((cViewer*)g_application)->m_filterView;
-			if (g_root.m_boxes.size() == filterView->m_contours.size())
+			for (u_int i=0; i < filterView->m_contours.size(); ++i)
 			{
-				for (u_int i=0; i < filterView->m_contours.size(); ++i)
-				{
-					auto &contour = filterView->m_contours[i];
-					auto &box = g_root.m_boxes[i];
+				auto &contour = filterView->m_contours[i];
+				auto &box = g_root.m_boxes[i];
 
-					const float l1 = std::max(box.volume.x, box.volume.z);
-					const float l2 = std::min(box.volume.x, box.volume.z);
-					const float l3 = box.volume.y;
+				const float l1 = std::max(box.volume.x, box.volume.z);
+				const float l2 = std::min(box.volume.x, box.volume.z);
+				const float l3 = box.volume.y;
 
-					sMeasureVolume info;
-					info.id = id++;
-					info.horz = l1;
-					info.vert = l2;
-					info.height = l3;
-					info.pos = box.pos;
-					info.volume = box.minVolume;
-					info.vw = box.minVolume / 6000.f;
-					info.pointCount = box.pointCnt;
-					info.contour = contour;
-					result.volumes.push_back(info);
-				}
+				sMeasureVolume info;
+				info.id = id++;
+				info.horz = l1;
+				info.vert = l2;
+				info.height = l3;
+				info.pos = box.pos;
+				info.volume = box.minVolume;
+				info.vw = box.minVolume / 6000.f;
+				info.pointCount = box.pointCnt;
+				info.contour = contour;
+				result.volumes.push_back(info);
 			}
+		}
 
-			if (!result.volumes.empty())
-				g_root.m_dbClient.Insert(result);
+		if (!result.volumes.empty())
+		{
+			m_measureCount++;
+			g_root.m_dbClient.Insert(result);
 		}
 	}
 }
@@ -433,8 +445,31 @@ void cInputView::DelayMeasure()
 {
 	RET(!m_isCaptureContinuos && !m_isFileAnimation);
 
-	m_state = eState::DELAY_MEASURE;
+	m_state = eState::DELAY_MEASURE1;
 	m_measureTime = 0;
+	m_measureCount = 0;
+	g_root.m_boxesStored.clear();
+}
+
+
+void cInputView::DelayMeasure10()
+{
+	RET(!m_isCaptureContinuos && !m_isFileAnimation);
+
+	m_state = eState::DELAY_MEASURE2;
+	m_measureTime = 0;
+	m_measureCount = 0;
+	g_root.m_boxesStored.clear();
+}
+
+
+void cInputView::CancelDelayMeasure()
+{
+	RET(!m_isCaptureContinuos && !m_isFileAnimation);
+
+	m_state = eState::NORMAL;
+	m_measureTime = 0;
+	m_measureCount = 0;
 	g_root.m_boxesStored.clear();
 }
 
@@ -757,7 +792,7 @@ void cInputView::OnEventProc(const sf::Event &evt)
 			{
 				const int fidx = (m_explorerFolderIndex == 2) ? 1 : 2;
 				sFileInfo &finfo2 = m_files[fidx];
-				if (finfo2.fullFileNames.size() > m_selFileIdx)
+				if ((int)finfo2.fullFileNames.size() > m_selFileIdx)
 				{
 					common::StrPath ansifileName2 = finfo2.fullFileNames[m_selFileIdx].ansi();// change UTF8 -> UTF16
 					OpenFile(ansifileName2, fidx);
@@ -787,7 +822,7 @@ void cInputView::OnEventProc(const sf::Event &evt)
 			{
 				const int fidx = (m_explorerFolderIndex == 2) ? 1 : 2;
 				sFileInfo &finfo2 = m_files[fidx];
-				if (finfo2.fullFileNames.size() > m_selFileIdx)
+				if ((int)finfo2.fullFileNames.size() > m_selFileIdx)
 				{
 					common::StrPath ansifileName2 = finfo2.fullFileNames[m_selFileIdx].ansi();// change UTF8 -> UTF16
 					OpenFile(ansifileName2, fidx);
