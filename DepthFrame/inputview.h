@@ -55,6 +55,7 @@ public:
 	int m_selFileIdx;
 	int m_aniCameraCount; // + 1
 	int m_explorerFolderIndex; //0, 1, 2 (camera 1,2,3), default:2
+	bool m_isAutoSelectFileIndex;
 
 	// Delay Measure (minimum difference error buffer)
 	float m_measureTime;

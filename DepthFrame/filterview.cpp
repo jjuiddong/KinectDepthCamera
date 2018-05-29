@@ -87,9 +87,23 @@ void cFilterView::ProcessDepth()
 	{
 		cRoot::sAreaFloor *areaFloor = g_root.m_areaBuff[i];
 
-		float threshold = areaFloor->startIdx * 0.1f;
+		float threshold1 = areaFloor->startIdx * 0.1f;
+		float threshold2 = areaFloor->endIdx * 0.11f;
 
-		cv::threshold(grayscaleMat, m_binImg, threshold, 255, cv::THRESH_BINARY);
+		if (g_root.m_isCalcHorz)
+		{
+			cv::threshold(grayscaleMat, m_binImg, threshold1, 255, cv::THRESH_BINARY);
+		}
+		else
+		{
+			Mat bin1;
+			cv::threshold(grayscaleMat, bin1, threshold2, 255, cv::THRESH_BINARY_INV);
+			cv::threshold(grayscaleMat, m_binImg, threshold1, 255, cv::THRESH_BINARY);
+			m_binImg &= bin1;
+		}
+
+		//cv::max(grayscaleMat, threshold1, m_binImg);
+		//cv::min(m_binImg, threshold2, m_binImg);
 		m_binImg.convertTo(m_binImg, CV_8UC1);
 
 		cv::erode(m_binImg, m_binImg, element);
@@ -100,7 +114,6 @@ void cFilterView::ProcessDepth()
 
 		bool isFindBox = false;
 		for (int vtxCnt = 4; !isFindBox && (vtxCnt < 9); ++vtxCnt)
-		//for (int vtxCnt = 4; !isFindBox && (vtxCnt < 14); ++vtxCnt)
 		{
 			int loopCnt = 0;
 			cv::Mat binImg = m_binImg.clone();
@@ -265,6 +278,9 @@ cRoot::sBoxInfo cFilterView::CalcBoxInfo(const sContourInfo &info)
 		box.volume.y *= 1.f;
 		box.volume.z *= scale;
 
+		if (box.volume.y < 40.f) // 높이가 낮으면 오차가 커져서 없애준다.
+			box.volume.y -= 1.f;
+
 		//box.volume.x -= (float)info.loop*1.4f;
 		//box.volume.z -= (float)info.loop*1.4f;
 
@@ -277,6 +293,9 @@ cRoot::sBoxInfo cFilterView::CalcBoxInfo(const sContourInfo &info)
 		box.volume.x *= 0;
 		box.volume.y = (info.upperH - info.lowerH) * scaleH + offsetY;
 		box.volume.z *= 0;
+
+		if (box.volume.y < 40.f) // 높이가 낮으면 오차가 커져서 없애준다.
+			box.volume.y -= 1.f;
 
 		box.minVolume = (float)info.contour.Area() * scale * scale * box.volume.y;
 		box.maxVolume = box.minVolume;
@@ -489,7 +508,7 @@ bool cFilterView::FindBox(cv::Mat &img
 		const double area = cv::contourArea(contours[i]);
 
 		//const double epsilontAlpha = (vtxCnt == 4) ? 0.03f : 0.01f;
-		const double epsilontAlpha = (area < 3000.f) ? 0.03f : 0.01f;
+		const double epsilontAlpha = (area < 3000.f) ? 0.03f : 0.015f;
 		cv::approxPolyDP(cv::Mat(contours[i]), approx
 			, cv::arcLength(cv::Mat(contours[i]), true) * epsilontAlpha, true);
 		//, cv::arcLength(cv::Mat(contours[i]), true) * 0.013f, true);
@@ -501,8 +520,10 @@ bool cFilterView::FindBox(cv::Mat &img
 		if (std::fabs(cv::contourArea(contours[i])) < m_minArea)
 			continue;
 
-		m_minCos = (area < 3000.f) ? -0.4f : -0.23f; // 직각 체크
-		m_maxCos = (area < 3000.f) ? 0.4f : 0.23f;
+		//m_minCos = (area < 3000.f) ? -0.4f : -0.23f; // 직각 체크
+		//m_maxCos = (area < 3000.f) ? 0.4f : 0.23f;
+		m_minCos = (area < 3000.f) ? -0.4f : -0.33f; // 직각 체크
+		m_maxCos = (area < 3000.f) ? 0.4f : 0.33f;
 
 		if ((approx.size() <= vtxCnt) && (approx.size() >= 4))
 		{
@@ -529,6 +550,8 @@ bool cFilterView::FindBox(cv::Mat &img
 			{
 				cContour contour;
 				contour.Init(approx);
+				contour.m_maxCos = maxcos;
+				contour.m_minCos = mincos;
 				out.push_back(contour);
 
 				//contour.Draw(m_dstImg, Scalar(0, 255, 0), 1);
@@ -588,9 +611,14 @@ void cFilterView::RemoveDuplicateContour(vector<sContourInfo> &contours)
 				{
 					if (contour1.upperH == contour2.upperH)
 					{
-						// 더 적은 loop로 발견된 박스를 남기고, 나머지를 제거한다.
-						if ( (contour1.level < contour2.level)
-							|| ((contour1.level == contour2.level) && (contour1.loop < contour2.loop)))
+						// 가장 사각형과 비슷한 모양을 남기고, 나머지를 제거한다.
+						//old: 더 적은 loop로 발견된 박스를 남기고, 나머지를 제거한다.
+						const double cos1 = std::max(abs(contour1.contour.m_minCos), abs(contour1.contour.m_maxCos));
+						const double cos2 = std::max(abs(contour2.contour.m_minCos), abs(contour2.contour.m_maxCos));
+
+						if ( //(contour1.level < contour2.level)
+							//|| ((contour1.level == contour2.level) && (contour1.loop < contour2.loop)))
+							cos1 < cos2)
 						{
 							contour2.used = false;
 						}
@@ -617,6 +645,7 @@ void cFilterView::RemoveDuplicateContour(vector<sContourInfo> &contours)
 	}
 
 
+	// 박스 높이 조정
 	for (u_int i = 0; i < contours.size() - 1; ++i)
 	{
 		sContourInfo &contour1 = contours[i];

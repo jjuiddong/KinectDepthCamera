@@ -69,6 +69,8 @@ public:
 	double m_time; // update time
 	int m_frameId;
 	int m_pointCloudCount;
+	bool m_mergeOffset; // 높이에 따른 오프셋 변화처리 (Right 카메라만 적용)
+
 	vector<common::Vector3> m_srcVertices; // source vertices, (balser source vertices)
 	vector<common::Vector3> m_vertices; // change space, (perspectiv projection vertex), no apply offset
 	vector<USHORT> m_intensity;

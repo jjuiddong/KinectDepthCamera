@@ -19,6 +19,8 @@ cAnalysisView::~cAnalysisView()
 
 void cAnalysisView::OnRender(const float deltaSeconds)
 {
+	ImGui::Checkbox("calc horz", &g_root.m_isCalcHorz);
+
 	if (ImGui::Button("Volume Measure"))
 	{
 		g_root.MeasureVolume(true);

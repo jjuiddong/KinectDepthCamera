@@ -31,9 +31,11 @@ public:
 	bool m_isEnable;
 	bool m_isMaster;
 	bool m_isShow;
+	double m_writeTime;
 	CameraInfo m_info;
 	CToFCamera *m_camera;
 	cDatReader m_tempBuffer; // temporary buffer
 	cSensorBuffer m_buffer;
 	common::CriticalSection m_cs;
+	std::thread m_thread;
 };

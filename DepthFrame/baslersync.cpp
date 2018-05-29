@@ -82,6 +82,8 @@ bool cBaslerCameraSync::CreateSensor(const int sensorCount)
 		sensor->m_info.strDisplayName = common::format("temp camera%d", i + 1);
 		sensor->m_buffer.m_offset = g_root.m_cameraOffset[i];
 		sensor->m_buffer.m_planeSub = g_root.m_planeSub[i];
+		sensor->m_buffer.m_mergeOffset = (i == 1);
+
 		m_sensors.push_back(sensor);
 	}
 
@@ -169,6 +171,7 @@ void cBaslerCameraSync::setupCamera()
 
 		sensor->m_buffer.m_offset = g_root.m_cameraOffset[camIdx];
 		sensor->m_buffer.m_planeSub = g_root.m_planeSub[camIdx];
+		sensor->m_buffer.m_mergeOffset = (camIdx == 1);
 		m_oldCameraEnable[camIdx] = true;
 
 		m_sensors.push_back(sensor);
@@ -487,8 +490,42 @@ bool cBaslerCameraSync::Grab()
 }
 
 
+void ThreadProc(cSensor *sensor, common::StrPath fileName)
+{
+	graphic::cRenderer &renderer = ((cViewer*)g_application)->m_3dView->GetRenderer();
+	sensor->CopyCaptureBuffer(renderer, fileName.c_str());
+}
+
+
 bool cBaslerCameraSync::CopyCaptureBuffer(graphic::cRenderer &renderer)
 {
+	//const double t0 = g_root.m_timer.GetMilliSeconds();
+
+	//const string curTime = common::GetCurrentDateTime();
+	//for (cSensor *sensor : m_sensors)
+	//{
+	//	if (!sensor->IsEnable())
+	//		continue;
+
+	//	common::StrPath fileName;
+	//	fileName.Format("../media/depthMulti5/%d/%s.pcd", sensor->m_id, curTime.c_str());
+	//	//sensor->CopyCaptureBuffer(renderer, fileName.c_str());
+
+	//	sensor->m_thread = std::thread(ThreadProc, sensor, fileName);
+	//}
+
+	//for (cSensor *sensor : m_sensors)
+	//{
+	//	if (!sensor->IsEnable())
+	//		continue;
+
+	//	if (sensor->m_thread.joinable())
+	//		sensor->m_thread.join();
+	//}
+
+	//const double t1 = g_root.m_timer.GetMilliSeconds();
+	//common::dbg::Log("CopyCapture %f\n", t1 - t0);
+
 	const string curTime = common::GetCurrentDateTime();
 	for (cSensor *sensor : m_sensors)
 	{

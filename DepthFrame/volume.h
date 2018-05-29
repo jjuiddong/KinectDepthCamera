@@ -11,7 +11,7 @@
 struct sContourInfo 
 {
 	bool used; // use internal
-	int level;
+	int level; // vertex count
 	int loop;
 	float lowerH;
 	float upperH;

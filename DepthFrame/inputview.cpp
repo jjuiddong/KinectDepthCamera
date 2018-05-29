@@ -26,6 +26,7 @@ cInputView::cInputView(const string &name)
 	, m_comboFileIdx(0)
 	, m_aniCameraCount(2)
 	, m_explorerFolderIndex(2)
+	, m_isAutoSelectFileIndex(false)
 {
 }
 
@@ -292,6 +293,8 @@ void cInputView::RenderFileList()
 		}
 	}
 
+	ImGui::Checkbox("AutoSelect File", &m_isAutoSelectFileIndex);
+
 	ImGui::PushID(10);
 	ImGui::InputText("", g_root.m_inputFilePath.m_str, g_root.m_inputFilePath.SIZE);
 	ImGui::PopID();
@@ -338,6 +341,17 @@ void cInputView::RenderFileList()
 					m_selectPath = ansifileName;
 
 					OpenFile(ansifileName, m_explorerFolderIndex);
+
+					if (m_isAutoSelectFileIndex)
+					{
+						const int fidx = (m_explorerFolderIndex == 2) ? 1 : 2;
+						sFileInfo &finfo2 = m_files[fidx];
+						if (finfo2.fullFileNames.size() > idx)
+						{
+							common::StrPath ansifileName2 = finfo2.fullFileNames[idx].ansi();// change UTF8 -> UTF16
+							OpenFile(ansifileName2, fidx);
+						}
+					}
 
 					// Popup Menu
 					if (ImGui::IsItemClicked(1))
@@ -590,8 +604,8 @@ void cInputView::UpdateFileList()
 	m_aniIndex1 = -1;
 	m_aniIndex2 = -1;
 	m_aniIndex3 = -1;
-	//m_aniIndex2 = 9000;
-	//m_aniIndex3 = 9000;
+	//m_aniIndex2 = 8000;
+	//m_aniIndex3 = 8000;
 }
 
 
@@ -738,6 +752,17 @@ void cInputView::OnEventProc(const sf::Event &evt)
 
 			if (m_selFileIdx >= 0)
 				OpenFile(finfo.fullFileNames[m_selFileIdx].ansi(), m_explorerFolderIndex);
+
+			if (m_isAutoSelectFileIndex)
+			{
+				const int fidx = (m_explorerFolderIndex == 2) ? 1 : 2;
+				sFileInfo &finfo2 = m_files[fidx];
+				if (finfo2.fullFileNames.size() > m_selFileIdx)
+				{
+					common::StrPath ansifileName2 = finfo2.fullFileNames[m_selFileIdx].ansi();// change UTF8 -> UTF16
+					OpenFile(ansifileName2, fidx);
+				}
+			}
 		}
 		break;
 
@@ -757,6 +782,17 @@ void cInputView::OnEventProc(const sf::Event &evt)
 
 			if (m_selFileIdx >= 0)
 				OpenFile(finfo.fullFileNames[m_selFileIdx].ansi(), m_explorerFolderIndex);
+
+			if (m_isAutoSelectFileIndex)
+			{
+				const int fidx = (m_explorerFolderIndex == 2) ? 1 : 2;
+				sFileInfo &finfo2 = m_files[fidx];
+				if (finfo2.fullFileNames.size() > m_selFileIdx)
+				{
+					common::StrPath ansifileName2 = finfo2.fullFileNames[m_selFileIdx].ansi();// change UTF8 -> UTF16
+					OpenFile(ansifileName2, fidx);
+				}
+			}
 		}
 		break;
 		}

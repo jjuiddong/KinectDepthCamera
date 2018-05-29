@@ -103,6 +103,7 @@ public:
 	bool m_isAutoMeasure;
 	bool m_isPalete;
 	bool m_isGrabLog;
+	bool m_isCalcHorz;
 
 	// Config
 	common::StrPath m_inputFilePath;

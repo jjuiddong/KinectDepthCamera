@@ -29,6 +29,7 @@ cRoot::cRoot()
 	, m_cullRangeMin(-200,-200,-200)
 	, m_cullRangeMax(200, 200, 200)
 	, m_measureId(0)
+	, m_isCalcHorz(false)
 {
 	ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
 	ZeroMemory(&m_hDistrib2, sizeof(m_hDistrib2));
@@ -42,7 +43,11 @@ cRoot::cRoot()
 
 	//m_cameraOffset[1].pos = Vector3(56.56f, -4.2f, 77.38f);
 	//m_cameraOffset[1].pos = Vector3(56.56f, -2.2f, 77.38f);
-	m_cameraOffset[1].pos = Vector3(55.030f, -2.200f, 76.460f);	
+	//m_cameraOffset[1].pos = Vector3(55.030f, -2.200f, 76.460f);	 // 0m
+	//m_cameraOffset[1].pos = Vector3(55.030f, -2.200f, 75.970f); // 1m
+
+	//m_cameraOffset[1].pos = Vector3(55.030f, -2.200f, 78.090f);	 // 30cm
+	m_cameraOffset[1].pos = Vector3(55.030f, -2.200f, 78.090f);	 // 30cm
 
 	m_cameraOffset[2].pos = Vector3(0, 0, 0);
 

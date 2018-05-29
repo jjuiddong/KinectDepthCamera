@@ -9,6 +9,9 @@ using namespace cv;
 
 
 cContour::cContour()
+	: m_minCos(0)
+	, m_maxCos(0)
+
 {
 }
 

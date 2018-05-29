@@ -21,6 +21,8 @@ public:
 
 
 public:
+	double m_minCos; // 가장 작은 각
+	double m_maxCos; // 가장 큰 각
 	vector<cv::Point> m_data;
 };
 

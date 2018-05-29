@@ -13,6 +13,7 @@ cSensorBuffer::cSensorBuffer()
 	, m_time(0)
 	, m_frameId(0)
 	, m_isUpdatePointCloud(true)
+	, m_mergeOffset(false)
 {
 	ZeroMemory(&m_diffAvrs, sizeof(m_diffAvrs));
 }
@@ -275,6 +276,8 @@ bool cSensorBuffer::UpdatePointCloudAllConfig(graphic::cRenderer &renderer)
 
 	tm *= m_offset.GetMatrix();
 
+	const float f = (75.290f - 78.090f) / 120.f;
+
 	float maxDiff = 0.f;
 	float diffAvrs = 0;
 	for (u_int i = 0; i < m_srcVertices.size(); ++i)
@@ -297,6 +300,13 @@ bool cSensorBuffer::UpdatePointCloudAllConfig(graphic::cRenderer &renderer)
 		{
 			pos = Vector3(0, 0, 0);
 		}
+
+		// 높이에 따라, z축으로 줄어든다. (Right 카메라)
+		if (m_mergeOffset)
+		{
+			pos.z += f * (pos.y - 30.f);
+		}
+
 		m_vertices[i] = pos;
 	}
 	diffAvrs /= (float)m_vertices.size();
@@ -555,7 +565,8 @@ void cSensorBuffer::MeasureVolume(cRenderer &renderer)
 			case 2:
 				state = 0;
 
-				limitLowArea = g_root.m_hDistrib[maxArea] * 0.01f;
+				//limitLowArea = LIMIT_AREA;
+				limitLowArea = std::max(LIMIT_AREA, g_root.m_hDistrib[maxArea] * 0.01f);
 				// find first again
 				for (int k = startIdx; k >= 0; --k)
 				{

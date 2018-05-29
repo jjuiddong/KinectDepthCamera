@@ -26,6 +26,7 @@ cSensor::cSensor()
 	, m_isMaster(false)
 	, m_isShow(true)
 	, m_id(0)
+	, m_writeTime(0)
 {
 }
 
@@ -166,9 +167,16 @@ bool cSensor::CopyCaptureBuffer(cRenderer &renderer, const char *saveFileName)
 	// save PCD file
 	if (g_root.m_isAutoSaveCapture)
 	{
-		// save only processing camera depthmap
 		if (m_isShow)
-			m_tempBuffer.Write(saveFileName);
+		{
+			const double curT = g_root.m_timer.GetMilliSeconds();
+			if ((curT - m_writeTime) > 1000.f) // 1초에 하나씩 저장한다.
+			{
+				m_writeTime = curT;
+				// save only processing camera depthmap
+				m_tempBuffer.Write(saveFileName);
+			}
+		}
 	}
 
 	return true;
