@@ -34,8 +34,8 @@ cViewer::cViewer()
 	m_windowName = L"Volume Measure";
 	//m_isLazyMode = true;
 	//const RECT r = { 0, 0, 1024, 768 };
-	//const RECT r = { 0, 0, 1280, 960 };
-	const RECT r = { 0, 0, (int)(1280*1.5f)	, (int)(960*1.5f) };
+	const RECT r = { 0, 0, 1280, 960 };
+	//const RECT r = { 0, 0, (int)(1280*1.5f)	, (int)(960*1.5f) };
 	m_windowRect = r;
 }
 
