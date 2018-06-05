@@ -128,7 +128,10 @@ void ThreadFilterAllFunc(cFilterView *fview, bool isCalcHorz)
 							info.level = vtxCnt;
 							info.loop = loopCnt;
 							info.lowerH = 0;
-							info.upperH = areaFloor->maxIdx * 0.1f;
+							const float scaleH = 0.99f;
+							const float offsetY = (g_root.m_isPalete) ? -13.f : 3.5f;
+
+							info.upperH = (areaFloor->maxIdx * 0.1f) * scaleH + offsetY;
 							info.contour = contour;
 							info.color = areaFloor->color;
 							contours.push_back(info);
@@ -211,7 +214,13 @@ void ThreadFilterSubFunc(cFilterView *fview, cRoot::sAreaFloor *areaFloor, bool 
 						info.level = vtxCnt;
 						info.loop = loopCnt;
 						info.lowerH = 0;
-						info.upperH = areaFloor->maxIdx * 0.1f;
+
+						const float scaleH = 0.99f;
+						const float offsetY = (g_root.m_isPalete) ? -13.f : 3.5f;
+
+						info.upperH = (areaFloor->maxIdx * 0.1f) * scaleH + offsetY;
+
+
 						info.contour = contour;
 						info.color = areaFloor->color;
 						contours.push_back(info);
@@ -378,8 +387,8 @@ cRoot::sBoxInfo cFilterView::CalcBoxInfo(const sContourInfo &info)
 	//const float scale = 50.f / 73.2f;
 	//const float scale = 50.f / 74.5f;
 	const float scale = 50.f / 72.3f;
-	const float scaleH = 0.99f;
-	const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete) ? -13.f : 3.5f;
+	//const float scaleH = 0.99f;
+	//const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete) ? -13.f : 3.5f;
 
 	cRoot::sBoxInfo box;
 	if (info.contour.Size() == 4)
@@ -393,7 +402,8 @@ cRoot::sBoxInfo cFilterView::CalcBoxInfo(const sContourInfo &info)
 		const float l1 = std::max((v1 - v2).Length(), (v3 - v4).Length());
 		const float l2 = std::max((v2 - v3).Length(), (v4 - v1).Length());
 		box.volume.x = std::max(l1, l2); // 큰 값이 가로
-		box.volume.y = (info.upperH - info.lowerH) * scaleH + offsetY;
+		//box.volume.y = (info.upperH - info.lowerH) * scaleH + offsetY;
+		box.volume.y = (info.upperH - info.lowerH);
 		box.volume.z = std::min(l1, l2); // 작은 값이 세로
 
 		// average value
@@ -418,7 +428,8 @@ cRoot::sBoxInfo cFilterView::CalcBoxInfo(const sContourInfo &info)
 	else
 	{
 		box.volume.x *= 0;
-		box.volume.y = (info.upperH - info.lowerH) * scaleH + offsetY;
+		//box.volume.y = (info.upperH - info.lowerH) * scaleH + offsetY;
+		box.volume.y = (info.upperH - info.lowerH);
 		box.volume.z *= 0;
 
 		if ((box.volume.y < 40.f) && (box.volume.y > 1.f)) // 높이가 낮으면 오차가 커져서 없애준다.
