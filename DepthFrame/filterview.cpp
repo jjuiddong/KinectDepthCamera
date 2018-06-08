@@ -242,7 +242,6 @@ void ThreadFilterSubFunc(cFilterView *fview, cRoot::sAreaFloor *areaFloor, bool 
 }
 
 
-
 // 영상인식해서 박스의 모양을 인식한다.
 void cFilterView::ProcessDepth()
 {
@@ -262,98 +261,6 @@ void cFilterView::ProcessDepth()
 	std::thread th2 = std::thread(ThreadFilterAllFunc, this, false);
 	th1.join();
 	th2.join();
-
-	//vector<std::thread*> threads;
-
-	//for (int i = 0; i < g_root.m_areaFloorCnt; ++i)
-	//{
-	//	cRoot::sAreaFloor *areaFloor = g_root.m_areaBuff[i];
-	//	std::thread *pth1 = new std::thread(ThreadFilterSubFunc, this, areaFloor, true);
-	//	std::thread *pth2 = new std::thread(ThreadFilterSubFunc, this, areaFloor, false);
-
-	//	threads.push_back(pth1);
-	//	threads.push_back(pth2);
-	//}
-
-	//for (auto &th : threads)
-	//	th->join();
-
-	//for (auto &th : threads)
-	//	delete th;
-	//threads.clear();
-
-
-	//Mat grayscaleMat;
-	//srcImg.convertTo(grayscaleMat, CV_16UC1, 500.0f);
-	//srcImg.convertTo(m_dstImg, CV_8UC1, 255.0f);
-	//cvtColor(m_dstImg, m_dstImg, cv::COLOR_GRAY2RGB);
-
-	//const Mat element = cv::getStructuringElement(MORPH_RECT, Size(3, 3));
-	//for (int i = 0; i < g_root.m_areaFloorCnt; ++i)
-	//{
-	//	cRoot::sAreaFloor *areaFloor = g_root.m_areaBuff[i];
-
-	//	float threshold1 = areaFloor->startIdx * 0.1f;
-	//	float threshold2 = areaFloor->endIdx * 0.11f;
-
-	//	if (g_root.m_isCalcHorz)
-	//	{
-	//		cv::threshold(grayscaleMat, m_binImg, threshold1, 255, cv::THRESH_BINARY);
-	//	}
-	//	else
-	//	{
-	//		Mat bin1;
-	//		cv::threshold(grayscaleMat, bin1, threshold2, 255, cv::THRESH_BINARY_INV);
-	//		cv::threshold(grayscaleMat, m_binImg, threshold1, 255, cv::THRESH_BINARY);
-	//		m_binImg &= bin1;
-	//	}
-
-	//	m_binImg.convertTo(m_binImg, CV_8UC1);
-
-	//	cv::erode(m_binImg, m_binImg, element);
-	//	cv::dilate(m_binImg, m_binImg, element);
-	//	cv::erode(m_binImg, m_binImg, element);
-	//	cv::dilate(m_binImg, m_binImg, element);
-	//	cv::dilate(m_binImg, m_binImg, element);
-
-	//	bool isFindBox = false;
-	//	for (int vtxCnt = 4; !isFindBox && (vtxCnt < 9); ++vtxCnt)
-	//	{
-	//		int loopCnt = 0;
-	//		cv::Mat binImg = m_binImg.clone();
-	//		while (!isFindBox && (loopCnt < 8))
-	//		{
-	//			vector<cContour> temp;
-	//			if (FindBox(binImg, vtxCnt, temp))
-	//			{
-	//				// 원래 크기로 되돌린다.
-	//				cv::Mat img2 = binImg.clone();
-	//				for (int k = 0; k < loopCnt; ++k)
-	//					cv::erode(img2, img2, element);
-
-	//				vector<cContour> out;
-	//				if (FindBox(img2, vtxCnt, out))
-	//				{
-	//					for (auto &contour : out)
-	//					{
-	//						sContourInfo info;
-	//						info.level = vtxCnt;
-	//						info.loop = loopCnt;
-	//						info.lowerH = 0;
-	//						info.upperH = areaFloor->maxIdx * 0.1f;
-	//						info.contour = contour;
-	//						info.color = areaFloor->color;
-	//						m_contours.push_back(info);
-	//					}
-	//				}
-	//			}
-
-	//			cv::dilate(binImg, binImg, element);
-	//			++loopCnt;
-	//		}
-	//	}
-	//}
-
 
 	RemoveDuplicateContour(m_contours);
 

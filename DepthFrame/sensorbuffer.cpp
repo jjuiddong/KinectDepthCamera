@@ -137,7 +137,7 @@ bool cSensorBuffer::ReadDatFile(cRenderer &renderer, const string &fileName)
 {
 	m_isLoaded = false;
 	cDatReader reader;
-	if (!reader.Read(fileName))
+	if (!reader.Read(fileName.c_str()))
 		return false;
 
 	ReadDatFile(renderer, reader);

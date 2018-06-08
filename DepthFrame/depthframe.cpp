@@ -132,9 +132,9 @@ bool cViewer::OnInit()
 	g_root.InitSensor();
 
 	// test zip
-	//ZipFile::AddFile("D:\\자료\\Box Volume\\Media-2018-04-11\\DepthSample\\test.zip"
-	//	, "D:\\자료\\Box Volume\\Media-2018-04-11\\DepthSample\\2018-03-24-10-04-13-662.pcd"
-	//	, "2018-03-24-10-04-13-662.pcd", LzmaMethod::Create());
+	//ZipFile::AddFile("c:\\Project\\Media\\DepthSave\\1\\test.zip"
+	//	, "c:\\Project\\Media\\DepthSave\\1\\2018-05-29-22-52-52-960.pcd"
+	//	, "2018-05-29-22-52-52-960.pcd", LzmaMethod::Create());
 
 	m_gui.SetContext();
 

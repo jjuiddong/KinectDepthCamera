@@ -174,7 +174,7 @@ bool cSensor::CopyCaptureBuffer(cRenderer &renderer, const char *saveFileName)
 			{
 				m_writeTime = curT;
 				// save only processing camera depthmap
-				m_tempBuffer.Write(saveFileName);
+				m_tempBuffer.Write(saveFileName, true);
 			}
 		}
 	}

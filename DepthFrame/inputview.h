@@ -72,4 +72,5 @@ public:
 	common::StrPath m_selectPath; // UTF-16
 
 	vector<sFileInfo> m_files;
+	//std::thread m_tmpTh;
 };

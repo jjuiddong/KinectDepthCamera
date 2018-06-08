@@ -1,9 +1,11 @@
 //
 // 2018-03-21, jjuiddong
-// *.dat file reader
+// *.dat, *.pcd  file reader
 // custom point cloude data file
+//	- 640 x 480
 //	- xyz 
 //	- intensity
+//	- confidence
 // 
 #pragma once
 
@@ -14,8 +16,9 @@ public:
 	cDatReader();
 	virtual ~cDatReader();
 
-	bool Read(const string &fileName);
-	bool Write(const string &fileName);
+	bool Read(const char *fileName);
+	bool Write(const char *fileName, const bool isCompress=false);
+	bool Compresse(const char *fileName);
 	void Clear();
 
 

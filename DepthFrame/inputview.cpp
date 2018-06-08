@@ -11,6 +11,43 @@
 using namespace graphic;
 using namespace framework;
 
+//
+//bool g_compressStop = false;
+//int g_compressFileCount = 0;
+//int g_compressFileTotalCount = 0;
+//void CompressThreadFunc(common::StrPath path)
+//{
+//	vector<WStr32> exts;
+//	exts.reserve(16);
+//	exts.push_back(L"ply"); exts.push_back(L"PLY");
+//	exts.push_back(L"pcd"); exts.push_back(L"PCD");
+//	exts.push_back(L"pcd2"); exts.push_back(L"PCD2");
+//
+//	vector<WStrPath> out;
+//	out.reserve(20000);
+//
+//	for (int i = 0; i < 3; ++i)
+//	{
+//		StrPath subPath;
+//		subPath.Format("%s/%d", path.c_str(), i);
+//		common::CollectFiles(exts, subPath.wstr().c_str(), out);
+//	}
+//
+//	g_compressFileTotalCount = out.size();
+//	g_compressFileCount = 0;
+//
+//	for (auto &fileName : out)
+//	{
+//		if (g_compressStop)
+//			break;
+//
+//		cDatReader reader;
+//		reader.Compresse(fileName.GetFullFileName().str().c_str());
+//		++g_compressFileCount;
+//	}	
+//}
+
+
 cInputView::cInputView(const string &name)
 	: framework::cDockWindow(name)
 	, m_isCaptureContinuos(false)
@@ -32,6 +69,9 @@ cInputView::cInputView(const string &name)
 
 cInputView::~cInputView()
 {
+	//g_compressStop = true;
+	//if (m_tmpTh.joinable())
+	//	m_tmpTh.join();
 }
 
 
@@ -295,6 +335,15 @@ void cInputView::RenderFileList()
 
 	ImGui::Checkbox("AutoSelect File", &m_isAutoSelectFileIndex);
 
+	//ImGui::SameLine();
+	//if (ImGui::Button("Compress"))
+	//{
+	//	StrPath path = g_root.m_inputFilePath.m_str;
+	//	m_tmpTh = std::thread(CompressThreadFunc, path);
+	//}
+	//ImGui::Text("%d / %d", g_compressFileCount, g_compressFileTotalCount);
+
+
 	ImGui::PushID(10);
 	ImGui::InputText("", g_root.m_inputFilePath.m_str, g_root.m_inputFilePath.SIZE);
 	ImGui::PopID();
@@ -503,7 +552,8 @@ void cInputView::UpdateFileList()
 	exts.reserve(16);
 	exts.push_back(L"ply"); exts.push_back(L"PLY");
 	exts.push_back(L"pcd"); exts.push_back(L"PCD");
-	exts.push_back(L"pcd2"); exts.push_back(L"PCD2");
+	//exts.push_back(L"pcd2"); exts.push_back(L"PCD2");
+	//exts.push_back(L"pcdz"); exts.push_back(L"PCDZ");
 
 	if (g_root.m_baslerCam.IsReadyCapture())
 	{
@@ -645,11 +695,11 @@ void cInputView::UpdateFileList()
 
 
 // 파일명을 숫자로 리턴한다.
-// ex = 2018-04-08-15-53-28-211.pcd
+// ex = 2018-04-08-15-53-28-211.pcdz
 // int64 = 20180408155328211
 __int64 cInputView::ConvertFileNameToInt64(const common::StrPath &fileName)
 {
-	if (fileName.size() != 27)
+	if ((fileName.size() != 27) && (fileName.size() != 28))
 		return 0;
 
 	char buff[32];
@@ -757,7 +807,8 @@ bool cInputView::OpenFile(const StrPath &ansifileName
 
 		g_root.MeasureVolume();
 	}
-	else if (string(".pcd") == ansifileName.GetFileExt())
+	else if ((string(".pcd") == ansifileName.GetFileExt())
+		|| (string(".pcdz") == ansifileName.GetFileExt()))
 	{
 		sensor1->m_buffer.ReadDatFile(
 			((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
