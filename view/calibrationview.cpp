@@ -1,7 +1,6 @@
 
 #include "stdafx.h"
 #include "calibrationview.h"
-#include "depthframe.h"
 #include "3dview.h"
 
 using namespace graphic;
@@ -83,8 +82,8 @@ void cCalibrationView::OnRender(const float deltaSeconds)
 			q.SetRotationY(rotateY);
 			sensor1->m_buffer.m_offset.rot = q;
 
-			sensor1->m_buffer.UpdatePointCloudAllConfig(((cViewer*)g_application)->m_3dView->GetRenderer());
-			sensor1->m_buffer.UpdatePointCloudItBySelf(((cViewer*)g_application)->m_3dView->GetRenderer());
+			sensor1->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
+			sensor1->m_buffer.UpdatePointCloudItBySelf(g_root.m_3dView->GetRenderer());
 		}
 	}
 	if (g_root.m_baslerCam.m_sensors.size() >= 2)
@@ -100,8 +99,8 @@ void cCalibrationView::OnRender(const float deltaSeconds)
 			q.SetRotationY(rotateY);
 			sensor2->m_buffer.m_offset.rot = q;
 
-			sensor2->m_buffer.UpdatePointCloudAllConfig(((cViewer*)g_application)->m_3dView->GetRenderer());
-			sensor2->m_buffer.UpdatePointCloudItBySelf(((cViewer*)g_application)->m_3dView->GetRenderer());
+			sensor2->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
+			sensor2->m_buffer.UpdatePointCloudItBySelf(g_root.m_3dView->GetRenderer());
 		}
 	}
 
@@ -116,7 +115,7 @@ void cCalibrationView::OnRender(const float deltaSeconds)
 		if (g_root.m_baslerCam.IsReadyCapture())
 		{
 			for (auto sensor : g_root.m_baslerCam.m_sensors)
-				sensor->m_buffer.UpdatePointCloudItBySelf(((cViewer*)g_application)->m_3dView->GetRenderer());
+				sensor->m_buffer.UpdatePointCloudItBySelf(g_root.m_3dView->GetRenderer());
 			g_root.MeasureVolume();
 		}
 	}

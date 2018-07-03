@@ -4,9 +4,6 @@
 //
 #pragma once
 
-#include "baslersync.h"
-#include "kinectv2.h"
-
 
 // Kinect V2
 static const int g_kinectDepthWidth = 512;
@@ -25,6 +22,21 @@ static const float g_capture3DWidth = 640.f * 1.f;
 static const float g_capture3DHeight = 480.f * 1.f;
 
 
+class c3DView;
+class cColorView;
+class cDepthView;
+class cDepthView2;
+class cInfraredView;
+class cAnalysisView;
+class cInputView;
+class cAnimationView;
+class cFilterView;
+class cLogView;
+class cResultView;
+class cBoxView;
+class cCameraView;
+class cCalibrationView;
+
 class cRoot
 {
 public:
@@ -33,6 +45,7 @@ public:
 
 	bool Create();
 	bool InitSensor();
+	bool DisconnectSensor();
 	void Update(const float deltaSeconds);
 	bool KinectCapture();
 	void MeasureVolume(const bool isUpdateSensor=false);
@@ -111,6 +124,22 @@ public:
 	common::Vector3 m_cullRangeMin;
 	common::Vector3 m_cullRangeMax;
 	common::cConfig m_config;
+
+	// View
+	c3DView *m_3dView;
+	cColorView *m_colorView;
+	cDepthView *m_depthView;
+	cDepthView2 *m_depthView2;
+	cInfraredView *m_infraredView;
+	cAnalysisView *m_analysisView;
+	cInputView *m_inputView;
+	cAnimationView *m_aniView;
+	cFilterView *m_filterView;
+	cLogView *m_logView;
+	cResultView *m_resultView;
+	cBoxView *m_boxView;
+	cCameraView *m_camView;
+	cCalibrationView *m_calibView;
 };
 
 

@@ -17,8 +17,7 @@ public:
 	virtual ~cDatReader();
 
 	bool Read(const char *fileName);
-	bool Write(const char *fileName, const bool isCompress=false);
-	bool Compresse(const char *fileName);
+	bool Write(const char *fileName);
 	void Clear();
 
 

@@ -1,7 +1,6 @@
 
 #include "stdafx.h"
 #include "resultview.h"
-#include "depthframe.h"
 #include "inputview.h"
 #include "filterview.h"
 
@@ -45,8 +44,8 @@ void cResultView::OnRender(const float deltaSeconds)
 	{
 		++g_root.m_measureId;
 		isMeasureVolume = true;
-		((cViewer*)g_application)->m_inputView->DelayMeasure();
-		((cViewer*)g_application)->m_filterView->ClearBoxVolumeAverage();
+		g_root.m_inputView->DelayMeasure();
+		g_root.m_filterView->ClearBoxVolumeAverage();
 	}
 
 	ImGui::SameLine();
@@ -54,31 +53,31 @@ void cResultView::OnRender(const float deltaSeconds)
 	{
 		++g_root.m_measureId;
 		isMeasureVolume = true;
-		((cViewer*)g_application)->m_inputView->DelayMeasure10();
-		((cViewer*)g_application)->m_filterView->ClearBoxVolumeAverage();
+		g_root.m_inputView->DelayMeasure10();
+		g_root.m_filterView->ClearBoxVolumeAverage();
 	}
 
 	if (ImGui::Button(u8"Ãë¼Ò"))
 	{
 		isMeasureVolume = false;
-		((cViewer*)g_application)->m_inputView->CancelDelayMeasure();
-		((cViewer*)g_application)->m_filterView->ClearBoxVolumeAverage();
+		g_root.m_inputView->CancelDelayMeasure();
+		g_root.m_filterView->ClearBoxVolumeAverage();
 	}
 
 	ImGui::SameLine();
-	ImGui::Text("%d", ((cViewer*)g_application)->m_inputView->m_measureCount);
+	ImGui::Text("%d", g_root.m_inputView->m_measureCount);
 
 	ImGui::Spacing();
 	ImGui::Spacing();
 	ImGui::Separator();
 	ImGui::Spacing();
 
-	vector<cFilterView::sAvrContour> &avrContours = ((cViewer*)g_application)->m_filterView->m_avrContours;
+	vector<cFilterView::sAvrContour> &avrContours = g_root.m_filterView->m_avrContours;
 	for (u_int i = 0; i < avrContours.size(); ++i)
 	{
 		auto &box = avrContours[i].result;
 
-		const float distribCnt = (float)avrContours[i].count / (float)((cViewer*)g_application)->m_filterView->m_calcAverageCount;
+		const float distribCnt = (float)avrContours[i].count / (float)g_root.m_filterView->m_calcAverageCount;
 		if (distribCnt < 0.5f)
 			continue;		
 

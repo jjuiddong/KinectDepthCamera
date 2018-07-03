@@ -1,7 +1,6 @@
 
 #include "stdafx.h"
 #include "filterview.h"
-#include "cvutil.h"
 
 using namespace graphic;
 using namespace framework;

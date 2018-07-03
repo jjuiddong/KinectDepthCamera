@@ -1,0 +1,50 @@
+//
+// 2018-07-03, jjuiddong
+// Volume Viewer
+//
+#pragma once
+
+
+class c3DView;
+class cColorView;
+class cDepthView;
+class cDepthView2;
+class cInfraredView;
+class cAnalysisView;
+class cInputView;
+class cFilterView;
+class cLogView;
+class cResultView;
+class cBoxView;
+class cCameraView;
+class cCalibrationView;
+class cAnimationView;
+
+class cViewer : public framework::cGameMain2
+{
+public:
+	cViewer();
+	virtual ~cViewer();
+
+	virtual bool OnInit() override;
+	virtual void OnUpdate(const float deltaSeconds) override;
+	virtual void OnRender(const float deltaSeconds) override;
+	virtual void OnEventProc(const sf::Event &evt) override;
+	virtual void OnShutdown() override;
+
+public:
+	c3DView * m_3dView;
+	cColorView *m_colorView;
+	cDepthView *m_depthView;
+	cDepthView2 *m_depthView2;
+	cInfraredView *m_infraredView;
+	cAnalysisView *m_analysisView;
+	cInputView *m_inputView;
+	cFilterView *m_filterView;
+	cLogView *m_logView;
+	cResultView *m_resultView;
+	cBoxView *m_boxView;
+	cCameraView *m_camView;
+	cCalibrationView *m_calibView;
+	cAnimationView *m_aniView;
+};

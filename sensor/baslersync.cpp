@@ -1,8 +1,8 @@
 
 #include "stdafx.h"
 #include "baslersync.h"
-#include "3dview.h"
-#include "depthframe.h"
+//#include "3dview.h"
+//#include "depthframe.h"
 #include "StopWatch.h"
 #include "sensor.h"
 
@@ -490,11 +490,11 @@ bool cBaslerCameraSync::Grab()
 }
 
 
-void ThreadProc(cSensor *sensor, common::StrPath fileName)
-{
-	graphic::cRenderer &renderer = ((cViewer*)g_application)->m_3dView->GetRenderer();
-	sensor->CopyCaptureBuffer(renderer, fileName.c_str());
-}
+//void ThreadProc(cSensor *sensor, common::StrPath fileName)
+//{
+//	graphic::cRenderer &renderer = ((cViewer*)g_application)->m_3dView->GetRenderer();
+//	sensor->CopyCaptureBuffer(renderer, fileName.c_str());
+//}
 
 
 bool cBaslerCameraSync::CopyCaptureBuffer(graphic::cRenderer &renderer)
@@ -574,6 +574,8 @@ void cBaslerCameraSync::Clear()
 
 		if (m_thread.joinable())
 			m_thread.join();
+		else
+			m_state = eThreadState::DISCONNECT;
 	}
 	else
 	{

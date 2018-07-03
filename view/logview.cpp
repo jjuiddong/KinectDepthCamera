@@ -1,7 +1,6 @@
 
 #include "stdafx.h"
 #include "logview.h"
-#include "depthframe.h"
 
 using namespace common;
 using namespace graphic;
@@ -72,6 +71,6 @@ void cLogView::AddLog(const string &str)
 
 void AddLog(const string &str)
 {
-	((cViewer*)g_application)->m_logView->AddLog(str);
+	g_root.m_logView->AddLog(str);
 	//common::dbg::Print(str);
 }

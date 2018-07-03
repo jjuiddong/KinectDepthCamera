@@ -1,9 +1,5 @@
 #include "stdafx.h"
 #include "datreader.h"
-#include "../ZipLib/ZipFile.h"
-#include "../ZipLib/streams/memstream.h"
-#include "../ZipLib/methods/Bzip2Method.h"
-
 
 using namespace graphic;
 
@@ -36,11 +32,7 @@ bool cDatReader::Read(const char *fileName)
 		|| !strcmp(path.GetFileExt(), ".PCDZ"));
 	if (isCompressed)
 	{
-		StrPath archiveName = path.GetFileNameExceptExt();
-		archiveName += ".pcd";
-		StrPath destName = path + ".tmp";
-		ZipFile::ExtractFile(fileName, archiveName.c_str(), destName.c_str());
-		readFileName = destName;
+		assert(0);
 	}
 	else
 	{
@@ -63,9 +55,7 @@ bool cDatReader::Read(const char *fileName)
 }
 
 
-bool cDatReader::Write(const char *fileName
-	, const bool isCompress //= false
-)
+bool cDatReader::Write(const char *fileName)
 {
 	using namespace std;
 	ofstream ofs(fileName, ios::binary);	
@@ -77,31 +67,6 @@ bool cDatReader::Write(const char *fileName
 	ofs.write((char*)&m_intensity[0], sizeof(uint16_t)*nPixel);
 	ofs.write((char*)&m_confidence[0], sizeof(uint16_t)*nPixel);
 	ofs.close();
-
-	if (isCompress)
-	{
-		StrPath path = fileName;
-		path += "z"; // *.pcdz
-		Compresse(path.c_str());
-		remove(fileName); // remove source file
-	}
-
-	return true;
-}
-
-
-bool cDatReader::Compresse(const char *fileName)
-{
-	common::StrPath destFileName = fileName;
-	destFileName += "z"; // *.pcdz
-	common::StrPath archiveFileName = fileName;
-
-	ZipFile::AddFile(destFileName.c_str()
-		, fileName
-		, archiveFileName.GetFileName()
-		, DeflateMethod::Create() // most fast compress format
-	);
-
 	return true;
 }
 

@@ -1,8 +1,8 @@
 
 #include "stdafx.h"
 #include "basler.h"
-#include "3dview.h"
-#include "depthframe.h"
+//#include "3dview.h"
+//#include "depthframe.h"
 
 
 /* Allocator class used by the CToFCamera class for allocating memory buffers
@@ -151,7 +151,7 @@ void cBaslerCamera::setupCamera()
 
 
 
-bool cBaslerCamera::Capture()
+bool cBaslerCamera::Capture(graphic::cRenderer &renderer)
 {
 	RETV(!m_isSetupSuccess, false);
 
@@ -185,7 +185,7 @@ bool cBaslerCamera::Capture()
 		//nImagesGrabbed++;
 		// We can process the buffer now. The buffer will not be overwritten with new data until
 		// it is explicitly placed in the acquisition engine's input queue again.
-		processData(grabResult);
+		processData(grabResult, renderer);
 
 		// We finished processing the data, put the buffer back into the acquisition 
 		// engine's input queue to be filled with new image data.
@@ -213,7 +213,7 @@ bool cBaslerCamera::Capture()
 }
 
 
-void cBaslerCamera::processData(const GrabResult& grabResult)
+void cBaslerCamera::processData(const GrabResult& grabResult, graphic::cRenderer &renderer)
 {
 	BufferParts parts;
 	m_Camera->GetBufferParts(grabResult, parts);
@@ -229,7 +229,7 @@ void cBaslerCamera::processData(const GrabResult& grabResult)
 	memcpy(&reader.m_intensity[0], pIntensity, sizeof(unsigned short) * 640 * 480);
 	memcpy(&reader.m_confidence[0], pConfidence, sizeof(unsigned short) * 640 * 480);
 
-	g_root.m_sensorBuff[0].ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer(), reader);
+	//g_root.m_sensorBuff[0].ReadDatFile(renderer, reader);
 
 	// save *.pcd file
 	if (g_root.m_isAutoSaveCapture)

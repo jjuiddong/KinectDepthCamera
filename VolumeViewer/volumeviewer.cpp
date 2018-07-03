@@ -1,8 +1,8 @@
 //
-// Depth Frame
+// Volume Viewer
 //
 #include "stdafx.h"
-#include "depthframe.h"
+#include "volumeviewer.h"
 #include "../view/3dview.h"
 #include "../view/colorview.h"
 #include "../view/depthview.h"
@@ -16,6 +16,7 @@
 #include "../view/boxview.h"
 #include "../view/cameraview.h"
 #include "../view/calibrationview.h"
+#include "../view/animationview.h"
 
 
 using namespace graphic;
@@ -27,7 +28,7 @@ cRoot g_root;
 
 cViewer::cViewer()
 {
-	m_windowName = L"Volume Measure";
+	m_windowName = L"Volume Viewer";
 	//m_isLazyMode = true;
 	//const RECT r = { 0, 0, 1024, 768 };
 	const RECT r = { 0, 0, 1280, 960 };
@@ -67,14 +68,20 @@ bool cViewer::OnInit()
 	m_gui.SetContext();
 
 	g_root.Create(); // 가장 먼저 호출
+	g_root.m_input = cRoot::eInputType::FILE;
 
 	m_3dView = new c3DView("3DView");
 	m_3dView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, NULL);
 	bool result = m_3dView->Init(m_renderer);
 	assert(result);
 
+	m_aniView = new cAnimationView("Animation View");
+	m_aniView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_3dView, 0.4f);
+	result = m_aniView->Init(m_renderer);
+	assert(result);
+
 	m_inputView = new cInputView("Input View");
-	m_inputView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_3dView, 0.2f);
+	m_inputView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_aniView);
 	result = m_inputView->Init(m_renderer);
 	assert(result);
 
@@ -102,25 +109,25 @@ bool cViewer::OnInit()
 	m_analysisView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_infraredView, 0.6f);
 
 	m_boxView = new cBoxView("Box View");
-	m_boxView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_3dView);
+	m_boxView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_3dView);
 	result = m_boxView->Init(m_renderer);
 	assert(result);
 
 	m_filterView = new cFilterView("Filter View");
-	m_filterView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_boxView);
+	m_filterView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_3dView);
 	result = m_filterView->Init(m_renderer);
 	assert(result);
 
 	m_resultView = new cResultView("Result");
-	m_resultView->Create(eDockState::DOCKWINDOW, eDockSlot::TOP, this, m_inputView, 0.5f);
+	m_resultView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_aniView, 0.5f);
 	result = m_resultView->Init(m_renderer);
 	assert(result);
 
 	m_logView = new cLogView("Output Log");
 	m_logView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_resultView);
-	
+
 	m_camView = new cCameraView("Camera");
-	m_camView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_inputView);
+	m_camView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_aniView);
 
 	m_calibView = new cCalibrationView("Calibration");
 	m_calibView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_analysisView);
@@ -138,8 +145,9 @@ bool cViewer::OnInit()
 	g_root.m_boxView = m_boxView;
 	g_root.m_camView = m_camView;
 	g_root.m_calibView = m_calibView;
+	g_root.m_aniView = m_aniView;
 
-	g_root.InitSensor();
+	g_root.DisconnectSensor();
 
 	m_gui.SetContext();
 
@@ -228,7 +236,7 @@ void cViewer::OnUpdate(const float deltaSeconds)
 	__super::OnUpdate(deltaSeconds);
 	cAutoCam cam(&m_camera);
 	GetMainCamera().Update(deltaSeconds);
-	g_root.Update(deltaSeconds);
+	//g_root.Update(deltaSeconds);
 }
 
 

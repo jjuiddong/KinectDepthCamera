@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "boxview.h"
 #include "filterview.h"
-#include "depthframe.h"
 
 using namespace graphic;
 using namespace framework;
@@ -122,13 +121,13 @@ void cBoxView::RenderBoxVolume3D(graphic::cRenderer &renderer)
 
 
 	// Render Average Box 
-	cFilterView *filterView = ((cViewer*)g_application)->m_filterView;
+	cFilterView *filterView = g_root.m_filterView;
 
 	if (filterView)
 	{
 		for (auto &box : filterView->m_avrContours)
 		{
-			const float distribCnt = (float)box.count / (float)((cViewer*)g_application)->m_filterView->m_calcAverageCount;
+			const float distribCnt = (float)box.count / (float)g_root.m_filterView->m_calcAverageCount;
 			if (distribCnt < 0.5f)
 				continue;
 

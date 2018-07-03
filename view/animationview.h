@@ -1,11 +1,11 @@
 //
-// 2018-03-19, jjuiddong
-// Input View
+// 2018-07-03, jjuiddong
+// 
 //
 #pragma once
 
 
-class cInputView : public framework::cDockWindow
+class cAnimationView : public framework::cDockWindow
 {
 public:
 	struct sFileInfo {
@@ -14,8 +14,8 @@ public:
 		vector<common::StrPath> fileNames; // Only Filename (UTF-8 encoding)
 	};
 
-	cInputView(const string &name);
-	virtual ~cInputView();
+	cAnimationView(const string &name);
+	virtual ~cAnimationView();
 
 	bool Init(graphic::cRenderer &renderer);
 	virtual void OnRender(const float deltaSeconds) override;
@@ -27,21 +27,21 @@ public:
 
 protected:
 	void UpdateFileList();
-	bool OpenFile(const common::StrPath &ansifileName, const size_t camIdx=0);
+	bool OpenFile(const common::StrPath &ansifileName, const size_t camIdx = 0);
 	void UpdateDelayMeasure(const float deltaSeconds);
 	void CalcDelayMeasure();
 	void RenderFileList();
 	__int64 ConvertFileNameToInt64(const common::StrPath &fileName);
 	std::pair<int, int> GetOnlyTwoCameraAnimationIndex(const sFileInfo &finfo1, int aniIdx1
-		, const sFileInfo &finfo2, int aniIdx2, const bool isSkip=false);
+		, const sFileInfo &finfo2, int aniIdx2, const bool isSkip = false);
 
-	
+
 public:
 	struct eState {
-		enum Enum { 
+		enum Enum {
 			DELAY_MEASURE1 // 1000 번 계산해서 평균값을 저장한다.
 			, DELAY_MEASURE2 // 10 번 계산해서 평균값을 저장한다.
-			, NORMAL 
+			, NORMAL
 		};
 	};
 	eState::Enum m_state;
@@ -72,5 +72,4 @@ public:
 	common::StrPath m_selectPath; // UTF-16
 
 	vector<sFileInfo> m_files;
-	//std::thread m_tmpTh;
 };

@@ -1,7 +1,6 @@
 
 #include "stdafx.h"
 #include "inputview.h"
-#include "depthframe.h"
 #include "3dview.h"
 #include "depthview.h"
 #include "depthview2.h"
@@ -10,43 +9,6 @@
 
 using namespace graphic;
 using namespace framework;
-
-//
-//bool g_compressStop = false;
-//int g_compressFileCount = 0;
-//int g_compressFileTotalCount = 0;
-//void CompressThreadFunc(common::StrPath path)
-//{
-//	vector<WStr32> exts;
-//	exts.reserve(16);
-//	exts.push_back(L"ply"); exts.push_back(L"PLY");
-//	exts.push_back(L"pcd"); exts.push_back(L"PCD");
-//	exts.push_back(L"pcd2"); exts.push_back(L"PCD2");
-//
-//	vector<WStrPath> out;
-//	out.reserve(20000);
-//
-//	for (int i = 0; i < 3; ++i)
-//	{
-//		StrPath subPath;
-//		subPath.Format("%s/%d", path.c_str(), i);
-//		common::CollectFiles(exts, subPath.wstr().c_str(), out);
-//	}
-//
-//	g_compressFileTotalCount = out.size();
-//	g_compressFileCount = 0;
-//
-//	for (auto &fileName : out)
-//	{
-//		if (g_compressStop)
-//			break;
-//
-//		cDatReader reader;
-//		reader.Compresse(fileName.GetFullFileName().str().c_str());
-//		++g_compressFileCount;
-//	}	
-//}
-
 
 cInputView::cInputView(const string &name)
 	: framework::cDockWindow(name)
@@ -69,9 +31,6 @@ cInputView::cInputView(const string &name)
 
 cInputView::~cInputView()
 {
-	//g_compressStop = true;
-	//if (m_tmpTh.joinable())
-	//	m_tmpTh.join();
 }
 
 
@@ -137,7 +96,7 @@ void cInputView::OnRender(const float deltaSeconds)
 
 		if (ImGui::Button("Capture Balser Camera"))
 			if (g_root.m_baslerCam.IsReadyCapture())
-				g_root.m_baslerCam.CopyCaptureBuffer(((cViewer*)g_application)->m_3dView->GetRenderer());
+				g_root.m_baslerCam.CopyCaptureBuffer(g_root.m_3dView->GetRenderer());
 
 		if (m_isCaptureContinuos)
 		{
@@ -172,7 +131,7 @@ void cInputView::OnRender(const float deltaSeconds)
 		m_triggerDelayTime += deltaSeconds;
 		if (m_captureTime > 0.1f)
 		{
-			if (g_root.m_baslerCam.CopyCaptureBuffer( ((cViewer*)g_application)->m_3dView->GetRenderer()))
+			if (g_root.m_baslerCam.CopyCaptureBuffer(g_root.m_3dView->GetRenderer()))
 				UpdateDelayMeasure(m_captureTime);
 			else
 				m_measureTime += m_captureTime;
@@ -210,7 +169,7 @@ void cInputView::OnRender(const float deltaSeconds)
 				bool r1 = false;
 				if ((m_aniIndex1 >= 0) && sensor1->m_isShow)
 				{
-					r1 = sensor1->m_buffer.ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
+					r1 = sensor1->m_buffer.ReadDatFile(g_root.m_3dView->GetRenderer()
 						, finfo1.fullFileNames[m_aniIndex1].ansi().c_str());
 					++m_aniIndex1;
 				}
@@ -222,7 +181,7 @@ void cInputView::OnRender(const float deltaSeconds)
 				bool r2 = false;
 				if ((m_aniIndex2 >= 0) && sensor2->m_isShow)
 				{
-					r2 = sensor2->m_buffer.ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
+					r2 = sensor2->m_buffer.ReadDatFile(g_root.m_3dView->GetRenderer()
 					, finfo2.fullFileNames[m_aniIndex2].ansi().c_str());
 				}
 				else
@@ -233,7 +192,7 @@ void cInputView::OnRender(const float deltaSeconds)
 				bool r3 = false;
 				if ((m_aniIndex3 >= 0) && sensor3->m_isShow)
 				{
-					r3 = sensor3->m_buffer.ReadDatFile(((cViewer*)g_application)->m_3dView->GetRenderer()
+					r3 = sensor3->m_buffer.ReadDatFile(g_root.m_3dView->GetRenderer()
 						, finfo3.fullFileNames[m_aniIndex3].ansi().c_str());
 				}
 				else
@@ -334,15 +293,6 @@ void cInputView::RenderFileList()
 	}
 
 	ImGui::Checkbox("AutoSelect File", &m_isAutoSelectFileIndex);
-
-	//ImGui::SameLine();
-	//if (ImGui::Button("Compress"))
-	//{
-	//	StrPath path = g_root.m_inputFilePath.m_str;
-	//	m_tmpTh = std::thread(CompressThreadFunc, path);
-	//}
-	//ImGui::Text("%d / %d", g_compressFileCount, g_compressFileTotalCount);
-
 
 	ImGui::PushID(10);
 	ImGui::InputText("", g_root.m_inputFilePath.m_str, g_root.m_inputFilePath.SIZE);
@@ -455,7 +405,7 @@ void cInputView::UpdateDelayMeasure(const float deltaSeconds)
 		result.type = 2; // snap measure
 		int id = 0;
 
-		cFilterView *filterView = ((cViewer*)g_application)->m_filterView;
+		cFilterView *filterView = g_root.m_filterView;
 		if (g_root.m_boxes.size() == filterView->m_contours.size())
 		{
 			for (u_int i=0; i < filterView->m_contours.size(); ++i)
@@ -528,11 +478,11 @@ void cInputView::CalcDelayMeasure()
 {
 	// 누적된 평균값을 저장한다.
 	g_root.m_boxesStored.clear();
-	cFilterView *filterView = ((cViewer*)g_application)->m_filterView;
+	cFilterView *filterView = g_root.m_filterView;
 	vector<cFilterView::sAvrContour> &avrContours = filterView->m_avrContours;
 	for (u_int i = 0; i < avrContours.size(); ++i)
 	{
-		const float distribCnt = (float)avrContours[i].count / (float)((cViewer*)g_application)->m_filterView->m_calcAverageCount;
+		const float distribCnt = (float)avrContours[i].count / (float)g_root.m_filterView->m_calcAverageCount;
 		if (distribCnt < 0.5f)
 			continue;
 
@@ -803,7 +753,7 @@ bool cInputView::OpenFile(const StrPath &ansifileName
 	if (string(".ply") == ansifileName.GetFileExt())
 	{
 		sensor1->m_buffer.ReadPlyFile(
-			((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
+			g_root.m_3dView->GetRenderer(), ansifileName.c_str());
 
 		g_root.MeasureVolume();
 	}
@@ -811,7 +761,7 @@ bool cInputView::OpenFile(const StrPath &ansifileName
 		|| (string(".pcdz") == ansifileName.GetFileExt()))
 	{
 		sensor1->m_buffer.ReadDatFile(
-			((cViewer*)g_application)->m_3dView->GetRenderer(), ansifileName.c_str());
+			g_root.m_3dView->GetRenderer(), ansifileName.c_str());
 		g_root.MeasureVolume();
 	}
 

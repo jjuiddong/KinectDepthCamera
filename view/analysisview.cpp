@@ -2,7 +2,6 @@
 #include "stdafx.h"
 #include "analysisview.h"
 #include "3dview.h"
-#include "depthframe.h"
 
 using namespace graphic;
 using namespace framework;

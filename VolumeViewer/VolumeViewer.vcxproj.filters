@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="depthframe.cpp" />
+    <ClCompile Include="volumeviewer.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="..\sensor\basler.cpp">
       <Filter>sensor</Filter>
@@ -10,6 +10,9 @@
       <Filter>sensor</Filter>
     </ClCompile>
     <ClCompile Include="..\sensor\calibration.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sensor\clipper.cpp">
       <Filter>sensor</Filter>
     </ClCompile>
     <ClCompile Include="..\sensor\contour.cpp">
@@ -37,9 +40,6 @@
       <Filter>sensor</Filter>
     </ClCompile>
     <ClCompile Include="..\sensor\sensorbuffer.cpp">
-      <Filter>sensor</Filter>
-    </ClCompile>
-    <ClCompile Include="..\sensor\clipper.cpp">
       <Filter>sensor</Filter>
     </ClCompile>
     <ClCompile Include="..\view\3dview.cpp">
@@ -84,10 +84,13 @@
     <ClCompile Include="..\view\root.cpp">
       <Filter>view</Filter>
     </ClCompile>
+    <ClCompile Include="..\view\animationview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="depthframe.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="volumeviewer.h" />
     <ClInclude Include="..\sensor\basler.h">
       <Filter>sensor</Filter>
     </ClInclude>
@@ -95,6 +98,9 @@
       <Filter>sensor</Filter>
     </ClInclude>
     <ClInclude Include="..\sensor\calibration.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\clipper.hpp">
       <Filter>sensor</Filter>
     </ClInclude>
     <ClInclude Include="..\sensor\contour.h">
@@ -131,9 +137,6 @@
       <Filter>sensor</Filter>
     </ClInclude>
     <ClInclude Include="..\sensor\volume.h">
-      <Filter>sensor</Filter>
-    </ClInclude>
-    <ClInclude Include="..\sensor\clipper.hpp">
       <Filter>sensor</Filter>
     </ClInclude>
     <ClInclude Include="..\view\3dview.h">
@@ -178,16 +181,16 @@
     <ClInclude Include="..\view\root.h">
       <Filter>view</Filter>
     </ClInclude>
+    <ClInclude Include="..\view\animationview.h">
+      <Filter>view</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="view">
-      <UniqueIdentifier>{4f40d4cc-aa1e-4510-abee-c57b172295bd}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="external">
-      <UniqueIdentifier>{ba0d210e-57bd-422c-890d-dba270c74e6a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sensor">
-      <UniqueIdentifier>{f3d4b0dd-78ec-4591-89f1-c2f599aa1a18}</UniqueIdentifier>
+      <UniqueIdentifier>{46f1fe48-a474-4d10-ac5b-2f3044daa5da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="view">
+      <UniqueIdentifier>{86914a60-f946-46dd-bcd4-4146e70b2065}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

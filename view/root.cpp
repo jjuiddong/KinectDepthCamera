@@ -5,7 +5,6 @@
 #include <iostream>
 #include <iomanip> 
 #include "3dview.h"
-#include "depthframe.h"
 #include "depthview.h"
 #include "depthview2.h"
 #include "infraredview.h"
@@ -105,6 +104,15 @@ bool cRoot::InitSensor()
 }
 
 
+// 센서를 종료한다.
+bool cRoot::DisconnectSensor()
+{
+	m_kinect.Clear();
+	m_baslerCam.Clear();
+	return true;
+}
+
+
 bool cRoot::KinectCapture()
 {
 	// nothing~ now
@@ -121,7 +129,7 @@ void cRoot::MeasureVolume(
 
 	if (m_isAutoMeasure || isUpdateSensor)
 	{
-		graphic::cRenderer &renderer = ((cViewer*)g_application)->m_3dView->GetRenderer();
+		graphic::cRenderer &renderer = g_root.m_3dView->GetRenderer();
 
 		// 포인트 클라우드에서 높이 분포를 계산한다.
 		// 높이분포를 이용해서 면적분포 메쉬를 생성한다.
@@ -137,10 +145,10 @@ void cRoot::MeasureVolume(
 	}
 
 	// Update FilterView, DepthView, DepthView2
-	((cViewer*)g_application)->m_3dView->Capture3D();
-	((cViewer*)g_application)->m_filterView->Process();
-	((cViewer*)g_application)->m_infraredView->Process(2);
-	((cViewer*)g_application)->m_filterView->CalcBoxVolumeAverage();
+	g_root.m_3dView->Capture3D();
+	g_root.m_filterView->Process();
+	g_root.m_infraredView->Process(2);
+	g_root.m_filterView->CalcBoxVolumeAverage();
 	//((cViewer*)g_application)->m_depthView->Process();
 	//((cViewer*)g_application)->m_depthView2->Process();
 }

@@ -16,7 +16,7 @@ public:
 	virtual ~cBaslerCamera();
 
 	bool Init();
-	bool Capture();
+	bool Capture(graphic::cRenderer &renderer);
 	void Clear();
 	bool IsConnect() const;
 	void setTriggerDelays() {}
@@ -25,7 +25,7 @@ public:
 protected:
 	int BaslerCameraSetup();
 	void setupCamera();
-	void processData(const GrabResult& grabResult);
+	void processData(const GrabResult& grabResult, graphic::cRenderer &renderer);
 
 
 public:
