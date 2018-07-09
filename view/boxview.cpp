@@ -155,7 +155,6 @@ void cBoxView::RenderBoxVolume3D(graphic::cRenderer &renderer)
 			}
 		}
 	}
-
 }
 
 
@@ -171,8 +170,10 @@ void cBoxView::OnRender(const float deltaSeconds)
 	bool isOpen = true;
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 	ImGui::SetNextWindowPos(pos);
-	ImGui::SetNextWindowSize(ImVec2(std::min(m_viewRect.Width(), 500.f), std::max(m_viewRect.Height(), 800.f)));
-	if (ImGui::Begin("Box Volume", &isOpen, ImVec2(std::min(m_viewRect.Width(), 500.f), std::max(m_viewRect.Height(), 800.f)), windowAlpha, flags))
+	ImGui::SetNextWindowSize(ImVec2(std::min(m_viewRect.Width(), 500.f), std::min(m_viewRect.Height(), 800.f)));
+	ImGui::SetNextWindowBgAlpha(windowAlpha);
+	ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
+	if (ImGui::Begin("Box Volume", &isOpen, flags))
 	{
 		if (ImGui::Button("Camera Origin"))
 		{
@@ -207,6 +208,7 @@ void cBoxView::OnRender(const float deltaSeconds)
 
 		ImGui::End();
 	}
+	ImGui::PopStyleColor();
 }
 
 

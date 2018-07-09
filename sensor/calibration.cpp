@@ -47,7 +47,9 @@ cCalibration::sResult cCalibration::CalibrationBasePlane(const common::Vector3 &
 	const sRectf range = sRectf(center.x - minMax.x, center.z + minMax.y,
 		center.x + minMax.x, center.z - minMax.y);
 
-	float offset = 5.f; // 5cm
+	//float offset = 5.f; // 5cm
+	float offset = 2.f; // 2cm
+	const float LIMIT_Y = 5.f;
 	sRectf rects[4] = {
 		sRectf(center.x - minMax.x, center.z + minMax.y
 		, center.x, center.z)
@@ -85,7 +87,7 @@ cCalibration::sResult cCalibration::CalibrationBasePlane(const common::Vector3 &
 				&& (rects[i].top > vtx.z)
 				&& (rects[i].bottom < vtx.z))
 			{
-				if (abs(center.y - vtx.y) < offset)
+				if (abs(center.y - vtx.y) < LIMIT_Y)
 					pts[i].push_back(vtx);
 				break;
 			}
@@ -96,7 +98,7 @@ cCalibration::sResult cCalibration::CalibrationBasePlane(const common::Vector3 &
 	double minSD = FLT_MAX;
 	Plane minPlane;
 	int cnt = 0;
-	while (cnt++ < MAX_BASEPLANE_CALIBRATION)
+	while (cnt++ < MAX_GROUNDPLANE_CALIBRATION)
 	{
 		// 4분할된 영역을 랜덤하게 3 영역을 선택한다.
 		int rectIdAr[] = { 0,1,2,3 };
@@ -124,11 +126,6 @@ cCalibration::sResult cCalibration::CalibrationBasePlane(const common::Vector3 &
 			Quaternion q;
 			q.SetRotationArc(plane.N, Vector3(0, 1, 0));
 			tm *= q.GetMatrix();
-			//Vector3 center = m_volumeCenter * q.GetMatrix();
-			//center.y = 0;
-			//Matrix44 T;
-			//T.SetPosition(Vector3(-center.x, m_plane.D, -center.z));
-			//tm *= T;
 		}
 
 		// 편차를 구하고, 가장 낮은 편차가 될 때까지 반복한다.
@@ -295,17 +292,17 @@ bool cCalibration::CalibrationBasePlane(const vector<sRange> &ranges, OUT sResul
 		Transform tfm;
 		tfm.scale = Vector3(1, 1, 1)*0.1f;
 		Matrix44 tm = tfm.GetMatrix();
-		if (!sensor->m_buffer.m_plane.N.IsEmpty())
+		if (!g_root.m_plane.N.IsEmpty())
 		{
 			Quaternion q;
-			q.SetRotationArc(sensor->m_buffer.m_plane.N, Vector3(0, 1, 0));
+			q.SetRotationArc(g_root.m_plane.N, Vector3(0, 1, 0));
 			tm *= q.GetMatrix();
 
-			Vector3 center = sensor->m_buffer.m_volumeCenter * q.GetMatrix();
+			Vector3 center = g_root.m_volumeCenter * q.GetMatrix();
 			center.y = 0;
 
 			Matrix44 T;
-			T.SetPosition(Vector3(-center.x, sensor->m_buffer.m_plane.D, -center.z));
+			T.SetPosition(Vector3(-center.x, g_root.m_plane.D, -center.z));
 
 			tm *= T;
 		}
@@ -360,7 +357,7 @@ bool cCalibration::CalibrationBasePlane(const vector<sRange> &ranges, OUT sResul
 			if (files.empty())
 				goto error;
 	
-	while (cnt++ < MAX_BASEPLANE_CALIBRATION)
+	while (cnt++ < MAX_GROUNDPLANE_CALIBRATION)
 	{
 		// 각 영역을 랜덤하게 3 영역을 선택한다.
 		for (u_int i = 0; i < ranges.size(); ++i)
@@ -452,6 +449,7 @@ error:
 // rect : x-z plane rect
 //		  left-right, x axis
 //		  top-bottom, z axis
+// center : 기준 높이 y
 // tm : transform matrix
 //
 double cCalibration::CalcHeightStandardDeviation(const vector<Vector3> &vertices
@@ -470,7 +468,7 @@ double cCalibration::CalcHeightStandardDeviation(const vector<Vector3> &vertices
 			&& (rect.top > vtx.z)
 			&& (rect.bottom < vtx.z))
 		{
-			if (abs(vtx.y - center.y) > 10) // 10 cm
+			if (abs(vtx.y - center.y) > 10) // 10 cm, too much over
 				continue;
 
 			const Vector3 p = vtx * tm;
@@ -491,7 +489,7 @@ double cCalibration::CalcHeightStandardDeviation(const vector<Vector3> &vertices
 			&& (rect.top > vtx.z)
 			&& (rect.bottom < vtx.z))
 		{
-			if (abs(vtx.y - center.y) > 10) // 10 cm
+			if (abs(vtx.y - center.y) > 10) // 10 cm, too much over
 				continue;
 
 			const Vector3 p = vtx * tm;

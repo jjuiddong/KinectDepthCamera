@@ -19,12 +19,11 @@ cAnimationView::cAnimationView(const string &name)
 	, m_aniIndex1(-1)
 	, m_aniIndex2(-1)
 	, m_aniIndex3(-1)
-	, m_selFileIdx(-1)
+	, m_selectFileList(0)
 	, m_state(eState::NORMAL)
 	, m_measureTime(0)
 	, m_comboFileIdx(0)
 	, m_aniCameraCount(2)
-	, m_explorerFolderIndex(2)
 	, m_isAutoSelectFileIndex(false)
 {
 }
@@ -112,7 +111,25 @@ void cAnimationView::OnRender(const float deltaSeconds)
 
 			}
 
-			m_aniIndex3++;
+			// Update Animation FileName
+			if (((int)m_files.size() > 0) && (m_files[0].fileNames.size() > (unsigned int)m_aniIndex1))
+			{
+				m_selFileIdx[0] = m_aniIndex1;
+				m_selectPath[0] = m_files[0].fileNames[m_aniIndex1];
+			}
+			if (((int)m_files.size() > 1) && (m_files[1].fileNames.size() > (unsigned int)m_aniIndex2))
+			{
+				m_selFileIdx[1] = m_aniIndex2;
+				m_selectPath[1] = m_files[1].fileNames[m_aniIndex2];
+			}
+			if (((int)m_files.size() > 2) && (m_files[2].fileNames.size() > (unsigned int)m_aniIndex3))
+			{
+				m_selFileIdx[2] = m_aniIndex3;
+				m_selectPath[2] = m_files[2].fileNames[m_aniIndex3];
+			}
+			//
+
+			m_aniIndex3++; // master, select next file 
 			m_aniTime = 0.f;
 			if ((u_int)m_aniIndex3 >= finfo3.fileNames.size())
 			{
@@ -132,7 +149,6 @@ void cAnimationView::OnRender(const float deltaSeconds)
 			{
 				m_aniIndex1 = 0;
 			}
-
 		}
 	}
 
@@ -162,11 +178,32 @@ void cAnimationView::OnRender(const float deltaSeconds)
 		}
 	}
 
-	ImGui::Spacing();
+	ImGui::Separator();
+
+	// Select Files
+	for (u_int i=0; i < m_selectPath.size(); ++i)
+	{
+		auto &fileName = m_selectPath[i];
+		ImGui::Text("Cam%d [%d] = %s", i, m_selFileIdx[i], fileName.c_str());
+	}
+
+	// Animation Index Slider
+	if (m_files.size() >= 3)
+	{
+		if (ImGui::SliderInt("Ani Idx3", &m_aniIndex3, 0, m_files[2].fileNames.size(), NULL))
+		{
+			if (!m_isFileAnimation)
+			{
+				OpenFileFromIndex(2, m_aniIndex3, true);
+			}
+		}
+	}
+
 	ImGui::Separator();
 	ImGui::Spacing();
 
-	RenderFileList();
+	if (!m_isFileAnimation)
+		RenderFileList();
 }
 
 
@@ -174,15 +211,7 @@ void cAnimationView::RenderFileList()
 {
 	if (g_root.m_baslerCam.IsReadyCapture())
 	{
-		ImGui::Text("Folder Select ");
-
-		for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
-		{
-			Str32 text;
-			text.Format("./%d/", sensor->m_id);
-			ImGui::SameLine();
-			ImGui::RadioButton(text.c_str(), &m_explorerFolderIndex, sensor->m_id);
-		}
+		ImGui::Text("File Select ");
 	}
 
 	ImGui::Checkbox("AutoSelect File", &m_isAutoSelectFileIndex);
@@ -204,6 +233,7 @@ void cAnimationView::RenderFileList()
 	for (u_int i=0; i < m_files.size(); ++i)
 	{
 		auto &files = m_files[i];
+		const int selIdx = m_selFileIdx[i];
 
 		ImGui::SetCursorPosX(x + (i*w));
 		ImGui::SetCursorPosY(y);
@@ -223,29 +253,14 @@ void cAnimationView::RenderFileList()
 				auto &fileName = finfo.fileNames[idx];
 
 				const ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick
-					| ((idx == m_selFileIdx) ? ImGuiTreeNodeFlags_Selected : 0);
+					| ((idx == selIdx) ? ImGuiTreeNodeFlags_Selected : 0);
 
 				ImGui::TreeNodeEx((void*)(intptr_t)idx, node_flags | ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
 					fileName.c_str());
 
 				if (ImGui::IsItemClicked() || ImGui::IsItemClicked(1))
 				{
-					m_selFileIdx = idx;
-					common::StrPath ansifileName = finfo.fullFileNames[idx].ansi();// change UTF8 -> UTF16
-					m_selectPath = ansifileName;
-
-					OpenFile(ansifileName, i);
-
-					if (m_isAutoSelectFileIndex)
-					{
-						const int fidx = (i == 2) ? 1 : 2;
-						sFileInfo &finfo2 = m_files[fidx];
-						if (finfo2.fullFileNames.size() > idx)
-						{
-							common::StrPath ansifileName2 = finfo2.fullFileNames[idx].ansi();// change UTF8 -> UTF16
-							OpenFile(ansifileName2, fidx);
-						}
-					}
+					OpenFileFromIndex(i, idx, true);
 				}
 
 				ImGui::NextColumn();
@@ -389,6 +404,8 @@ void cAnimationView::CalcDelayMeasure()
 void cAnimationView::UpdateFileList()
 {
 	m_files.clear();
+	m_selFileIdx.clear();
+	m_selectPath.clear();
 
 	vector<WStr32> exts;
 	exts.reserve(16);
@@ -414,6 +431,8 @@ void cAnimationView::UpdateFileList()
 
 			// 데이타 중복 복사를 피하기위한 꽁수
 			m_files.push_back({});
+			m_selFileIdx.push_back(0);
+			m_selectPath.push_back("");
 			sFileInfo &finfos = m_files.back();
 
 			finfos.fullFileNames.reserve(out.size());
@@ -501,7 +520,6 @@ void cAnimationView::UpdateFileList()
 		m_comboFileStr.m_str[cnt++] = '.';
 		m_comboFileStr.m_str[cnt++] = '.';
 	}
-
 
 	// 2대의 카메라를 애니메이션 한다면, 각 0/1 폴더의 파일을 __int64 값으로 수치화해서 저장한다.
 	// 애니메이션시 값을 비교해 가장 가까운 파일을 서로 연결해 애니메이션 한다.
@@ -594,7 +612,50 @@ __int64 cAnimationView::ConvertFileNameToInt64(const common::StrPath &fileName)
 //}
 
 
+// finfo1, aniIdx1에 해당하는 파일과 매칭되는 파일을 검색한다.
+// 같은 시간대에 저장된 파일을 검색한다. 시간차가 크면 제외
+// finfo1 을 기준으로 검색한다.
+// aniIdx2 : -1 이면, aniIdx1을 중심으로 검색한다. 그렇지 않으면, aniIdx2를 중심으로 검색한다.
+int cAnimationView::SearchMatchFile(const sFileInfo &finfo1, int aniIdx1
+	, const sFileInfo &finfo2, int aniIdx2 )
+{
+	RETV(aniIdx1 < 0, -1);
+	if (aniIdx2 < 0)
+		aniIdx2 = 0;
+	RETV((int)finfo1.ids.size() <= aniIdx1, -1);
+	RETV((int)finfo2.ids.size() <= aniIdx2, -1);
+
+	int oldIdx = -1;
+	while (abs(finfo2.ids[aniIdx2] - finfo1.ids[aniIdx1]) > 60)
+	{
+		int nextIdx = 0;
+		if (finfo1.ids[aniIdx1] > finfo2.ids[aniIdx2])
+		{
+			nextIdx = aniIdx2 + 1;
+		}
+		else
+		{
+			nextIdx = aniIdx2 - 1;
+		}
+
+		if ((int)finfo2.ids.size() <= (unsigned int)aniIdx2)
+			return -1;
+
+		// already check file, Not Exist matching file
+		if (oldIdx == nextIdx)
+			return -1;
+
+		oldIdx = aniIdx2;
+		aniIdx2 = nextIdx;
+	}
+
+	return aniIdx2;
+}
+
+
 // 2개의 카메라 정보가 있는 파일만 애니메이션 한다.
+// 같은 시간대에 저장된 파일을 매칭한다. 시간차가 크면 제외
+// finfo1 : master (기준 인덱스)
 std::pair<int, int> cAnimationView::GetOnlyTwoCameraAnimationIndex(const sFileInfo &finfo1, int aniIdx1
 	, const sFileInfo &finfo2, int aniIdx2
 	, const bool isSkip //= false
@@ -605,6 +666,7 @@ std::pair<int, int> cAnimationView::GetOnlyTwoCameraAnimationIndex(const sFileIn
 	RETV((int)finfo1.ids.size() <= aniIdx1, std::make_pair(-1, -1));
 	RETV((int)finfo2.ids.size() <= aniIdx2, std::make_pair(-1, -1));
 
+	int oldIdx = -1;
 	while (abs(finfo2.ids[aniIdx2] - finfo1.ids[aniIdx1]) > 60)
 	{
 		if (isSkip)
@@ -614,19 +676,33 @@ std::pair<int, int> cAnimationView::GetOnlyTwoCameraAnimationIndex(const sFileIn
 			break;
 		}
 
+		int nextIdx = 0;
 		if (finfo1.ids[aniIdx1] > finfo2.ids[aniIdx2])
 		{
-			++aniIdx2;
+			nextIdx = aniIdx2 + 1;
 		}
 		else
 		{
-			++aniIdx1;
+			nextIdx = aniIdx2 - 1;
 		}
 
 		if ((int)finfo1.ids.size() <= aniIdx1)
 			return { -1,-1 };
 		if ((int)finfo2.ids.size() <= aniIdx2)
 			return { -1,-1 };
+
+		// already check file, Not Exist matching file
+		if (oldIdx == nextIdx)
+		{
+			// move master file to next
+			oldIdx = -1;
+			++aniIdx1;
+		}
+		else
+		{
+			oldIdx = aniIdx2;
+			aniIdx2 = nextIdx;
+		}
 	}
 
 	return { aniIdx1, aniIdx2 };
@@ -661,6 +737,72 @@ bool cAnimationView::OpenFile(const StrPath &ansifileName
 }
 
 
+// Open pcd file, from camera, file index
+bool cAnimationView::OpenFileFromIndex(const size_t camIdx, const int fileIdx
+	, const bool isUpdateIternalValue //= false
+)
+{
+	if (isUpdateIternalValue)
+		m_selectFileList = camIdx;
+
+	if (m_files.size() <= camIdx)
+		return false;
+
+	const sFileInfo &finfo = m_files[camIdx];
+	if (finfo.fullFileNames.size() <= (unsigned int)fileIdx)
+		return false;
+
+	const common::StrPath ansifileName = finfo.fullFileNames[fileIdx].ansi();// change UTF8 -> UTF16
+	OpenFile(ansifileName, camIdx);
+
+	if (isUpdateIternalValue)
+	{
+		m_selFileIdx[camIdx] = fileIdx;
+		m_selectPath[camIdx] = ansifileName;
+	}
+
+	if (m_isAutoSelectFileIndex)
+	{
+		const int camIdx2 = (camIdx == 2) ? 1 : 2;
+		const sFileInfo &finfo2 = m_files[camIdx2];
+		const int fileIdx2 = SearchMatchFile(finfo, fileIdx, finfo2, m_selFileIdx[camIdx2]);
+		if (isUpdateIternalValue)
+			m_selFileIdx[camIdx2] = fileIdx2;
+
+		if (fileIdx2 >= 0)
+		{
+			common::StrPath ansifileName2 = finfo2.fullFileNames[m_selFileIdx[camIdx2]].ansi();// change UTF8 -> UTF16
+			OpenFile(ansifileName2, camIdx2);
+
+			if (isUpdateIternalValue)
+				m_selectPath[camIdx2] = ansifileName2;
+		}
+		else
+		{
+			cSensor *sensor = g_root.m_baslerCam.m_sensors[camIdx2];
+			if (sensor)
+				sensor->m_buffer.m_isLoaded = false;
+
+			if (isUpdateIternalValue)
+				m_selectPath[camIdx2] = "";
+		}
+	}
+
+	return true;
+}
+
+
+// Select Next File from keyboard event
+void cAnimationView::NextFile(const int add)
+{
+	const int i = m_selectFileList;
+	if ((int)m_files.size() <= i)
+		return;
+
+	OpenFileFromIndex(i, m_selFileIdx[i] + add, true);
+}
+
+
 void cAnimationView::OnEventProc(const sf::Event &evt)
 {
 	if (evt.type == sf::Event::KeyReleased)
@@ -668,61 +810,12 @@ void cAnimationView::OnEventProc(const sf::Event &evt)
 		switch (evt.key.code)
 		{
 		case sf::Keyboard::Key::Down:
-		{
-			if ((int)m_files.size() <= m_explorerFolderIndex)
-				break;
-
-			sFileInfo &finfo = m_files[m_explorerFolderIndex];
-
-			++m_selFileIdx;
-			if ((int)finfo.fullFileNames.size() <= m_selFileIdx)
-				m_selFileIdx = (int)finfo.fullFileNames.size() - 1;
-
-			if (m_selFileIdx >= 0)
-				OpenFile(finfo.fullFileNames[m_selFileIdx].ansi(), m_explorerFolderIndex);
-
-			if (m_isAutoSelectFileIndex)
-			{
-				const int fidx = (m_explorerFolderIndex == 2) ? 1 : 2;
-				sFileInfo &finfo2 = m_files[fidx];
-				if ((int)finfo2.fullFileNames.size() > m_selFileIdx)
-				{
-					common::StrPath ansifileName2 = finfo2.fullFileNames[m_selFileIdx].ansi();// change UTF8 -> UTF16
-					OpenFile(ansifileName2, fidx);
-				}
-			}
-		}
-		break;
+			NextFile(1);
+			break;
 
 		case sf::Keyboard::Key::Up:
-		{
-			if ((int)m_files.size() <= m_explorerFolderIndex)
-				break;
-
-			sFileInfo &finfo = m_files[m_explorerFolderIndex];
-
-			if (m_selFileIdx < 0)
-				break;
-
-			--m_selFileIdx;
-			if (m_selFileIdx < 0)
-				m_selFileIdx = finfo.fullFileNames.empty() ? -1 : 0;
-
-			if (m_selFileIdx >= 0)
-				OpenFile(finfo.fullFileNames[m_selFileIdx].ansi(), m_explorerFolderIndex);
-
-			if (m_isAutoSelectFileIndex)
-			{
-				const int fidx = (m_explorerFolderIndex == 2) ? 1 : 2;
-				sFileInfo &finfo2 = m_files[fidx];
-				if ((int)finfo2.fullFileNames.size() > m_selFileIdx)
-				{
-					common::StrPath ansifileName2 = finfo2.fullFileNames[m_selFileIdx].ansi();// change UTF8 -> UTF16
-					OpenFile(ansifileName2, fidx);
-				}
-			}
-		}
-		break;
+			NextFile(-1);
+			break;
 		}
 	}
 }

@@ -25,32 +25,32 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 		g_root.MeasureVolume(true);
 	}
 
-	ImGui::SameLine();
-	if (ImGui::Button("Analysis Depth"))
-	{
-		if (!g_root.m_baslerCam.m_sensors.empty())
-		{
-			cSensor *sensor1 = g_root.m_baslerCam.m_sensors[0];
-			sensor1->m_buffer.AnalysisDepth();
-		}
-	}
+	//ImGui::SameLine();
+	//if (ImGui::Button("Analysis Depth"))
+	//{
+	//	if (!g_root.m_baslerCam.m_sensors.empty())
+	//	{
+	//		cSensor *sensor1 = g_root.m_baslerCam.m_sensors[0];
+	//		sensor1->m_buffer.AnalysisDepth();
+	//	}
+	//}
 
-	ImGui::Spacing();
-	ImGui::Separator();
+	//ImGui::Spacing();
+	//ImGui::Separator();
 	//ImGui::Text("Height Area Count = %d", g_root.m_areaCount);
-	ImGui::Text("Distribute Count = %d", g_root.m_distribCount);
+	//ImGui::Text("Distribute Count = %d", g_root.m_distribCount);
+	//ImGui::Spacing();
+	//ImGui::Spacing();
 
-	ImGui::Spacing();
-	ImGui::Spacing();
+	ImGui::PushItemWidth(m_rect.Width()-70);
 
 	// Height Distribute 
 	{
 		ImGui::Text("Height Distribute");
 		static int range1 = ARRAYSIZE(g_root.m_hDistrib);
 		static int scroll1 = 0;
-		ImGui::PlotLines("Height Distribute", &g_root.m_hDistrib[scroll1]
-			, range1
-			, 0, "", 0, 3000, ImVec2(0, 100));
+		ImGui::PlotLines2("Height Distribute", &g_root.m_hDistrib[scroll1]
+			, range1, 0, scroll1, "", 0, 3000, ImVec2(0, 200));
 
 		if (ImGui::SliderInt("Range", &range1, 100, ARRAYSIZE(g_root.m_hDistrib)))
 			scroll1 = 0;
@@ -65,15 +65,13 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 		ImGui::Text("Height Distribute2");
 		static int range = ARRAYSIZE(g_root.m_hDistrib2);
 		static int scroll = 0;
-		ImGui::PlotLines("Height Distribute2", &g_root.m_hDistrib2[scroll]
-			, range
-			, 0, "", 0, 1, ImVec2(0, 100));
+		ImGui::PlotLines2("Height Distribute2", &g_root.m_hDistrib2[scroll]
+			, range, 0, scroll, "", 0, 1, ImVec2(0, 200));
 
 		if (ImGui::SliderInt("Range2", &range, 100, ARRAYSIZE(g_root.m_hDistrib2)))
 			scroll = 0;
 		ImGui::SliderInt("Scroll2", &scroll, 0, ARRAYSIZE(g_root.m_hDistrib2) - range);
 	}
-
 
 	ImGui::Spacing();
 	ImGui::Spacing();
@@ -85,24 +83,25 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 		if (!g_root.m_baslerCam.m_sensors.empty())
 		{
 			cSensor *sensor1 = g_root.m_baslerCam.m_sensors[0];
-			ImGui::PlotLines("Height Different Average", sensor1->m_buffer.m_diffAvrs.values
+			ImGui::PlotLines2("Height Different Average", sensor1->m_buffer.m_diffAvrs.values
 				, sensor1->m_buffer.m_diffAvrs.size
-				, sensor1->m_buffer.m_diffAvrs.idx, "", 0, .5f, ImVec2(0, 100));
+				, sensor1->m_buffer.m_diffAvrs.idx, 0, "", 0, .5f, ImVec2(0, 200));
 		}
 	}
 
 
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
-	for (int i = 0; i < g_root.m_areaFloorCnt; ++i)
-	{
-		cRoot::sAreaFloor *area = g_root.m_areaBuff[i];
-		ImGui::Text("Area-%d", i + 1);
-		ImGui::Text("AreaSize : %d", area->areaCnt);
-		ImGui::PlotLines("Area ", area->areaGraph.values
-			, ARRAYSIZE(area->areaGraph.values)
-			, area->areaGraph.idx, "", 0, 2000, ImVec2(0, 100));
-	}
+	//ImGui::Spacing();
+	//ImGui::Separator();
+	//ImGui::Spacing();
+	//for (int i = 0; i < g_root.m_areaFloorCnt; ++i)
+	//{
+	//	cRoot::sAreaFloor *area = g_root.m_areaBuff[i];
+	//	ImGui::Text("Area-%d", i + 1);
+	//	ImGui::Text("AreaSize : %d", area->areaCnt);
+	//	ImGui::PlotLines("Area ", area->areaGraph.values
+	//		, ARRAYSIZE(area->areaGraph.values)
+	//		, area->areaGraph.idx, "", 0, 2000, ImVec2(0, 100));
+	//}
 
+	ImGui::PopItemWidth();
 }

@@ -27,6 +27,7 @@ public:
 	bool ReadPlyFile(graphic::cRenderer &renderer, const string &fileName);
 	bool ReadDatFile(graphic::cRenderer &renderer, const string &fileName);
 	bool ReadDatFile(graphic::cRenderer &renderer, const cDatReader &reader);
+	void Zeros(graphic::cRenderer &renderer);
 
 	void Render(graphic::cRenderer &renderer
 		, const char *techniqName = "Unlit"
@@ -42,13 +43,14 @@ public:
 	void GeneratePlane(common::Vector3 pos[3]);
 	void ChangeSpace(graphic::cRenderer &renderer);
 	void MeasureVolume(graphic::cRenderer &renderer);
-	bool UpdatePointCloudItBySelf(graphic::cRenderer &renderer);
+	bool UpdatePointCloudBySelf(graphic::cRenderer &renderer);
 	bool UpdatePointCloudAllConfig(graphic::cRenderer &renderer);
 	void AnalysisDepth();
 	void Clear();
 
 
 protected:
+	void InitBuffer(graphic::cRenderer &renderer);
 	bool UpdatePointCloud(graphic::cRenderer &renderer
 		, const vector<common::Vector3> &vertices
 		, const vector<unsigned short> &intensity
@@ -72,12 +74,10 @@ public:
 	bool m_mergeOffset; // 높이에 따른 오프셋 변화처리 (Right 카메라만 적용)
 
 	vector<common::Vector3> m_srcVertices; // source vertices, (balser source vertices)
-	vector<common::Vector3> m_vertices; // change space, (perspectiv projection vertex), no apply offset
+	vector<common::Vector3> m_vertices; // change space vertices, (perspectiv projection vertex), no apply offset
 	vector<USHORT> m_intensity;
 	vector<USHORT> m_confidence;
-	common::Plane m_plane;
 	common::Plane m_planeSub;
-	common::Vector3 m_volumeCenter;
 	graphic::cVertexBuffer m_vtxBuff;
 	common::Transform m_offset;
 	graphic::cShader11 m_shader;

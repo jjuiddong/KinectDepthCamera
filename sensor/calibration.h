@@ -41,7 +41,7 @@ protected:
 
 public:
 	enum {
-		MAX_BASEPLANE_CALIBRATION = 1000
+		MAX_GROUNDPLANE_CALIBRATION = 1000
 	};
 
 	sResult m_result;

@@ -15,6 +15,9 @@ public:
 
 
 protected:
+	double CalcBasePlaneStandardDeviation(const size_t camIdx = 0);
+
+
+public:
 	bool m_isCalc;
-	cCalibration::sResult m_result;
 };

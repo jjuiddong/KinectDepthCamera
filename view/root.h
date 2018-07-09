@@ -49,6 +49,9 @@ public:
 	void Update(const float deltaSeconds);
 	bool KinectCapture();
 	void MeasureVolume(const bool isUpdateSensor=false);
+	bool LoadPlane();
+	bool SavePlane();
+	void GeneratePlane(common::Vector3 pos[3]);
 	void Clear();
 
 
@@ -61,9 +64,6 @@ public:
 	int m_measureId; // 측정 버튼을 누를때 마다 1씩 증가
 
 	cv::Mat m_projMap; // change space, (orthogonal projection map)
-	common::Transform m_cameraOffset[3]; // camera1 offset
-	common::Plane m_planeSub[3];
-
 	common::cTimer m_timer;
 	
 	// Update Every Time
@@ -117,6 +117,19 @@ public:
 	bool m_isPalete;
 	bool m_isGrabLog;
 	bool m_isCalcHorz;
+
+	// Ground Calibration
+	common::Plane m_plane;
+	common::Plane m_planeSub[3];
+	common::Vector3 m_volumeCenter;
+	common::Transform m_cameraOffset[3];
+	float m_cameraOffsetYAngle[3];
+
+	cCalibration m_calib;
+	common::Vector3 m_rangeCenter;
+	common::Vector2 m_rangeMinMax;
+	double m_planeStandardDeviation;
+	bool m_isContinuousCalibrationPlane; // calibration 된 정보를 평균화해서 출력한다.
 
 	// Config
 	common::StrPath m_inputFilePath;

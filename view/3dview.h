@@ -57,19 +57,11 @@ public:
 	common::Vector3 m_planePos[3];
 
 	graphic::cDbgSphere m_sphere;
-	graphic::cGridLine m_planeGrid;
+	graphic::cGridLine m_sensorPlaneGrid;
 	graphic::cDbgLine m_volumeCenterLine;
 	graphic::cDbgLine m_boxLine;
 	common::Vector3 m_pickPos;
 	
-	// base plane calibration
-	cCalibration m_calib;
-	common::Vector3 m_rangeCenter;
-	common::Vector2 m_rangeMinMax;
-	double m_planeStandardDeviation;
-	bool m_isContinuousCalibrationPlane;
-
-
 	// MouseMove Variable
 	POINT m_viewPos;
 	common::sRectf m_viewRect; // detect mouse event area

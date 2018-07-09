@@ -75,38 +75,38 @@ bool cViewer::OnInit()
 	bool result = m_3dView->Init(m_renderer);
 	assert(result);
 
-	m_aniView = new cAnimationView("Animation View");
-	m_aniView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_3dView, 0.4f);
-	result = m_aniView->Init(m_renderer);
-	assert(result);
+	m_analysisView = new cAnalysisView("Analysis View");
+	m_analysisView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_3dView, 0.5f);
 
 	m_inputView = new cInputView("Input View");
-	m_inputView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_aniView);
+	m_inputView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_analysisView);
 	result = m_inputView->Init(m_renderer);
 	assert(result);
 
+	m_aniView = new cAnimationView("Animation View");
+	m_aniView->Create(eDockState::DOCKWINDOW, eDockSlot::BOTTOM, this, m_3dView, 0.5f);
+	result = m_aniView->Init(m_renderer);
+	assert(result);
+
 	m_infraredView = new cInfraredView("Infrared View");
-	m_infraredView->Create(eDockState::DOCKWINDOW, eDockSlot::BOTTOM, this, m_3dView, 0.36f);
+	m_infraredView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_aniView, 0.5f);
 	result = m_infraredView->Init(m_renderer);
 	assert(result);
 
 	m_depthView = new cDepthView("Depth View");
-	m_depthView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_infraredView);
+	m_depthView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_aniView);
 	result = m_depthView->Init(m_renderer);
 	assert(result);
 
 	m_depthView2 = new cDepthView2("Depth2 View");
-	m_depthView2->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_infraredView);
+	m_depthView2->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_aniView);
 	result = m_depthView2->Init(m_renderer);
 	assert(result);
 
 	m_colorView = new cColorView("Color View");
-	m_colorView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_infraredView);
+	m_colorView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_aniView);
 	result = m_colorView->Init(m_renderer);
 	assert(result);
-
-	m_analysisView = new cAnalysisView("Analysis View");
-	m_analysisView->Create(eDockState::DOCKWINDOW, eDockSlot::RIGHT, this, m_infraredView, 0.6f);
 
 	m_boxView = new cBoxView("Box View");
 	m_boxView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_3dView);
@@ -119,7 +119,7 @@ bool cViewer::OnInit()
 	assert(result);
 
 	m_resultView = new cResultView("Result");
-	m_resultView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_aniView, 0.5f);
+	m_resultView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_analysisView, 0.5f);
 	result = m_resultView->Init(m_renderer);
 	assert(result);
 
@@ -127,10 +127,10 @@ bool cViewer::OnInit()
 	m_logView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_resultView);
 
 	m_camView = new cCameraView("Camera");
-	m_camView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_aniView);
+	m_camView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_analysisView);
 
 	m_calibView = new cCalibrationView("Calibration");
-	m_calibView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_analysisView);
+	m_calibView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_aniView);
 
 	g_root.m_3dView = m_3dView;
 	g_root.m_colorView = m_colorView;
@@ -181,6 +181,8 @@ bool cViewer::OnInit()
 	float rounding = frameRounding;
 
 	ImGuiStyle& style = ImGui::GetStyle();
+	//style.FrameBorderSize = 0.f;
+	//style.ChildBorderSize = 0.f;
 	style.FrameRounding = rounding;
 	style.WindowRounding = rounding;
 	style.Colors[ImGuiCol_Text] = ImVec4(col_text.x, col_text.y, col_text.z, 1.00f);
@@ -188,6 +190,7 @@ bool cViewer::OnInit()
 	style.Colors[ImGuiCol_WindowBg] = ImVec4(col_back.x, col_back.y, col_back.z, 0.80f);
 	style.Colors[ImGuiCol_ChildWindowBg] = ImVec4(col_area.x, col_area.y, col_area.z, 1.00f);
 	style.Colors[ImGuiCol_PopupBg] = ImVec4(col_area.x, col_area.y, col_area.z, 1.00f);
+	//style.Colors[ImGuiCol_Border] = ImVec4(col_text.x, col_text.y, col_text.z, 0.30f);
 	style.Colors[ImGuiCol_Border] = ImVec4(col_text.x, col_text.y, col_text.z, 0.30f);
 	style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
 	style.Colors[ImGuiCol_FrameBg] = ImVec4(col_back.x, col_back.y, col_back.z, 1.00f);
@@ -201,7 +204,7 @@ bool cViewer::OnInit()
 	style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(col_main.x, col_main.y, col_main.z, 0.31f);
 	style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(col_main.x, col_main.y, col_main.z, 0.78f);
 	style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(col_main.x, col_main.y, col_main.z, 1.00f);
-	style.Colors[ImGuiCol_ComboBg] = ImVec4(col_area.x, col_area.y, col_area.z, 1.00f);
+	//style.Colors[ImGuiCol_ComboBg] = ImVec4(col_area.x, col_area.y, col_area.z, 1.00f);
 	style.Colors[ImGuiCol_CheckMark] = ImVec4(col_text.x, col_text.y, col_text.z, 0.80f);
 	style.Colors[ImGuiCol_SliderGrab] = ImVec4(col_main.x, col_main.y, col_main.z, 0.54f);
 	style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(col_main.x, col_main.y, col_main.z, 1.00f);
@@ -217,9 +220,9 @@ bool cViewer::OnInit()
 	style.Colors[ImGuiCol_ResizeGrip] = ImVec4(col_main.x, col_main.y, col_main.z, 0.20f);
 	style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(col_main.x, col_main.y, col_main.z, 0.78f);
 	style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(col_main.x, col_main.y, col_main.z, 1.00f);
-	style.Colors[ImGuiCol_CloseButton] = ImVec4(col_text.x, col_text.y, col_text.z, 0.16f);
-	style.Colors[ImGuiCol_CloseButtonHovered] = ImVec4(col_text.x, col_text.y, col_text.z, 0.39f);
-	style.Colors[ImGuiCol_CloseButtonActive] = ImVec4(col_text.x, col_text.y, col_text.z, 1.00f);
+	//style.Colors[ImGuiCol_CloseButton] = ImVec4(col_text.x, col_text.y, col_text.z, 0.16f);
+	//style.Colors[ImGuiCol_CloseButtonHovered] = ImVec4(col_text.x, col_text.y, col_text.z, 0.39f);
+	//style.Colors[ImGuiCol_CloseButtonActive] = ImVec4(col_text.x, col_text.y, col_text.z, 1.00f);
 	style.Colors[ImGuiCol_PlotLines] = ImVec4(col_text.x, col_text.y, col_text.z, 0.63f);
 	style.Colors[ImGuiCol_PlotLinesHovered] = ImVec4(col_main.x, col_main.y, col_main.z, 1.00f);
 	style.Colors[ImGuiCol_PlotHistogram] = ImVec4(col_text.x, col_text.y, col_text.z, 0.63f);

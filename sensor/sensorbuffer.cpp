@@ -8,7 +8,7 @@ using namespace graphic;
 cSensorBuffer::cSensorBuffer()
 	: m_width(0)
 	, m_height(0)
-	, m_plane(Vector3(0, 0, 0), 0)
+	//, m_plane(Vector3(0, 0, 0), 0)
 	, m_isLoaded(false)
 	, m_time(0)
 	, m_frameId(0)
@@ -158,12 +158,27 @@ bool cSensorBuffer::ReadDatFile(graphic::cRenderer &renderer, const cDatReader &
 }
 
 
-// Update, verext buffer, intensity buffer, confidence buffer
-bool cSensorBuffer::UpdatePointCloud(cRenderer &renderer
-	, const vector<Vector3> &vertices
-	, const vector<unsigned short> &intensity
-	, const vector<unsigned short> &confidence
-)
+// initialize buffer data to Zero
+void cSensorBuffer::Zeros(graphic::cRenderer &renderer)
+{
+	InitBuffer(renderer);
+	
+	for (auto &vtx : m_srcVertices)
+		vtx = Vector3(0, 0, 0);
+	for (auto &vtx : m_vertices)
+		vtx = Vector3(0, 0, 0);
+
+	if (sVertex *dst = (sVertex*)m_vtxBuff.Lock(renderer))
+	{
+		for (int i = 0; i < m_height; ++i)
+			for (int k = 0; k < m_width; ++k)
+				dst++->p = Vector3(0,0,0);
+		m_vtxBuff.Unlock(renderer);
+	}
+}
+
+
+void cSensorBuffer::InitBuffer(graphic::cRenderer &renderer)
 {
 	const int w = g_baslerDepthWidth;
 	const int h = g_baslerDepthHeight;
@@ -178,6 +193,17 @@ bool cSensorBuffer::UpdatePointCloud(cRenderer &renderer
 		m_vtxBuff.Clear();
 		m_vtxBuff.Create(renderer, w * h, sizeof(sVertex), D3D11_USAGE_DYNAMIC);
 	}
+}
+
+
+// Update, verext buffer, intensity buffer, confidence buffer
+bool cSensorBuffer::UpdatePointCloud(cRenderer &renderer
+	, const vector<Vector3> &vertices
+	, const vector<unsigned short> &intensity
+	, const vector<unsigned short> &confidence
+)
+{
+	InitBuffer(renderer);
 
 	m_srcVertices = vertices;
 
@@ -185,7 +211,7 @@ bool cSensorBuffer::UpdatePointCloud(cRenderer &renderer
 	memcpy(&m_confidence[0], &confidence[0], confidence.size() * sizeof(confidence[0]));
 
 	UpdatePointCloudAllConfig(renderer);
-	UpdatePointCloudItBySelf(renderer);
+	UpdatePointCloudBySelf(renderer);
 
 	for (u_int i = (u_int)m_pointCloudCount; i < m_vertices.size(); ++i)
 		m_vertices[i] = Vector3(0, 0, 0);
@@ -194,7 +220,7 @@ bool cSensorBuffer::UpdatePointCloud(cRenderer &renderer
 }
 
 
-bool cSensorBuffer::UpdatePointCloudItBySelf(graphic::cRenderer &renderer)
+bool cSensorBuffer::UpdatePointCloudBySelf(graphic::cRenderer &renderer)
 {
 	// Update Point Cloud
 	m_pointCloudCount = 0;
@@ -253,17 +279,17 @@ bool cSensorBuffer::UpdatePointCloudAllConfig(graphic::cRenderer &renderer)
 	Matrix44 tm = tfm.GetMatrix();
 
 	// plane calculation
-	if (!m_plane.N.IsEmpty())
+	if (!g_root.m_plane.N.IsEmpty())
 	{
 		Quaternion q;
-		q.SetRotationArc(m_plane.N, Vector3(0, 1, 0));
+		q.SetRotationArc(g_root.m_plane.N, Vector3(0, 1, 0));
 		tm *= q.GetMatrix();
 
-		Vector3 center = m_volumeCenter * q.GetMatrix();
+		Vector3 center = g_root.m_volumeCenter * q.GetMatrix();
 		center.y = 0;
 
 		Matrix44 T;
-		T.SetPosition(Vector3(-center.x, m_plane.D, -center.z));
+		T.SetPosition(Vector3(-center.x, g_root.m_plane.D, -center.z));
 
 		tm *= T;
 	}
@@ -272,6 +298,11 @@ bool cSensorBuffer::UpdatePointCloudAllConfig(graphic::cRenderer &renderer)
 		Quaternion q;
 		q.SetRotationArc(m_planeSub.N, Vector3(0, 1, 0));
 		tm *= q.GetMatrix();
+
+		Matrix44 T;
+		T.SetPosition(Vector3(0, m_planeSub.D, 0));
+
+		tm *= T;
 	}
 
 	tm *= m_offset.GetMatrix();
@@ -420,69 +451,21 @@ Vector3 cSensorBuffer::PickVertex(const Ray &ray)
 }
 
 
-void cSensorBuffer::GeneratePlane(common::Vector3 pos[3])
-{
-
-	Matrix44 tm;
-	if (m_plane.N.IsEmpty())
-	{
-		Plane plane(pos[0], pos[1], pos[2]);
-		m_plane = plane;
-	}
-	else
-	{
-		// old plane
-		{
-			Quaternion q;
-			q.SetRotationArc(m_plane.N, Vector3(0, 1, 0));
-			tm *= q.GetMatrix();
-			Matrix44 T;
-			T.SetPosition(Vector3(0, m_plane.D, 0));
-			tm *= T;
-		}
-
-		tm.Inverse2();
-
-		common::Vector3 p[3];
-		p[0] = pos[0] * tm;
-		p[1] = pos[1] * tm;
-		p[2] = pos[2] * tm;
-		Plane plane(p[0], p[1], p[2]);
-
-
-		// new plane
-		//{
-		//	Quaternion q;
-		//	q.SetRotationArc(plane.N, Vector3(0, 1, 0));
-		//	tm *= q.GetMatrix();
-		//	//Matrix44 T;
-		//	//T.SetPosition(Vector3(0, plane.D, 0));
-		//	//tm *= T;
-		//}
-		//Vector3 N = Vector3(0, 1, 0) * tm.Inverse();
-		//Plane p(N.Normal(), 0);
-		m_plane = plane;
-
-	}
-	//m_plane = plane;
-}
-
-
 // sensor plane, volume center space change
 void cSensorBuffer::ChangeSpace(cRenderer &renderer)
 {
 	Quaternion q;
-	q.SetRotationArc(m_plane.N, Vector3(0, 1, 0));
+	q.SetRotationArc(g_root.m_plane.N, Vector3(0, 1, 0));
 	const Matrix44 tm = q.GetMatrix();
 
-	Vector3 center = m_volumeCenter * tm;
+	Vector3 center = g_root.m_volumeCenter * tm;
 	center.y = 0;
 
 	for (u_int i = 0; i < m_vertices.size(); ++i)
 	{
 		Vector3 pos = m_vertices[i];
 		m_vertices[i] = pos * tm;
-		m_vertices[i].y += m_plane.D;
+		m_vertices[i].y += g_root.m_plane.D;
 		m_vertices[i].x -= center.x;
 		m_vertices[i].z -= center.z;
 	}

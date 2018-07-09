@@ -28,12 +28,16 @@ public:
 protected:
 	void UpdateFileList();
 	bool OpenFile(const common::StrPath &ansifileName, const size_t camIdx = 0);
+	bool OpenFileFromIndex(const size_t camIdx, const int fileIdx, const bool isUpdateIternalValue = false);
 	void UpdateDelayMeasure(const float deltaSeconds);
 	void CalcDelayMeasure();
 	void RenderFileList();
 	__int64 ConvertFileNameToInt64(const common::StrPath &fileName);
 	std::pair<int, int> GetOnlyTwoCameraAnimationIndex(const sFileInfo &finfo1, int aniIdx1
 		, const sFileInfo &finfo2, int aniIdx2, const bool isSkip = false);
+	int SearchMatchFile(const sFileInfo &finfo1, int aniIdx1
+		, const sFileInfo &finfo2, int aniIdx2);
+	void NextFile(const int add);
 
 
 public:
@@ -55,9 +59,7 @@ public:
 	int m_aniIndex2;
 	int m_aniIndex3;
 	float m_aniTime;
-	int m_selFileIdx;
 	int m_aniCameraCount; // + 1
-	int m_explorerFolderIndex; //0, 1, 2 (camera 1,2,3), default:2
 	bool m_isAutoSelectFileIndex;
 
 	// Delay Measure (minimum difference error buffer)
@@ -69,7 +71,9 @@ public:
 	int m_filePages;
 	int m_comboFileIdx;
 	common::Str256 m_comboFileStr;
-	common::StrPath m_selectPath; // UTF-16
+	int m_selectFileList;
+	vector<int> m_selFileIdx;
+	vector<common::StrPath> m_selectPath; // UTF-16
 
 	vector<sFileInfo> m_files;
 };

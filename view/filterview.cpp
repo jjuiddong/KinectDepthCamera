@@ -37,7 +37,9 @@ void cFilterView::OnRender(const float deltaSeconds)
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 	ImGui::SetNextWindowPos(pos);
 	ImGui::SetNextWindowSize(ImVec2(std::min(m_rect.Width() - 15.f, 800.f), m_rect.Height()));
-	if (ImGui::Begin("FilterView Info", &isOpen, ImVec2(std::min(m_rect.Width() - 15.f, 800.f), m_rect.Height()), windowAlpha, flags))
+	ImGui::SetNextWindowBgAlpha(windowAlpha);
+	ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
+	if (ImGui::Begin("FilterView Info", &isOpen, flags))
 	{
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -52,9 +54,9 @@ void cFilterView::OnRender(const float deltaSeconds)
 			ImGui::Spacing();
 			ImGui::Separator();
 		}
-
 		ImGui::End();
 	}
+	ImGui::PopStyleColor();
 }
 
 

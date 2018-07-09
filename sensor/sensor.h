@@ -1,7 +1,7 @@
 //
 // 2018-05-19, jjuiddong
 // Basler Depth Sensor
-//
+//	- multithread grab depth buffer
 //
 #pragma once
 

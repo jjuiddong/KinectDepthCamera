@@ -19,11 +19,8 @@ c3DView::c3DView(const string &name)
 	, m_state(eState::NORMAL)
 	, m_showPointCloud(true)
 	, m_showBoxAreaPointCloud(true)
-	, m_planeStandardDeviation(0)
 	, m_showBoxVolume(false)
 	, m_isUpdateOrthogonalProjection(true)
-	, m_rangeMinMax(50,50)
-	, m_isContinuousCalibrationPlane(false)
 {
 }
 
@@ -56,7 +53,7 @@ bool c3DView::Init(cRenderer &renderer)
 		, true, true);
 
 	m_ground.Create(renderer, 100, 100, 10, 10);
-	m_planeGrid.Create(renderer, 100, 100, 10, 10);
+	m_sensorPlaneGrid.Create(renderer, 100, 100, 10, 10);
 	m_sphere.Create(renderer, 1, 10, 10, cColor::WHITE);
 	m_volumeCenterLine.Create(renderer);
 	m_boxLine.Create(renderer);
@@ -98,7 +95,7 @@ void c3DView::OnPreRender(const float deltaSeconds)
 			m_ground.Render(renderer);
 
 		if (m_isGenPlane && m_showSensorPlane)
-			m_planeGrid.Render(renderer);
+			m_sensorPlaneGrid.Render(renderer);
 
 		if (m_isGenVolumeCenter)
 			m_volumeCenterLine.Render(renderer);
@@ -149,19 +146,21 @@ void c3DView::OnPreRender(const float deltaSeconds)
 
 		if (eState::RANGE2 == m_state)
 		{
+			const Vector2 &minMax = g_root.m_rangeMinMax;
+			const Vector3 &center = g_root.m_rangeCenter;
 			const Vector3 offset[4] = {
-				Vector3(-m_rangeMinMax.x, -m_rangeCenter.y, -m_rangeMinMax.y) // left-top
-				, Vector3(m_rangeMinMax.x, -m_rangeCenter.y, -m_rangeMinMax.y) // right-top
-				, Vector3(m_rangeMinMax.x, -m_rangeCenter.y, m_rangeMinMax.y) // right-bottom
-				, Vector3(-m_rangeMinMax.x, -m_rangeCenter.y, m_rangeMinMax.y) // left-bottom
+				Vector3(-minMax.x, -center.y, -minMax.y) // left-top
+				, Vector3(minMax.x, -center.y, -minMax.y) // right-top
+				, Vector3(minMax.x, -center.y, minMax.y) // right-bottom
+				, Vector3(-minMax.x, -center.y, minMax.y) // left-bottom
 			};
 
 			// render vertical range line
 			renderer.m_dbgLine.SetColor(cColor::RED);
 			for (int i=0; i < 4; ++i)
 			{
-				const Vector3 p0 = m_rangeCenter + offset[i];
-				const Vector3 p1 = p0 + Vector3(0, m_rangeCenter.y, 0);
+				const Vector3 p0 = center + offset[i];
+				const Vector3 p1 = p0 + Vector3(0, center.y, 0);
 				renderer.m_dbgLine.SetLine(p0, p1, 1.f);
 				renderer.m_dbgLine.Render(renderer);
 			}
@@ -171,20 +170,20 @@ void c3DView::OnPreRender(const float deltaSeconds)
 			for (int i = 0; i < 4; ++i)
 			{
 				const int next = (i + 1) % 4;
-				const Vector3 p0 = m_rangeCenter + offset[i] + Vector3(0, m_rangeCenter.y,0);
-				const Vector3 p1 = m_rangeCenter + offset[next] + Vector3(0, m_rangeCenter.y, 0);
+				const Vector3 p0 = center + offset[i] + Vector3(0, center.y,0);
+				const Vector3 p1 = center + offset[next] + Vector3(0, center.y, 0);
 				renderer.m_dbgLine.SetLine(p0, p1, 1.f);
 				renderer.m_dbgLine.Render(renderer);
 			}
 
 			// render plane normals
 			renderer.m_dbgLine.SetColor(cColor::BLUE);
-			if (m_isContinuousCalibrationPlane)
+			if (g_root.m_isContinuousCalibrationPlane)
 			{
-				for (auto &plane : m_calib.m_planes)
+				for (auto &plane : g_root.m_calib.m_planes)
 				{
-					const Vector3 p0 = m_rangeCenter;
-					const Vector3 p1 = m_rangeCenter + plane.N * 30.f;
+					const Vector3 p0 = center;
+					const Vector3 p1 = center + plane.N * 30.f;
 					renderer.m_dbgLine.SetLine(p0, p1, 0.3f);
 					renderer.m_dbgLine.Render(renderer);
 				}
@@ -311,10 +310,15 @@ void c3DView::OnRender(const float deltaSeconds)
 	// HUD
 	const float windowAlpha = 0.0f;
 	bool isOpen = true;
-	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
+	ImGuiWindowFlags flags = 
+		ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize
+		| ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 	ImGui::SetNextWindowPos(pos);
-	ImGui::SetNextWindowSize(ImVec2(std::min(m_viewRect.Width(), 800.f), std::min(m_viewRect.Height(), 800.f)));
-	if (ImGui::Begin("Information", &isOpen, ImVec2(m_viewRect.Width(), std::min(m_viewRect.Height(), 800.f)), windowAlpha, flags))
+	ImGui::SetNextWindowSize(ImVec2(std::min(m_viewRect.Width(), 800.f)
+		, std::min(m_viewRect.Height(), 800.f)));
+	ImGui::SetNextWindowBgAlpha(windowAlpha);
+	ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0,0,0,0));
+	if (ImGui::Begin("Information", &isOpen, flags))
 	{
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
@@ -373,64 +377,22 @@ void c3DView::OnRender(const float deltaSeconds)
 		ImGui::SameLine();
 		if (ImGui::Button("Save Plane"))
 		{
-			cSensor *sensor1 = g_root.m_baslerCam.m_sensors.empty()? NULL : g_root.m_baslerCam.m_sensors[0];
-
-			if (m_isGenPlane && sensor1)
-			{
-				g_root.m_config.SetValue("plane-x", sensor1->m_buffer.m_plane.N.x);
-				g_root.m_config.SetValue("plane-y", sensor1->m_buffer.m_plane.N.y);
-				g_root.m_config.SetValue("plane-z", sensor1->m_buffer.m_plane.N.z);
-				g_root.m_config.SetValue("plane-d", sensor1->m_buffer.m_plane.D);
-			}
-
-			if (m_isGenVolumeCenter && sensor1)
-			{
-				g_root.m_config.SetValue("center-x", sensor1->m_buffer.m_volumeCenter.x);
-				g_root.m_config.SetValue("center-y", sensor1->m_buffer.m_volumeCenter.y);
-				g_root.m_config.SetValue("center-z", sensor1->m_buffer.m_volumeCenter.z);
-			}
-
-			if (g_root.m_config.Write("config_depthframe.txt"))
-			{
-				// ok
-			}
+			g_root.SavePlane();
 		}
 
 		ImGui::SameLine();
 		if (ImGui::Button("Load Plane"))
 		{
-			common::cConfig config;
-			if (config.Read("config_depthframe.txt"))
+			if (g_root.LoadPlane())
 			{
-				if (config.GetString("plane-x", "none") != "none")
-				{
-					m_isGenPlane = true;
-					for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
-					{
-						sensor->m_buffer.m_plane.N.x = config.GetFloat("plane-x");
-						sensor->m_buffer.m_plane.N.y = config.GetFloat("plane-y");
-						sensor->m_buffer.m_plane.N.z = config.GetFloat("plane-z");
-						sensor->m_buffer.m_plane.D = config.GetFloat("plane-d");
-					}
-				}
-
-				if (config.GetString("center-x", "none") != "none")
-				{
-					m_isGenVolumeCenter = true;
-					for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
-					{
-						sensor->m_buffer.m_volumeCenter.x = config.GetFloat("center-x");
-						sensor->m_buffer.m_volumeCenter.y = config.GetFloat("center-y");
-						sensor->m_buffer.m_volumeCenter.z = config.GetFloat("center-z");
-					}
-				}
+				m_isGenPlane = true;
+				m_isGenVolumeCenter = true;
 			}
 
-			//g_root.MeasureVolume();
 			for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
 			{
 				sensor->m_buffer.UpdatePointCloudAllConfig(GetRenderer());
-				sensor->m_buffer.UpdatePointCloudItBySelf(GetRenderer());
+				sensor->m_buffer.UpdatePointCloudBySelf(GetRenderer());
 			}
 		}
 
@@ -449,125 +411,16 @@ void c3DView::OnRender(const float deltaSeconds)
 		cSensor *sensor1 = g_root.m_baslerCam.m_sensors.empty() ? NULL : g_root.m_baslerCam.m_sensors[0];
 		if (sensor1)
 		{
-			const Vector3 &volumeCenter = sensor1->m_buffer.m_volumeCenter;
-			ImGui::Text("volume center = %f, %f, %f", volumeCenter.x, volumeCenter.y, volumeCenter.z);
+			//const Vector3 &volumeCenter = g_root.m_volumeCenter;
+			//ImGui::Text("volume center = %f, %f, %f", volumeCenter.x, volumeCenter.y, volumeCenter.z);
 
 			if (ImGui::Button("Change Space"))
-			{
 				sensor1->m_buffer.ChangeSpace(GetRenderer());
-			}
-		}
-
-
-		if (ImGui::Button("Standard Deviation"))
-		{
-			m_planeStandardDeviation = CalcBasePlaneStandardDeviation();
-		}
-
-		if (m_planeStandardDeviation != 0)
-		{
-			ImGui::Text("Standard Deviation = %f", m_planeStandardDeviation);
-		}
-
-		if (ImGui::Button("BasePlane Calibration"))
-		{
-			m_state = eState::RANGE;
-		}
-
-		if (eState::RANGE2 == m_state)
-		{
-			ImGui::DragFloat3("Range Center", (float*)&m_rangeCenter, 0.01f);
-			ImGui::DragFloat2("MinMax", (float*)&m_rangeMinMax, 0.1f);
-			ImGui::Checkbox("Continuous Calibration", &m_isContinuousCalibrationPlane);
-
-			if (ImGui::Button("Calibration"))
-			{
-				cSensor *selSensor = NULL;
-				for (auto sensor : g_root.m_baslerCam.m_sensors)
-				{
-					if (sensor->m_isEnable && sensor->m_isShow 
-						&& sensor->m_buffer.m_isLoaded )
-					{
-						selSensor = sensor;
-						break;
-					}
-				}
-
-				if (selSensor)
-				{
-					m_calib.CalibrationBasePlane(m_rangeCenter, m_rangeMinMax, selSensor);
-
-					dbg::Logp("calib plane xyzd, %f, %f, %f, %f\n"
-						, m_calib.m_result.plane.N.x, m_calib.m_result.plane.N.y, m_calib.m_result.plane.N.z, m_calib.m_result.plane.D);
-				}
-			}
-
-			ImGui::Text("current sd = %f", m_calib.m_result.curSD);
-			ImGui::Text("calibration sd = %f", m_calib.m_result.minSD);
-			ImGui::Text("plane x=%f, y=%f, z=%f, d=%f"
-				, m_calib.m_result.plane.N.x, m_calib.m_result.plane.N.y, m_calib.m_result.plane.N.z, m_calib.m_result.plane.D);
-
-			if (m_isContinuousCalibrationPlane)
-				ImGui::Text("avr plane x=%f, y=%f, z=%f, d=%f"
-					, m_calib.m_avrPlane.N.x, m_calib.m_avrPlane.N.y, m_calib.m_avrPlane.N.z, m_calib.m_avrPlane.D);
-
-			if (ImGui::Button("Clear Base Plane Calibration"))
-			{
-				dbg::Logp("Clear Base Plane Calibration \n");
-				m_calib.Clear();
-			}
-
 		}
 
 		ImGui::End();
 	}
-}
-
-
-// 바닥의 표준편차를 구한다.
-double c3DView::CalcBasePlaneStandardDeviation(const size_t camIdx //=0
-)
-{
-	if (camIdx >= g_root.m_baslerCam.m_sensors.size())
-		return 0.f;
-
-	cSensor *sensor1 = g_root.m_baslerCam.m_sensors[camIdx];
-
-	const float xLimitLower = -40.f;
-	const float xLimitUpper = 45.f;
-	const float zLimitLower = -42.5f;
-	const float zLimitUpper = 42.5f;
-
-	// 높이 평균 구하기
-	int k = 0;
-	double avr = 0;
-	for (auto &vtx : sensor1->m_buffer.m_vertices)
-	{
-		if ((xLimitLower < vtx.x)
-			&& (xLimitUpper > vtx.x)
-			&& (zLimitLower < vtx.z)
-			&& (zLimitUpper > vtx.z))
-		{
-			avr = CalcAverage(++k, avr, vtx.y);
-		}
-	}
-
-	// 표준 편차 구하기
-	k = 0;
-	double sd = 0;
-	for (auto &vtx : sensor1->m_buffer.m_vertices)
-	{
-		if ((xLimitLower < vtx.x)
-			&& (xLimitUpper > vtx.x)
-			&& (zLimitLower < vtx.z)
-			&& (zLimitUpper > vtx.z))
-		{
-			sd = CalcAverage(++k, sd, (vtx.y - avr) * (vtx.y - avr));
-		}
-	}
-	sd = sqrt(sd);
-
-	return sd;
+	ImGui::PopStyleColor();
 }
 
 
@@ -719,11 +572,11 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 				
 				Quaternion q;
 				q.SetRotationArc(Vector3(0, 1, 0), plane.N);
-				m_planeGrid.m_transform.rot = q;
-				m_planeGrid.m_transform.pos = Vector3(0, 0, 0);
-				m_planeGrid.m_transform.pos = plane.N * -plane.D;
+				m_sensorPlaneGrid.m_transform.rot = q;
+				m_sensorPlaneGrid.m_transform.pos = Vector3(0, 0, 0);
+				m_sensorPlaneGrid.m_transform.pos = plane.N * -plane.D;
 
-				curSensor->m_buffer.GeneratePlane(m_planePos);
+				g_root.GeneratePlane(m_planePos);
 			}
 		}
 
@@ -740,10 +593,10 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 		if (eState::VCENTER == m_state)
 		{
 			const Vector3 vtxPos = curSensor->m_buffer.PickVertex(ray);
-			curSensor->m_buffer.m_volumeCenter = vtxPos;
+			g_root.m_volumeCenter = vtxPos;
 			m_isGenVolumeCenter = true;
 
-			const Plane &plane = curSensor->m_buffer.m_plane;
+			const Plane &plane = g_root.m_plane;
 			const float d = plane.Distance(vtxPos) * 10.f;
 			m_volumeCenterLine.SetLine(vtxPos + plane.N*d, vtxPos - plane.N*d, 0.1f);
 			
@@ -754,7 +607,7 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 		if (eState::RANGE == m_state)
 		{
 			const Vector3 vtxPos = curSensor->m_buffer.PickVertex(ray);
-			m_rangeCenter = vtxPos;
+			g_root.m_rangeCenter = vtxPos;
 			m_sphere.SetPos(vtxPos);
 			m_state = eState::RANGE2;
 		}
