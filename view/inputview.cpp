@@ -4,7 +4,6 @@
 #include "3dview.h"
 #include "depthview.h"
 #include "depthview2.h"
-#include "filterview.h"
 
 
 using namespace graphic;
@@ -385,7 +384,7 @@ void cInputView::UpdateDelayMeasure(const float deltaSeconds)
 	}
 	else if (eState::DELAY_MEASURE2 == m_state)
 	{
-		if (m_measureCount > 10)
+		if (m_measureCount > 20)
 		{
 			CalcDelayMeasure();
 			isUpdateVolumeCalc = false; // already show
@@ -401,17 +400,17 @@ void cInputView::UpdateDelayMeasure(const float deltaSeconds)
 
 		// 측정값을 db에 저장한다.
 		sMeasureResult result;
-		result.id = g_root.m_measureId;
+		result.id = g_root.m_measure.m_measureId;
 		result.type = 2; // snap measure
 		int id = 0;
 
-		cFilterView *filterView = g_root.m_filterView;
-		if (g_root.m_boxes.size() == filterView->m_contours.size())
+		cMeasure &measure = g_root.m_measure;
+		if (g_root.m_measure.m_boxes.size() == measure.m_contours.size())
 		{
-			for (u_int i=0; i < filterView->m_contours.size(); ++i)
+			for (u_int i=0; i < measure.m_contours.size(); ++i)
 			{
-				auto &contour = filterView->m_contours[i];
-				auto &box = g_root.m_boxes[i];
+				auto &contour = measure.m_contours[i];
+				auto &box = g_root.m_measure.m_boxes[i];
 
 				const float l1 = std::max(box.volume.x, box.volume.z);
 				const float l2 = std::min(box.volume.x, box.volume.z);
@@ -433,8 +432,10 @@ void cInputView::UpdateDelayMeasure(const float deltaSeconds)
 
 		if (!result.volumes.empty())
 		{
+
 			m_measureCount++;
 			g_root.m_dbClient.Insert(result);
+			g_root.m_measure.m_results.push_back(result);
 		}
 	}
 }
@@ -447,7 +448,7 @@ void cInputView::DelayMeasure()
 	m_state = eState::DELAY_MEASURE1;
 	m_measureTime = 0;
 	m_measureCount = 0;
-	g_root.m_boxesStored.clear();
+	g_root.m_measure.m_boxesStored.clear();
 }
 
 
@@ -458,7 +459,7 @@ void cInputView::DelayMeasure10()
 	m_state = eState::DELAY_MEASURE2;
 	m_measureTime = 0;
 	m_measureCount = 0;
-	g_root.m_boxesStored.clear();
+	g_root.m_measure.m_boxesStored.clear();
 }
 
 
@@ -469,7 +470,7 @@ void cInputView::CancelDelayMeasure()
 	m_state = eState::NORMAL;
 	m_measureTime = 0;
 	m_measureCount = 0;
-	g_root.m_boxesStored.clear();
+	g_root.m_measure.m_boxesStored.clear();
 }
 
 
@@ -477,20 +478,176 @@ void cInputView::CancelDelayMeasure()
 void cInputView::CalcDelayMeasure()
 {
 	// 누적된 평균값을 저장한다.
-	g_root.m_boxesStored.clear();
-	cFilterView *filterView = g_root.m_filterView;
-	vector<cFilterView::sAvrContour> &avrContours = filterView->m_avrContours;
+	g_root.m_measure.m_boxesStored.clear();
+	vector<sAvrContour> &avrContours = g_root.m_measure.m_avrContours;
 	for (u_int i = 0; i < avrContours.size(); ++i)
 	{
-		const float distribCnt = (float)avrContours[i].count / (float)g_root.m_filterView->m_calcAverageCount;
+		// 인식된 횟수가 적으면, 무시한다.
+		const float distribCnt = (float)avrContours[i].count / (float)g_root.m_measure.m_calcAverageCount;
 		if (distribCnt < 0.5f)
 			continue;
 
 		auto &box = avrContours[i].result;
-		g_root.m_boxesStored.push_back(box);
+		g_root.m_measure.m_boxesStored.push_back(box);
 	}
+	//
+
+	CalcDelayMeasureRefine();
 
 	m_state = eState::NORMAL;
+}
+
+
+// 전체 저장된 측정치에서 평균, 표준편차를 구한 후,
+// 표준편차에서 멀어진 측정치는 제외한 평균값을 구해서 결과를 낸다.
+void cInputView::CalcDelayMeasureRefine()
+{
+	// Calc Average
+	vector<sMeasureVolume> avrVolumes;
+	for (auto &result : g_root.m_measure.m_results)
+	{
+		for (u_int i = 0; i < result.volumes.size(); ++i)
+		{
+			if (avrVolumes.size() <= i)
+			{
+				sMeasureVolume vol;
+				vol.id = i;
+				vol.horz = 0.f;
+				vol.vert = 0.f;
+				vol.height = 0.f;
+				vol.volume = 0.f;
+				vol.vw = 0.f;
+				vol.pointCount = 0;
+				avrVolumes.push_back(vol);
+			}
+
+			sMeasureVolume &vol = result.volumes[i];
+			sMeasureVolume &avr = avrVolumes[i];
+			avr.horz += vol.horz;
+			avr.vert += vol.vert;
+			avr.height += vol.height;
+			avr.vw += vol.vw;
+			avr.pointCount++;
+		}
+	}
+
+	for (auto &avr : avrVolumes)
+	{
+		avr.horz /= (float)avr.pointCount;
+		avr.vert /= (float)avr.pointCount;
+		avr.height /= (float)avr.pointCount;
+		avr.vw /= (float)avr.pointCount;
+	}
+
+	//------------------------------------------------------
+	// Calc Standard Deviation
+	vector<sMeasureVolume> sdVolumes;
+	for (auto &result : g_root.m_measure.m_results)
+	{
+		for (u_int i = 0; i < result.volumes.size(); ++i)
+		{
+			if (sdVolumes.size() <= i)
+			{
+				sMeasureVolume vol;
+				vol.id = i;
+				vol.horz = 0.f;
+				vol.vert = 0.f;
+				vol.height = 0.f;
+				vol.volume = 0.f;
+				vol.vw = 0.f;
+				vol.pointCount = 0;
+				sdVolumes.push_back(vol);
+			}
+
+			const sMeasureVolume &vol = result.volumes[i];
+			const sMeasureVolume &avr = avrVolumes[i];
+			sMeasureVolume &sd = sdVolumes[i];
+
+			sd.horz += (vol.horz - avr.horz) * (vol.horz - avr.horz);
+			sd.vert += (vol.vert - avr.vert) * (vol.vert - avr.vert);
+			sd.height += (vol.height - avr.height) * (vol.height - avr.height);
+			sd.vw += (vol.vw - avr.vw) * (vol.vw - avr.vw);
+			sd.pointCount++;
+		}
+	}
+
+	for (auto &sd : sdVolumes)
+	{
+		if (sd.pointCount > 1)
+		{
+			sd.horz = sqrt(sd.horz / (float)(sd.pointCount - 1));
+			sd.vert = sqrt(sd.vert / (float)(sd.pointCount - 1));
+			sd.height = sqrt(sd.height / (float)(sd.pointCount - 1));
+			sd.vw = sqrt(sd.vw / (float)(sd.pointCount - 1));
+		}
+	}
+
+
+	//-------------------------------------------------------------
+	// 표준편차에서 벗어난 데이타를 제외하고 다시 구한다.
+	vector<sMeasureVolume> finalVolumes;
+	for (auto &result : g_root.m_measure.m_results)
+	{
+		for (u_int i = 0; i < result.volumes.size(); ++i)
+		{
+			if (finalVolumes.size() <= i)
+			{
+				sMeasureVolume vol;
+				vol.id = i;
+				vol.horz = 0.f;
+				vol.vert = 0.f;
+				vol.height = 0.f;
+				vol.volume = 0.f;
+				vol.vw = 0.f;
+				vol.pointCount = 0;
+				finalVolumes.push_back(vol);
+			}
+
+			const sMeasureVolume &vol = result.volumes[i];
+			const sMeasureVolume &avr = avrVolumes[i];
+			const sMeasureVolume &sd = sdVolumes[i];
+			sMeasureVolume &fin = finalVolumes[i];
+
+			if ((abs(vol.horz - avr.horz) < sd.horz)
+				&& (abs(vol.vert - avr.vert) < sd.vert)
+				&& (abs(vol.height - avr.height) < sd.height)
+				)
+			{
+				fin.horz += vol.horz;
+				fin.vert += vol.vert;
+				fin.height += vol.height;
+				fin.vw += vol.vw;
+				fin.pointCount++;
+			}
+		}
+	}
+
+	for (auto &fin : finalVolumes)
+	{
+		fin.horz /= (float)fin.pointCount;
+		fin.vert /= (float)fin.pointCount;
+		fin.height /= (float)fin.pointCount;
+		fin.vw /= (float)fin.pointCount;
+	}
+
+	vector<sAvrContour> &avrContours = g_root.m_measure.m_avrContours;
+	for (u_int i = 0; i < finalVolumes.size(); ++i)
+	{
+		// 인식된 횟수가 적으면, 무시한다.
+		const float distribCnt = (float)finalVolumes[i].pointCount / (float)g_root.m_measure.m_calcAverageCount;
+		if (distribCnt < 0.5f)
+			continue;
+
+		if (g_root.m_measure.m_boxesStored.size() <= i)
+			continue;
+
+		const auto &fin = finalVolumes[i];
+		auto &box = g_root.m_measure.m_boxesStored[i];
+		box.minVolume = fin.vw * 6000.f;
+		box.maxVolume = fin.vw * 6000.f;
+		box.volume = Vector3(fin.vert, fin.horz, fin.height);
+	}
+
 }
 
 

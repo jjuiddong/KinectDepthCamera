@@ -84,6 +84,9 @@
     <ClCompile Include="..\view\root.cpp">
       <Filter>view</Filter>
     </ClCompile>
+    <ClCompile Include="..\sensor\measure.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="depthframe.h" />
@@ -177,6 +180,9 @@
     </ClInclude>
     <ClInclude Include="..\view\root.h">
       <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\measure.h">
+      <Filter>sensor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

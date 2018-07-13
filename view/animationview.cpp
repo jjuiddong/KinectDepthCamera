@@ -4,7 +4,6 @@
 #include "3dview.h"
 #include "depthview.h"
 #include "depthview2.h"
-#include "filterview.h"
 
 
 using namespace graphic;
@@ -308,17 +307,17 @@ void cAnimationView::UpdateDelayMeasure(const float deltaSeconds)
 
 		// 측정값을 db에 저장한다.
 		sMeasureResult result;
-		result.id = g_root.m_measureId;
+		result.id = g_root.m_measure.m_measureId;
 		result.type = 2; // snap measure
 		int id = 0;
 
-		cFilterView *filterView = g_root.m_filterView;
-		if (g_root.m_boxes.size() == filterView->m_contours.size())
+		cMeasure &measure = g_root.m_measure;
+		if (g_root.m_measure.m_boxes.size() == measure.m_contours.size())
 		{
-			for (u_int i = 0; i < filterView->m_contours.size(); ++i)
+			for (u_int i = 0; i < measure.m_contours.size(); ++i)
 			{
-				auto &contour = filterView->m_contours[i];
-				auto &box = g_root.m_boxes[i];
+				auto &contour = measure.m_contours[i];
+				auto &box = g_root.m_measure.m_boxes[i];
 
 				const float l1 = std::max(box.volume.x, box.volume.z);
 				const float l2 = std::min(box.volume.x, box.volume.z);
@@ -354,7 +353,7 @@ void cAnimationView::DelayMeasure()
 	m_state = eState::DELAY_MEASURE1;
 	m_measureTime = 0;
 	m_measureCount = 0;
-	g_root.m_boxesStored.clear();
+	g_root.m_measure.m_boxesStored.clear();
 }
 
 
@@ -365,7 +364,7 @@ void cAnimationView::DelayMeasure10()
 	m_state = eState::DELAY_MEASURE2;
 	m_measureTime = 0;
 	m_measureCount = 0;
-	g_root.m_boxesStored.clear();
+	g_root.m_measure.m_boxesStored.clear();
 }
 
 
@@ -376,7 +375,7 @@ void cAnimationView::CancelDelayMeasure()
 	m_state = eState::NORMAL;
 	m_measureTime = 0;
 	m_measureCount = 0;
-	g_root.m_boxesStored.clear();
+	g_root.m_measure.m_boxesStored.clear();
 }
 
 
@@ -384,17 +383,16 @@ void cAnimationView::CancelDelayMeasure()
 void cAnimationView::CalcDelayMeasure()
 {
 	// 누적된 평균값을 저장한다.
-	g_root.m_boxesStored.clear();
-	cFilterView *filterView = g_root.m_filterView;
-	vector<cFilterView::sAvrContour> &avrContours = filterView->m_avrContours;
+	g_root.m_measure.m_boxesStored.clear();
+	vector<sAvrContour> &avrContours = g_root.m_measure.m_avrContours;
 	for (u_int i = 0; i < avrContours.size(); ++i)
 	{
-		const float distribCnt = (float)avrContours[i].count / (float)g_root.m_filterView->m_calcAverageCount;
+		const float distribCnt = (float)avrContours[i].count / (float)g_root.m_measure.m_calcAverageCount;
 		if (distribCnt < 0.5f)
 			continue;
 
 		auto &box = avrContours[i].result;
-		g_root.m_boxesStored.push_back(box);
+		g_root.m_measure.m_boxesStored.push_back(box);
 	}
 
 	m_state = eState::NORMAL;

@@ -22,7 +22,7 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 
 	if (ImGui::Button("Volume Measure"))
 	{
-		g_root.MeasureVolume(true);
+		g_root.MeasureVolume();
 	}
 
 	//ImGui::SameLine();
@@ -47,14 +47,14 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 	// Height Distribute 
 	{
 		ImGui::Text("Height Distribute");
-		static int range1 = ARRAYSIZE(g_root.m_hDistrib);
+		static int range1 = ARRAYSIZE(g_root.m_measure.m_hDistrib);
 		static int scroll1 = 0;
-		ImGui::PlotLines2("Height Distribute", &g_root.m_hDistrib[scroll1]
+		ImGui::PlotLines2("Height Distribute", &g_root.m_measure.m_hDistrib[scroll1]
 			, range1, 0, scroll1, "", 0, 3000, ImVec2(0, 200));
 
-		if (ImGui::SliderInt("Range", &range1, 100, ARRAYSIZE(g_root.m_hDistrib)))
+		if (ImGui::SliderInt("Range", &range1, 100, ARRAYSIZE(g_root.m_measure.m_hDistrib)))
 			scroll1 = 0;
-		ImGui::SliderInt("Scroll", &scroll1, 0, ARRAYSIZE(g_root.m_hDistrib) - range1);
+		ImGui::SliderInt("Scroll", &scroll1, 0, ARRAYSIZE(g_root.m_measure.m_hDistrib) - range1);
 	}
 
 	ImGui::Spacing();
@@ -63,14 +63,30 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 	// Height Distribute2
 	{
 		ImGui::Text("Height Distribute2");
-		static int range = ARRAYSIZE(g_root.m_hDistrib2);
+		static int range = ARRAYSIZE(g_root.m_measure.m_hDistrib2);
 		static int scroll = 0;
-		ImGui::PlotLines2("Height Distribute2", &g_root.m_hDistrib2[scroll]
+		ImGui::PlotLines2("Height Distribute2", &g_root.m_measure.m_hDistrib2[scroll]
 			, range, 0, scroll, "", 0, 1, ImVec2(0, 200));
 
-		if (ImGui::SliderInt("Range2", &range, 100, ARRAYSIZE(g_root.m_hDistrib2)))
+		if (ImGui::SliderInt("Range2", &range, 100, ARRAYSIZE(g_root.m_measure.m_hDistrib2)))
 			scroll = 0;
-		ImGui::SliderInt("Scroll2", &scroll, 0, ARRAYSIZE(g_root.m_hDistrib2) - range);
+		ImGui::SliderInt("Scroll2", &scroll, 0, ARRAYSIZE(g_root.m_measure.m_hDistrib2) - range);
+	}
+
+	ImGui::Spacing();
+	ImGui::Spacing();
+
+	// Volume Distribute
+	{
+		ImGui::Text("Volume Distribute");
+		static int range = ARRAYSIZE(g_root.m_measure.m_volDistrib);
+		static int scroll = 0;
+		ImGui::PlotLines2("Volume Distribute", &g_root.m_measure.m_volDistrib[scroll]
+			, range, 0, scroll, "", 0, 100, ImVec2(0, 200));
+
+		if (ImGui::SliderInt("Range3", &range, 100, ARRAYSIZE(g_root.m_measure.m_volDistrib)))
+			scroll = 0;
+		ImGui::SliderInt("Scroll3", &scroll, 0, ARRAYSIZE(g_root.m_measure.m_volDistrib) - range);
 	}
 
 	ImGui::Spacing();

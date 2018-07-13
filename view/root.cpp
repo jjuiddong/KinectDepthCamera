@@ -13,10 +13,7 @@
 using namespace common;
 
 cRoot::cRoot()
-	: m_distribCount(0)
-	, m_areaCount(0)
-	, m_areaFloorCnt(0)
-	, m_input(eInputType::BASLER)
+	: m_input(eInputType::BASLER)
 	, m_isAutoSaveCapture(false)
 	, m_isTryConnectBasler(true)
 	, m_isAutoMeasure(false)
@@ -25,22 +22,19 @@ cRoot::cRoot()
 	, m_baslerCam(true)
 	, m_isGrabLog(false)
 	, m_isRangeCulling(false)
-	, m_cullRangeMin(-200,-200,-200)
+	, m_cullRangeMin(-200, -200, -200)
 	, m_cullRangeMax(200, 200, 200)
-	, m_measureId(0)
 	, m_isCalcHorz(false)
-	, m_plane(Vector3(0,1,0),0)
-	, m_volumeCenter(0,0,0)
+	, m_plane(Vector3(0, 1, 0), 0)
+	, m_volumeCenter(0, 0, 0)
 	, m_rangeMinMax(50, 50)
 	, m_isContinuousCalibrationPlane(false)
 	, m_planeStandardDeviation(0)
-
+	, m_configFileName("config_depthframe.txt")
+	, m_isShowBox(true)
+	, m_isShowBoxCandidate(true)
+	, m_isShowBoxVertex(true)
 {
-	ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
-	ZeroMemory(&m_hDistrib2, sizeof(m_hDistrib2));
-	ZeroMemory(&m_hDistribDifferential, sizeof(m_hDistribDifferential));
-	m_projMap = cv::Mat((int)g_capture3DHeight, (int)g_capture3DWidth, CV_32FC1);
-
 	// Camera Offset Setting, Korean Air Cargo
 	//m_cameraOffset[0].pos = Vector3(-59.740f, 4.170f, -75.420f);
 	//m_cameraOffset[0].rot.SetRotationY(-0.02f);
@@ -65,7 +59,7 @@ cRoot::~cRoot()
 
 bool cRoot::Create()
 {
-	if (m_config.Read("config_depthframe.txt"))
+	if (m_config.Read(m_configFileName.c_str()))
 	{
 		m_isConnectKinect = m_config.GetBool("kinect_connect", true);
 		m_isTryConnectBasler = m_config.GetBool("basler_connect", true);
@@ -129,34 +123,13 @@ bool cRoot::KinectCapture()
 
 
 // camIdx 카메라가 인식한 영상으로 볼륨 측정한다.
-void cRoot::MeasureVolume(
-	const bool isUpdateSensor //=false
-)
+void cRoot::MeasureVolume()
 {
-	m_areaFloorCnt = 0;
-
-	if (m_isAutoMeasure || isUpdateSensor)
-	{
-		graphic::cRenderer &renderer = g_root.m_3dView->GetRenderer();
-
-		// 포인트 클라우드에서 높이 분포를 계산한다.
-		// 높이분포를 이용해서 면적분포 메쉬를 생성한다.
-		// 높이 별로 포인트 클라우드를 생성한다.
-		cSensor *sensor = NULL;
-		for (auto s : m_baslerCam.m_sensors)
-		{
-			if (s->IsEnable() && s->m_isShow)
-				sensor = s;
-		}
-		if (sensor)
-			sensor->m_buffer.MeasureVolume(renderer);
-	}
-
-	// Update FilterView, DepthView, DepthView2
+	// 순서 중요!!
 	g_root.m_3dView->Capture3D();
+	g_root.m_measure.MeasureVolume();
 	g_root.m_filterView->Process();
-	g_root.m_infraredView->Process(2);
-	g_root.m_filterView->CalcBoxVolumeAverage();
+	g_root.m_infraredView->Process(0);
 	//((cViewer*)g_application)->m_depthView->Process();
 	//((cViewer*)g_application)->m_depthView2->Process();
 }
@@ -171,7 +144,7 @@ void cRoot::Update(const float deltaSeconds)
 // Calibration에 관련된 변수들을 파일에 읽어온다.
 bool cRoot::LoadPlane()
 {
-	if (!m_config.Read("config_depthframe.txt"))
+	if (!m_config.Read(m_configFileName.c_str()))
 		return false;
 
 	if (m_config.GetString("plane-x", "none") != "none")
@@ -200,7 +173,7 @@ bool cRoot::LoadPlane()
 		m_cameraOffset[i].pos.y = m_config.GetFloat(id.c_str(), 0);
 		id.Format("camera-offset%d-z", i);
 		m_cameraOffset[i].pos.z = m_config.GetFloat(id.c_str(), 0);
-		id.Format("camera-offset-angle", i);
+		id.Format("camera-offset%d-angle", i);
 		m_cameraOffsetYAngle[i] = m_config.GetFloat(id.c_str(), 0);
 		m_cameraOffset[i].rot.SetRotationY( m_cameraOffsetYAngle[i] );
 
@@ -256,7 +229,7 @@ bool cRoot::SavePlane()
 			m_config.SetValue(id.c_str(), m_cameraOffset[i].pos.y);
 			id.Format("camera-offset%d-z", i);
 			m_config.SetValue(id.c_str(), m_cameraOffset[i].pos.z);
-			id.Format("camera-offset-angle", i);
+			id.Format("camera-offset%d-angle", i);
 			m_config.SetValue(id.c_str(), m_cameraOffsetYAngle[i]);
 		}
 
@@ -273,7 +246,7 @@ bool cRoot::SavePlane()
 		}
 	}
 
-	return m_config.Write("config_depthframe.txt");
+	return m_config.Write(m_configFileName.c_str());
 }
 
 
@@ -324,12 +297,7 @@ void cRoot::GeneratePlane(common::Vector3 pos[3])
 
 void cRoot::Clear()
 {
-	for (auto p : m_areaBuff)
-	{
-		delete p->vtxBuff;
-		delete p;
-	}
-	m_areaBuff.clear();
+	m_measure.Clear();
 
 	m_kinect.Clear();
 	m_baslerCam.Clear();
@@ -337,5 +305,5 @@ void cRoot::Clear()
 	m_config.SetValue("kinect_connect", m_isConnectKinect);
 	m_config.SetValue("basler_connect", m_isTryConnectBasler);
 	m_config.SetValue("inputfilepath", m_inputFilePath.c_str());
-	m_config.Write("config_depthframe.txt");
+	m_config.Write(m_configFileName.c_str());
 }

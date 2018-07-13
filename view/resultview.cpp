@@ -33,7 +33,7 @@ void cResultView::OnRender(const float deltaSeconds)
 	const ImVec2 pos = ImGui::GetCursorPos();
 	ImGui::PushFont(m_owner->m_fontBig);
 
-	const bool isSecondColumn = !g_root.m_boxesStored.empty();
+	const bool isSecondColumn = !g_root.m_measure.m_boxesStored.empty();
 	const float w = isSecondColumn? (m_rect.Width() / 2.f) - 5 : 0;
 
 	ImGui::PushStyleVar(ImGuiStyleVar_ChildWindowRounding, 5.0f);
@@ -42,26 +42,29 @@ void cResultView::OnRender(const float deltaSeconds)
 	static bool isMeasureVolume = false;
 	if (ImGui::Button(u8"측정(100)"))
 	{
-		++g_root.m_measureId;
+		++g_root.m_measure.m_measureId;
 		isMeasureVolume = true;
 		g_root.m_inputView->DelayMeasure();
-		g_root.m_filterView->ClearBoxVolumeAverage();
+		//g_root.m_filterView->ClearBoxVolumeAverage();
+		g_root.m_measure.ClearBoxVolumeAverage();
 	}
 
 	ImGui::SameLine();
 	if (ImGui::Button(u8"측정(10)"))
 	{
-		++g_root.m_measureId;
+		++g_root.m_measure.m_measureId;
 		isMeasureVolume = true;
 		g_root.m_inputView->DelayMeasure10();
-		g_root.m_filterView->ClearBoxVolumeAverage();
+		//g_root.m_filterView->ClearBoxVolumeAverage();
+		g_root.m_measure.ClearBoxVolumeAverage();
 	}
 
 	if (ImGui::Button(u8"취소"))
 	{
 		isMeasureVolume = false;
 		g_root.m_inputView->CancelDelayMeasure();
-		g_root.m_filterView->ClearBoxVolumeAverage();
+		//g_root.m_filterView->ClearBoxVolumeAverage();
+		g_root.m_measure.ClearBoxVolumeAverage();
 	}
 
 	ImGui::SameLine();
@@ -72,12 +75,13 @@ void cResultView::OnRender(const float deltaSeconds)
 	ImGui::Separator();
 	ImGui::Spacing();
 
-	vector<cFilterView::sAvrContour> &avrContours = g_root.m_filterView->m_avrContours;
+//	vector<cFilterView::sAvrContour> &avrContours = g_root.m_filterView->m_avrContours;
+	vector<sAvrContour> &avrContours = g_root.m_measure.m_avrContours;
 	for (u_int i = 0; i < avrContours.size(); ++i)
 	{
 		auto &box = avrContours[i].result;
 
-		const float distribCnt = (float)avrContours[i].count / (float)g_root.m_filterView->m_calcAverageCount;
+		const float distribCnt = (float)avrContours[i].count / (float)g_root.m_measure.m_calcAverageCount;
 		if (distribCnt < 0.5f)
 			continue;		
 
@@ -109,14 +113,14 @@ void cResultView::OnRender(const float deltaSeconds)
 	// 지연 측정 결과
 	if (isSecondColumn)
 	{
-		if (isMeasureVolume && !g_root.m_boxesStored.empty())
+		if (isMeasureVolume && !g_root.m_measure.m_boxesStored.empty())
 		{
 			isMeasureVolume = false;
 			sMeasureResult result;
-			result.id = g_root.m_measureId;
+			result.id = g_root.m_measure.m_measureId;
 			result.type = 1; // delay measure
 			int id = 0;
-			for (auto &box : g_root.m_boxesStored)
+			for (auto &box : g_root.m_measure.m_boxesStored)
 			{
 				const float l1 = std::max(box.volume.x, box.volume.z);
 				const float l2 = std::min(box.volume.x, box.volume.z);
@@ -154,9 +158,9 @@ void cResultView::OnRender(const float deltaSeconds)
 		ImGui::Separator();
 		ImGui::Spacing();
 
-		for (u_int i = 0; i < g_root.m_boxesStored.size(); ++i)
+		for (u_int i = 0; i < g_root.m_measure.m_boxesStored.size(); ++i)
 		{
-			auto &box = g_root.m_boxesStored[i];
+			auto &box = g_root.m_measure.m_boxesStored[i];
 
 			// 소수 첫 번째 자리에서 반올림
 			// 긴쪽이 가로, 짧은 쪽이 세로

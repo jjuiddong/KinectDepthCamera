@@ -131,9 +131,9 @@ void c3DView::OnPreRender(const float deltaSeconds)
 			renderer.m_cbPerFrame.Update(renderer);
 			renderer.m_cbMaterial.Update(renderer, 2);
 
-			for (int i=0; i < g_root.m_areaFloorCnt; ++i)		
+			for (int i=0; i < g_root.m_measure.m_areaFloorCnt; ++i)
 			{
-				auto &areaFloor = g_root.m_areaBuff[i];
+				auto &areaFloor = g_root.m_measure.m_areaBuff[i];
 
 				XMVECTOR diffuse = XMLoadFloat4((XMFLOAT4*)&areaFloor->color.GetColor());
 				renderer.m_cbMaterial.m_v->diffuse = diffuse;
@@ -226,20 +226,14 @@ void c3DView::Capture3D()
 	if (m_captureTarget.Begin(renderer, common::Vector4(0,0,0,1)))
 	{
 		CommonStates states(renderer.GetDevice());
-		//renderer.GetDevContext()->RSSetState(states.CullCounterClockwise());
 		renderer.GetDevContext()->RSSetState(states.CullNone());
 
 		Transform tfm;
 		tfm.scale = Vector3(1.5f, 1, 1.5f);
-		//tfm.scale = Vector3(3.f, 1, 3.f);
-		//tfm.scale = Vector3(2.f, 1, 2.f);
-		//g_root.m_sensorBuff.RenderTessellation(renderer, tfm.GetMatrixXM());
-
 		for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
-			if (sensor->m_isShow)
-				if (sensor->m_buffer.m_isLoaded)
-					sensor->m_buffer.Render(renderer, "Heightmap", false
-						, tfm.GetMatrixXM());
+			if (sensor->m_isShow && sensor->m_buffer.m_isLoaded)
+				sensor->m_buffer.Render(renderer, "Heightmap", false
+					, tfm.GetMatrixXM());
 	}
 	m_captureTarget.End(renderer);
 
@@ -256,7 +250,7 @@ void c3DView::Capture3D()
 		if (FAILED(hr))
 			return;
 
-		float *dst = (float*)g_root.m_projMap.data;
+		float *dst = (float*)g_root.m_measure.m_projMap.data;
 		D3D11_MAPPED_SUBRESOURCE map;
 		hr = renderer.GetDevContext()->Map(pStaging.Get(), 0, D3D11_MAP_READ, 0, &map);
 		if (FAILED(hr))
@@ -274,7 +268,7 @@ void c3DView::Capture3D()
 
 void c3DView::RenderBoxVolume3D(graphic::cRenderer &renderer)
 {
-	for (auto &box : g_root.m_boxes)
+	for (auto &box : g_root.m_measure.m_boxes)
 	{
 		m_boxLine.SetColor(box.color);
 

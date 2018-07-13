@@ -12,6 +12,9 @@ cBoxView::cBoxView(const string &name)
 	, m_groundPlane2(Vector3(0, -1, 0), 0)
 	, m_showGround(true)
 	, m_showPointCloud(true)
+	, m_showBoxVertex(true)
+	, m_showBoxAverageShape(true)
+	, m_showBoxMeasureShape(true)
 {
 }
 
@@ -89,45 +92,62 @@ void cBoxView::OnPreRender(const float deltaSeconds)
 
 void cBoxView::RenderBoxVolume3D(graphic::cRenderer &renderer)
 {
-	for (auto &box : g_root.m_boxes)
+	// Render Current Measure Box
+	if (m_showBoxMeasureShape)
 	{
-		const float width = 0.2f;
-		common::Vector4 color = box.color.GetColor();
-		color = color * 0.4f;
-		color.w = 0.5f;
-		const cColor newColor(color);
-		m_boxLine.SetColor(newColor);
-		//m_boxLine.SetColor(cColor(0.f,1.f,1.f));
-
-		for (u_int i = 0; i < box.pointCnt; ++i)
+		for (auto &box : g_root.m_measure.m_boxes)
 		{
-			m_boxLine.SetLine(box.box3d[i], box.box3d[(i+1)% box.pointCnt], width);
-			m_boxLine.Render(renderer);
-		}
+			const float width = 0.2f;
+			common::Vector4 color = box.color.GetColor();
+			color = color * 0.4f;
+			color.w = 0.5f;
+			const cColor newColor(color);
+			m_boxLine.SetColor(newColor);
+			//m_boxLine.SetColor(cColor(0.f,1.f,1.f));
 
-		for (u_int i = 0; i < box.pointCnt; ++i)
-		{
-			m_boxLine.SetLine(box.box3d[i + box.pointCnt]
-				, box.box3d[((i + 1) % box.pointCnt) + box.pointCnt], width);
-			m_boxLine.Render(renderer);
-		}
+			for (u_int i = 0; i < box.pointCnt; ++i)
+			{
+				m_boxLine.SetLine(box.box3d[i], box.box3d[(i + 1) % box.pointCnt], width);
+				m_boxLine.Render(renderer);
+			}
 
-		for (u_int i = 0; i < box.pointCnt; ++i)
-		{
-			m_boxLine.SetLine(box.box3d[i], box.box3d[i + box.pointCnt], width);
-			m_boxLine.Render(renderer);
+			for (u_int i = 0; i < box.pointCnt; ++i)
+			{
+				m_boxLine.SetLine(box.box3d[i + box.pointCnt]
+					, box.box3d[((i + 1) % box.pointCnt) + box.pointCnt], width);
+				m_boxLine.Render(renderer);
+			}
+
+			for (u_int i = 0; i < box.pointCnt; ++i)
+			{
+				m_boxLine.SetLine(box.box3d[i], box.box3d[i + box.pointCnt], width);
+				m_boxLine.Render(renderer);
+			}
+
+			if (m_showBoxVertex)
+			{
+				renderer.m_dbgSphere.SetColor(cColor::GRAY);
+				renderer.m_dbgSphere.SetRadius(1.f);
+
+				for (u_int i = 0; i < box.pointCnt; ++i)
+				{
+					renderer.m_dbgSphere.SetPos(box.box3d[i]);
+					renderer.m_dbgSphere.Render(renderer);
+					renderer.m_dbgSphere.SetPos(box.box3d[i + box.pointCnt]);
+					renderer.m_dbgSphere.Render(renderer);
+				}
+			}
 		}
 	}
 
-
 	// Render Average Box 
-	cFilterView *filterView = g_root.m_filterView;
+	cMeasure &measure = g_root.m_measure;
 
-	if (filterView)
+	if (m_showBoxAverageShape)
 	{
-		for (auto &box : filterView->m_avrContours)
+		for (auto &box : measure.m_avrContours)
 		{
-			const float distribCnt = (float)box.count / (float)g_root.m_filterView->m_calcAverageCount;
+			const float distribCnt = (float)box.count / (float)measure.m_calcAverageCount;
 			if (distribCnt < 0.5f)
 				continue;
 
@@ -152,6 +172,20 @@ void cBoxView::RenderBoxVolume3D(graphic::cRenderer &renderer)
 			{
 				m_boxLine.SetLine(box.vertices3d[i], box.vertices3d[i + pointCnt], width);
 				m_boxLine.Render(renderer);
+			}
+
+			if (m_showBoxVertex)
+			{
+				renderer.m_dbgSphere.SetColor(cColor::WHITE);
+				renderer.m_dbgSphere.SetRadius(1.f);
+
+				for (u_int i = 0; i < pointCnt; ++i)
+				{
+					renderer.m_dbgSphere.SetPos(box.vertices3d[i]);
+					renderer.m_dbgSphere.Render(renderer);
+					renderer.m_dbgSphere.SetPos(box.vertices3d[i + pointCnt]);
+					renderer.m_dbgSphere.Render(renderer);
+				}
 			}
 		}
 	}
@@ -189,12 +223,18 @@ void cBoxView::OnRender(const float deltaSeconds)
 		ImGui::Checkbox("Ground", &m_showGround);
 		ImGui::SameLine();
 		ImGui::Checkbox("Point Cloud", &m_showPointCloud);
+		//ImGui::SameLine();
+		ImGui::Checkbox("Box Measure", &m_showBoxMeasureShape);
+		ImGui::SameLine();
+		ImGui::Checkbox("Box Vertex", &m_showBoxVertex);
+		ImGui::SameLine();
+		ImGui::Checkbox("Box Average", &m_showBoxAverageShape);
 
-		ImGui::Spacing();
+		//ImGui::Spacing();
 		ImGui::Separator();
-		for (u_int i = 0; i < g_root.m_boxes.size(); ++i)
+		for (u_int i = 0; i < g_root.m_measure.m_boxes.size(); ++i)
 		{
-			auto &box = g_root.m_boxes[i];
+			auto &box = g_root.m_measure.m_boxes[i];
 			ImGui::Text("Box%d", i + 1);
 			ImGui::Text("\t X = %f", box.volume.x);
 			ImGui::Text("\t Y = %f", box.volume.z);

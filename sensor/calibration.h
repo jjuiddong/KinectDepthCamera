@@ -1,6 +1,6 @@
 //
 // 2018-05-26, jjuiddong
-// base plane calibration
+// ground plane calibration
 //
 #pragma once
 

@@ -166,6 +166,7 @@
     <ClCompile Include="..\sensor\datreader.cpp" />
     <ClCompile Include="..\sensor\dbclient.cpp" />
     <ClCompile Include="..\sensor\kinectv2.cpp" />
+    <ClCompile Include="..\sensor\measure.cpp" />
     <ClCompile Include="..\sensor\plyreader.cpp" />
     <ClCompile Include="..\sensor\rectcontour.cpp" />
     <ClCompile Include="..\sensor\sensor.cpp" />
@@ -202,6 +203,7 @@
     <ClInclude Include="..\sensor\dbclient.h" />
     <ClInclude Include="..\sensor\graphbuff.h" />
     <ClInclude Include="..\sensor\kinectv2.h" />
+    <ClInclude Include="..\sensor\measure.h" />
     <ClInclude Include="..\sensor\plyreader.h" />
     <ClInclude Include="..\sensor\rectcontour.h" />
     <ClInclude Include="..\sensor\sensor.h" />

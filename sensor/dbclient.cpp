@@ -22,96 +22,16 @@ public:
 
 		if (!m_dbClient.m_isRun)
 			return eRunResult::END;
-		
-		using namespace std;
-		stringstream ss;
 
-		ss << "{ \"VERSION\" : 1\n";
-		ss << "\t,\"MEASURE_ID\" : " << m_result.id << "\n";
-		ss << "\t,\"TYPE\" : " << m_result.type << "\n";
-		ss << "\t,\"VOLUME\" : [\n";
-		
-		for (u_int i = 0; i < m_result.volumes.size(); ++i)
-		{
-			const sMeasureVolume &measure = m_result.volumes[i];
-
-			ss << "\t";
-
-			if (0 != i)
-				ss << ", "; // comma
-
-			ss << "{\n";
-
-			ss << "\t\t \"ID\" : " << measure.id << "\n";
-			ss << "\t\t ,\"HORZ\" : " << measure.horz << "\n";
-			ss << "\t\t ,\"VERT\" : " << measure.vert << "\n";
-			ss << "\t\t ,\"HEIGHT\" : " << measure.height << "\n";
-			ss << "\t\t ,\"VOLUME\" : " << measure.volume << "\n";
-			ss << "\t\t ,\"VW\" : " << measure.vw << "\n";
-			ss << "\t\t ,\"POINTCOUNT\" : " << measure.pointCount << "\n";
-			
-			ss << "\t}\n";
-		}
-
-		ss << "\t] \n";
-
-		// save contour 
-		if (2 == m_result.type)
-		{
-			ss << "\n";
-			ss << "\t,\"CONTOUR\" : [\n";
-
-			for (u_int i = 0; i < m_result.volumes.size(); ++i)
-			{
-				const sMeasureVolume &measure = m_result.volumes[i];
-
-				ss << "\t";
-
-				if (0 != i)
-					ss << ", "; // comma
-
-				ss << "{\n";
-
-				ss << "\t\t \"ID\" : " << measure.id << "\n";
-				ss << "\t\t ,\"LEVEL\" : " << measure.contour.level << "\n";
-				ss << "\t\t ,\"LOOP\" : " << measure.contour.loop << "\n";
-				ss << "\t\t ,\"LOWERH\" : " << measure.contour.lowerH << "\n";
-				ss << "\t\t ,\"UPPERH\" : " << measure.contour.upperH << "\n";
-				ss << "\t\t ,\"VERTEX\" : [\n";
-				ss << "\t\t ";
-
-				for (u_int k=0; k < measure.contour.contour.m_data.size(); ++k)
-				{
-					auto &vtx = measure.contour.contour.m_data[k];
-					if (k != 0)
-						ss << ", ";
-					ss << vtx.x << ", " << vtx.y;
-				}
-
-				ss << " ]\n";
-				ss << "\t}\n";
-			}
-
-			ss << "\t] \n";
-		}
-		
-		ss << "}";
+		string jsonStr = cDBClient::GetResult2JSon(m_result);
 
 		if (m_dbClient.m_sql.IsConnected())
 		{
 			string str = "INSERT INTO  tb_cargo_mear(MEASURE_DATA) VALUES ('";
-			str += ss.str();
+			str += jsonStr;
 			str += "');";
 			MySQLQuery query(&m_dbClient.m_sql, str);
 			const int result = query.ExecuteInsert();
-		}
-
-		// 임시로 파일로 저장한다.
-		string fileName = "jsonoutput_" + common::GetCurrentDateTime() + ".volume";
-		ofstream ofs(fileName);
-		if (ofs.is_open())
-		{
-			ofs << ss.str();
 		}
 
 		return eRunResult::END; 
@@ -154,6 +74,23 @@ bool cDBClient::Create()
 
 bool cDBClient::Insert(const sMeasureResult &result)
 {
+	// 임시로 파일로 저장한다.
+	if (1)
+	{
+		using namespace std;
+		string fileName = "jsonoutput_" + common::GetCurrentDateTime() + ".volume";
+		ofstream ofs(fileName);
+		if (ofs.is_open())
+			ofs << cDBClient::GetResult2JSon(result);
+
+		// test debugging code
+		if (result.type == 1)
+			WriteExcel();
+		else if (result.type == 2)
+			m_results.push_back(result);
+		//
+	}
+
 	if (!m_sql.IsConnected())
 		return true;
 
@@ -162,6 +99,118 @@ bool cDBClient::Insert(const sMeasureResult &result)
 	if (!m_thread.IsRun())
 		m_thread.Start();
 	
+	return true;
+}
+
+
+string cDBClient::GetResult2JSon(const sMeasureResult &result)
+{
+	using namespace std;
+	stringstream ss;
+
+	ss << "{ \"VERSION\" : 1\n";
+	ss << "\t,\"MEASURE_ID\" : " << result.id << "\n";
+	ss << "\t,\"TYPE\" : " << result.type << "\n";
+	ss << "\t,\"VOLUME\" : [\n";
+
+	for (u_int i = 0; i < result.volumes.size(); ++i)
+	{
+		const sMeasureVolume &measure = result.volumes[i];
+
+		ss << "\t";
+
+		if (0 != i)
+			ss << ", "; // comma
+
+		ss << "{\n";
+
+		ss << "\t\t \"ID\" : " << measure.id << "\n";
+		ss << "\t\t ,\"HORZ\" : " << measure.horz << "\n";
+		ss << "\t\t ,\"VERT\" : " << measure.vert << "\n";
+		ss << "\t\t ,\"HEIGHT\" : " << measure.height << "\n";
+		ss << "\t\t ,\"VOLUME\" : " << measure.volume << "\n";
+		ss << "\t\t ,\"VW\" : " << measure.vw << "\n";
+		ss << "\t\t ,\"POINTCOUNT\" : " << measure.pointCount << "\n";
+
+		ss << "\t}\n";
+	}
+
+	ss << "\t] \n";
+
+	// save contour 
+	if (2 == result.type)
+	{
+		ss << "\n";
+		ss << "\t,\"CONTOUR\" : [\n";
+
+		for (u_int i = 0; i < result.volumes.size(); ++i)
+		{
+			const sMeasureVolume &measure = result.volumes[i];
+
+			ss << "\t";
+
+			if (0 != i)
+				ss << ", "; // comma
+
+			ss << "{\n";
+
+			ss << "\t\t \"ID\" : " << measure.id << "\n";
+			ss << "\t\t ,\"LEVEL\" : " << measure.contour.level << "\n";
+			ss << "\t\t ,\"LOOP\" : " << measure.contour.loop << "\n";
+			ss << "\t\t ,\"LOWERH\" : " << measure.contour.lowerH << "\n";
+			ss << "\t\t ,\"UPPERH\" : " << measure.contour.upperH << "\n";
+			ss << "\t\t ,\"VERTEX\" : [\n";
+			ss << "\t\t ";
+
+			for (u_int k = 0; k < measure.contour.contour.m_data.size(); ++k)
+			{
+				auto &vtx = measure.contour.contour.m_data[k];
+				if (k != 0)
+					ss << ", ";
+				ss << vtx.x << ", " << vtx.y;
+			}
+
+			ss << " ]\n";
+			ss << "\t}\n";
+		}
+
+		ss << "\t] \n";
+	}
+
+	ss << "}";
+
+	return ss.str();
+}
+
+
+bool cDBClient::WriteExcel()
+{
+	using namespace std;
+	string fileName = "exceloutput_" + common::GetCurrentDateTime() + ".volume";
+	ofstream ofs(fileName);
+	if (!ofs.is_open())
+		return false;	
+
+	for (auto &result : m_results)
+		for (auto &vol : result.volumes)
+			ofs << vol.horz << "\t";
+	ofs << endl;
+
+	for (auto &result : m_results)
+		for (auto &vol : result.volumes)
+			ofs << vol.vert << "\t";
+	ofs << endl;
+
+	for (auto &result : m_results)
+		for (auto &vol : result.volumes)
+			ofs << vol.height << "\t";
+	ofs << endl;
+
+	for (auto &result : m_results)
+		for (auto &vol : result.volumes)
+			ofs << vol.vw << "\t";
+	ofs << endl;
+
 	return true;
 }
 

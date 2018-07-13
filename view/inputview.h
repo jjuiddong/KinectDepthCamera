@@ -30,6 +30,7 @@ protected:
 	bool OpenFile(const common::StrPath &ansifileName, const size_t camIdx=0);
 	void UpdateDelayMeasure(const float deltaSeconds);
 	void CalcDelayMeasure();
+	void CalcDelayMeasureRefine();
 	void RenderFileList();
 	__int64 ConvertFileNameToInt64(const common::StrPath &fileName);
 	std::pair<int, int> GetOnlyTwoCameraAnimationIndex(const sFileInfo &finfo1, int aniIdx1

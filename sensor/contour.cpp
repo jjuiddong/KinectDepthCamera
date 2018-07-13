@@ -36,6 +36,17 @@ void cContour::Draw(cv::Mat &dst
 }
 
 
+void cContour::DrawVertex(cv::Mat &dst
+	, const int radius // = 5
+	, const cv::Scalar &color //= cv::Scalar(0, 0, 0)
+	, const int thickness //= 1
+) const
+{
+	for (u_int i = 0; i < m_data.size(); ++i)
+		circle(dst, m_data[i], radius, color, thickness);
+}
+
+
 bool cContour::IsContain(const cContour &contour) const
 {
 	Paths p1(1), p2(1), solution;
@@ -74,3 +85,15 @@ cv::Point cContour::Center() const
 	return center;
 }
 
+
+bool cContour::operator==(const cContour &rhs) const
+{
+	if (m_data.size() != rhs.m_data.size())
+		return false;
+
+	for (u_int i = 0; i < m_data.size(); ++i)
+		if (m_data[i] != rhs.m_data[i])
+			return false;
+
+	return true;
+}

@@ -32,8 +32,11 @@ void cInfraredView::OnRender(const float deltaSeconds)
 void cInfraredView::Process(const size_t camIdx //=0
 )
 {
-	//ProcessInfrared(&g_root.m_sensorBuff[camIdx].m_intensity[0]
-	//	, g_root.m_sensorBuff[camIdx].m_width, g_root.m_sensorBuff[camIdx].m_height);
+	RET(g_root.m_baslerCam.m_sensors.size() <= camIdx);
+
+	cSensor *sensor = g_root.m_baslerCam.m_sensors[camIdx];
+	ProcessInfrared(&sensor->m_buffer.m_intensity[0]
+		, sensor->m_buffer.m_width, sensor->m_buffer.m_height);
 }
 
 

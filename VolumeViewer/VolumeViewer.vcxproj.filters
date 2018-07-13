@@ -87,6 +87,9 @@
     <ClCompile Include="..\view\animationview.cpp">
       <Filter>view</Filter>
     </ClCompile>
+    <ClCompile Include="..\sensor\measure.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
@@ -183,6 +186,9 @@
     </ClInclude>
     <ClInclude Include="..\view\animationview.h">
       <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\measure.h">
+      <Filter>sensor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

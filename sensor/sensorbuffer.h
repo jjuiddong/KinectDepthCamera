@@ -42,7 +42,6 @@ public:
 	common::Vector3 PickVertex(const common::Ray &ray);
 	void GeneratePlane(common::Vector3 pos[3]);
 	void ChangeSpace(graphic::cRenderer &renderer);
-	void MeasureVolume(graphic::cRenderer &renderer);
 	bool UpdatePointCloudBySelf(graphic::cRenderer &renderer);
 	bool UpdatePointCloudAllConfig(graphic::cRenderer &renderer);
 	void AnalysisDepth();

@@ -13,11 +13,14 @@ public:
 
 	bool Init(const vector<cv::Point> &contour);
 	void Draw(cv::Mat &dst, const cv::Scalar &color = cv::Scalar(0, 0, 0), const int thickness = 1) const;
+	void DrawVertex(cv::Mat &dst, const int radius = 5, const cv::Scalar &color = cv::Scalar(0, 0, 0), const int thickness = 1) const;
 	bool IsContain(const cContour &contour) const;
 	u_int Area() const;
 	cv::Point Center() const;
 	inline u_int Size() const;
 	inline cv::Point operator[] (int i) const;
+
+	bool operator==(const cContour &rhs) const;
 
 
 public:

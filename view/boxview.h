@@ -33,6 +33,9 @@ protected:
 public:
 	bool m_showGround;
 	bool m_showPointCloud;
+	bool m_showBoxVertex;
+	bool m_showBoxMeasureShape;
+	bool m_showBoxAverageShape;
 
 	graphic::cGridLine m_ground;
 	graphic::cLine m_boxLine;

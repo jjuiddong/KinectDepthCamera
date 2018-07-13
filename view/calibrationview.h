@@ -15,7 +15,10 @@ public:
 
 
 protected:
+	void SingleSensorGroundCalibration();
+	void MultiSensorGroundCalibration();
 	double CalcBasePlaneStandardDeviation(const size_t camIdx = 0);
+	common::StrPath OpenFileDialog();
 
 
 public:

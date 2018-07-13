@@ -34,6 +34,7 @@
 #include "../sensor/baslersync.h"
 #include "../sensor/kinectv2.h"
 #include "../sensor/cvutil.h"
+#include "../sensor/measure.h"
 #include "../view/logview.h"
 #include "../view/root.h"
 
