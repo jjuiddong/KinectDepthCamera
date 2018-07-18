@@ -2,6 +2,8 @@
 #include "stdafx.h"
 #include "measure.h"
 #include "../view/3dview.h"
+#include <opencv2/imgproc/imgproc.hpp>
+
 
 using namespace graphic;
 using namespace framework;
@@ -75,6 +77,14 @@ void ThreadFilterAllFunc(cMeasure *fview, bool isCalcHorz)
 			cv::Mat binImg = mbinImg.clone();
 			while (loopCnt < 8)
 			{
+				if (g_root.m_isSave2DMat)
+				{
+					// save mat file
+					StrPath path;
+					path.Format("depthframe_mat_%d_%d_%d_%d.jpg", isCalcHorz, i, vtxCnt, loopCnt);
+					cv::imwrite(path.c_str(), binImg);
+				}
+
 				vector<cContour> temp;
 				if (fview->FindBox(binImg, vtxCnt, temp))
 				{
@@ -491,7 +501,7 @@ void cMeasure::CalcHeightDistribute()
 void cMeasure::Measure2DImage()
 {
 	m_contours.clear();
-	m_removeRects.clear();
+	m_removeContours.clear();
 
 	cv::Mat &srcImg = g_root.m_measure.m_projMap;
 	srcImg.convertTo(m_dstImg, CV_8UC1, 255.0f);
@@ -531,11 +541,28 @@ void cMeasure::Measure2DImage()
 }
 
 
-void cMeasure::RenderContourRect(cv::Mat &dst, const vector<sContourInfo> &contours)
+// 인식된 박스를 m_dstImg에 그린다.
+void cMeasure::DrawContourRect()
+{
+	cv::Mat &srcImg = g_root.m_measure.m_projMap;
+	srcImg.convertTo(m_dstImg, CV_8UC1, 255.0f);
+	cvtColor(m_dstImg, m_dstImg, cv::COLOR_GRAY2RGB);
+
+	RenderContourRect(m_dstImg, m_contours);
+	RenderContourRect(m_dstImg, m_removeContours, m_contours.size());
+}
+
+
+void cMeasure::RenderContourRect(cv::Mat &dst, const vector<sContourInfo> &contours
+	, const int offsetId //=0
+)
 {
 	for (u_int i = 0; i < contours.size(); ++i)
 	{
 		auto &info = contours[i];
+		if (!info.visible)
+			continue;
+
 		//const Scalar color(255, 255, 255);
 		const Vector3 color2 = info.color.GetColor() * 255;
 
@@ -544,7 +571,7 @@ void cMeasure::RenderContourRect(cv::Mat &dst, const vector<sContourInfo> &conto
 			info.contour.Draw(dst, cv::Scalar(color2.x, color2.y, color2.z));
 
 			char boxName[64];
-			sprintf(boxName, "BOX%d", i + 1);
+			sprintf(boxName, "BOX%d", i + 1 + offsetId);
 			setLabel(dst, boxName, info.contour.m_data, Scalar(1, 1, 1));
 		}
 
@@ -843,6 +870,9 @@ bool cMeasure::FindBox(cv::Mat &img
 	vector<vector<cv::Point>> contours;
 	findContours(img, contours, CV_RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
+	//Mat dbgDstImg;
+	//cvtColor(img, dbgDstImg, cv::COLOR_GRAY2RGB);
+
 	int m_minArea = 300;
 	double m_minCos = (vtxCnt == 4) ? -0.4f : -0.3f; // 직각 체크
 	double m_maxCos = (vtxCnt == 4) ? 0.4f : 0.3f;
@@ -883,6 +913,13 @@ bool cMeasure::FindBox(cv::Mat &img
 			// Get the lowest and the highest cosine
 			const double mincos = cos.front();
 			const double maxcos = cos.back();
+
+			// for debugging
+			//{
+			//	cContour contour;
+			//	contour.Init(approx);
+			//	contour.Draw(dbgDstImg, cv::Scalar(0,0,255));
+			//}
 
 			// Use the degrees obtained above and the number of vertices
 			// to determine the shape of the contour
@@ -929,7 +966,10 @@ void cMeasure::RemoveDuplicateContour(vector<sContourInfo> &contours)
 		return;
 
 	for (auto &contour : contours)
+	{
 		contour.used = true;
+		contour.visible = true;
+	}
 
 	for (u_int i = 0; i < contours.size() - 1; ++i)
 	{
@@ -947,8 +987,12 @@ void cMeasure::RemoveDuplicateContour(vector<sContourInfo> &contours)
 			{
 				const int a1 = contour1.contour.Area();
 				const int a2 = contour2.contour.Area();
-				const bool isDuplciate = abs(((float)a1 / (float)a2) - 1.f) < 0.1f; // 거의 같은 사이즈
+				//const bool isDuplciate = abs(((float)a1 / (float)a2) - 1.f) < 0.1f; // 거의 같은 사이즈
+				const bool isDuplciate = abs(((float)a1 / (float)a2) - 1.f) < 0.01f; // 거의 같은 사이즈
 				contour2.duplicate = isDuplciate;
+
+				contour1.area = a1;
+				contour2.area = a2;
 
 				// 중복 인식된 박스일 때, 더 낮은 높이의 박스를 제거한다.
 				// 높이가 거의 같다면, 더 적은 loop로 발견된 박스를 남기고, 나머지를 제거한다.
@@ -1029,14 +1073,18 @@ void cMeasure::RemoveDuplicateContour(vector<sContourInfo> &contours)
 				// 면적이 큰 박스가 아래에 있는 것으로 가정한다.
 				if (a1 < a2)
 				{
-					contour1.lowerH = contour2.upperH;
+					// 업데이트되는 높이가 기존보다 높을 때만 업데이트
+					if (contour1.lowerH < contour2.upperH)
+						contour1.lowerH = contour2.upperH;
 				}
 				else
 				{
-					contour2.lowerH = contour1.upperH;
+					// 업데이트되는 높이가 기존보다 높을 때만 업데이트
+					if (contour2.lowerH < contour1.upperH)
+						contour2.lowerH = contour1.upperH;
 				}
 
-				// 박스 높이가 너무 작으면 제거한다.
+				// 박스 높이가 너무 낮으면 제거한다.
 				if (abs(contour1.upperH - contour1.lowerH) < 5)
 					contour1.used = false;
 				if (abs(contour2.upperH - contour2.lowerH) < 5)
@@ -1048,8 +1096,17 @@ void cMeasure::RemoveDuplicateContour(vector<sContourInfo> &contours)
 
 	vector<sContourInfo> temp;
 	for (auto &contour : contours)
+	{
 		if (contour.used)
+		{
 			temp.push_back(contour);
+		}
+		else
+		{
+			//contour.color = cColor::WHITE;
+			m_removeContours.push_back(contour); // for debugging
+		}
+	}
 
 	contours.clear();
 	contours = temp;

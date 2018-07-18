@@ -34,6 +34,7 @@ cRoot::cRoot()
 	, m_isShowBox(true)
 	, m_isShowBoxCandidate(true)
 	, m_isShowBoxVertex(true)
+	, m_isSave2DMat(false)
 {
 	// Camera Offset Setting, Korean Air Cargo
 	//m_cameraOffset[0].pos = Vector3(-59.740f, 4.170f, -75.420f);

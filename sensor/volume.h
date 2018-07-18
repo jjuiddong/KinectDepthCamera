@@ -10,7 +10,10 @@
 // BoxVolume
 struct sContourInfo 
 {
+	bool visible; // use internal
 	bool used; // use internal
+	float area; // use internal
+
 	int level; // vertex count
 	int loop;
 	float lowerH;
@@ -82,3 +85,12 @@ struct sMeasureResult
 	int type; // 1:delay measure, 2:snap measure
 	vector<sMeasureVolume> volumes;
 };
+
+
+enum {OUTLIER_TOLERANCE = 1120};
+//enum { OUTLIER_TOLERANCE = 2496 };
+
+static const common::Vector3 g_3dCaptureScale(1.5f, 1.f, 1.5f);
+
+//640x480 해상도에서, 1px 정도 오차가 있어 추가함.
+//static const common::Vector3 g_3dCaptureScale(1.5f, 1, 1.5f + (1.f / 480.f));

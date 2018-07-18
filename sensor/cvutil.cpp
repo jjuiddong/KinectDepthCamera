@@ -7,7 +7,7 @@
 
 #ifdef _DEBUG
 	#pragma comment(lib, "opencv_core340d.lib")
-	//#pragma comment(lib, "opencv_imgcodecs310d.lib")
+	#pragma comment(lib, "opencv_imgcodecs340d.lib")
 	//#pragma comment(lib, "opencv_features2d310d.lib")
 	//#pragma comment(lib, "opencv_videoio310d.lib")
 	//#pragma comment(lib, "opencv_highgui310d.lib")
@@ -17,7 +17,7 @@
 	//#pragma comment(lib, "opencv_calib3d310d.lib")
 	#else
 	#pragma comment(lib, "opencv_core340.lib")
-	//#pragma comment(lib, "opencv_imgcodecs310.lib")
+	#pragma comment(lib, "opencv_imgcodecs340.lib")
 	//#pragma comment(lib, "opencv_features2d310.lib")
 	//#pragma comment(lib, "opencv_videoio310.lib")
 	//#pragma comment(lib, "opencv_highgui310.lib")

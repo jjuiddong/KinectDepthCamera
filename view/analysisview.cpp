@@ -18,12 +18,15 @@ cAnalysisView::~cAnalysisView()
 
 void cAnalysisView::OnRender(const float deltaSeconds)
 {
-	ImGui::Checkbox("calc horz", &g_root.m_isCalcHorz);
+	//ImGui::Checkbox("calc horz", &g_root.m_isCalcHorz);
 
 	if (ImGui::Button("Volume Measure"))
 	{
 		g_root.MeasureVolume(true);
 	}
+
+	ImGui::SameLine();
+	ImGui::Checkbox("Save 2D Mat", &g_root.m_isSave2DMat);
 
 	ImGui::PushItemWidth(m_rect.Width()-70);
 

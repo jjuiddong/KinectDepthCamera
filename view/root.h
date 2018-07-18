@@ -85,6 +85,7 @@ public:
 	bool m_isPalete;
 	bool m_isGrabLog;
 	bool m_isCalcHorz;
+	bool m_isSave2DMat;
 
 	// Ground Calibration
 	common::StrPath m_configFileName;

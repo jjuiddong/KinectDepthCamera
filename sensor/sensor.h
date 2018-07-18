@@ -28,9 +28,6 @@ public:
 
 
 public:
-	enum {OUTLIER_TOLERANCE = 1120};
-	//enum { OUTLIER_TOLERANCE = 2496};
-
 	int m_id;
 	bool m_isEnable;
 	bool m_isMaster;

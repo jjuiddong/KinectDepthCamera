@@ -29,14 +29,27 @@ bool cFilterView::Init(graphic::cRenderer &renderer)
 void cFilterView::OnRender(const float deltaSeconds)
 {
 	ImVec2 pos = ImGui::GetCursorScreenPos();
-	ImGui::Image(m_depthTexture.m_texSRV, ImVec2(m_rect.Width() - 15, m_rect.Height() - 50));
 
-	// HUD
+	ImVec2 imgSize;
+	if (m_rect.Width() - 15 > m_rect.Height() - 50)
+	{
+		imgSize.x = (m_rect.Height() - 50) * (640.f / 480.f);
+		imgSize.y = (m_rect.Height() - 50);
+	}
+	else
+	{
+		imgSize.x = (m_rect.Width() - 50);
+		imgSize.y = (m_rect.Width() - 15) * (480.f / 640.f);
+	}
+
+	ImGui::Image(m_depthTexture.m_texSRV, imgSize);
+
+	// Box Information
 	const float windowAlpha = 0.0f;
 	bool isOpen = true;
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 	ImGui::SetNextWindowPos(pos);
-	ImGui::SetNextWindowSize(ImVec2(std::min(m_rect.Width() - 15.f, 800.f), m_rect.Height()));
+	ImGui::SetNextWindowSize(ImVec2(std::min(m_rect.Width() - 15.f, 300.f), m_rect.Height()-50));
 	ImGui::SetNextWindowBgAlpha(windowAlpha);
 	ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
 	if (ImGui::Begin("FilterView Info", &isOpen, flags))
@@ -62,6 +75,51 @@ void cFilterView::OnRender(const float deltaSeconds)
 		}
 		ImGui::End();
 	}
+
+	// Edge Information
+	ImGui::SetNextWindowPos(ImVec2(m_rect.Width() - 200.f + pos.x, pos.y));
+	ImGui::SetNextWindowSize(ImVec2(200, m_rect.Height()-50));
+	ImGui::SetNextWindowBgAlpha(windowAlpha);
+	if (ImGui::Begin("Edge Info", &isOpen, flags))
+	{
+		bool isUpdate = false;
+		if (ImGui::Button("Clear"))
+		{
+			for (auto &contour : g_root.m_measure.m_contours)
+				contour.visible = false;
+			for (auto &contour : g_root.m_measure.m_removeContours)
+				contour.visible = false;
+			isUpdate = true;
+		}
+
+		for (u_int i=0; i < g_root.m_measure.m_contours.size(); ++i)
+		{
+			auto &contour = g_root.m_measure.m_contours[i];
+			Str64 text;
+			text.Format("Box%d, %.1f, %.1f", i+1, contour.area, contour.upperH);
+			if (ImGui::Checkbox(text.c_str(), &contour.visible))
+				isUpdate = true;
+		}
+
+		for (u_int i = 0; i < g_root.m_measure.m_removeContours.size(); ++i)
+		{
+			auto &contour = g_root.m_measure.m_removeContours[i];
+			Str64 text;
+			text.Format("Box%d, %.1f, %.1f", i + 1 + g_root.m_measure.m_contours.size()
+				, contour.area, contour.upperH);
+			if (ImGui::Checkbox(text.c_str(), &contour.visible))
+				isUpdate = true;
+		}
+
+		if (isUpdate)
+		{
+			g_root.m_measure.DrawContourRect();
+			ProcessDepth();
+		}
+
+		ImGui::End();
+	}
+
 	ImGui::PopStyleColor();
 }
 

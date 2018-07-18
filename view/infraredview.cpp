@@ -24,8 +24,19 @@ bool cInfraredView::Init(graphic::cRenderer &renderer)
 
 void cInfraredView::OnRender(const float deltaSeconds)
 {
-	//UpdateInfraredImage();
-	ImGui::Image(m_infraredTexture.m_texSRV, ImVec2(m_rect.Width() - 15, m_rect.Height() - 50));
+	ImVec2 imgSize;
+	if (m_rect.Width() - 15 > m_rect.Height() - 50)
+	{
+		imgSize.x = (m_rect.Height() - 50) * (640.f / 480.f);
+		imgSize.y = (m_rect.Height() - 50);
+	}
+	else
+	{
+		imgSize.x = (m_rect.Width() - 50);
+		imgSize.y = (m_rect.Width() - 15) * (480.f / 640.f);
+	}
+
+	ImGui::Image(m_infraredTexture.m_texSRV, imgSize);
 }
 
 

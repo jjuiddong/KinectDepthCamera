@@ -18,6 +18,7 @@ public:
 	void CalcBoxVolumeAverage();
 	void ClearBoxVolumeAverage();
 	bool FindBox(cv::Mat &img, const u_int vtxCnt, OUT vector<cContour> &out);
+	void DrawContourRect();
 	void Clear();
 
 
@@ -26,7 +27,8 @@ protected:
 	void Measure2DImage();
 	void RemoveDuplicateContour(vector<sContourInfo> &contours);
 	sBoxInfo CalcBoxInfo(const sContourInfo &info);
-	void RenderContourRect(cv::Mat &dst, const vector<sContourInfo> &contours);
+	void RenderContourRect(cv::Mat &dst, const vector<sContourInfo> &contours
+		, const int offsetId=0);
 
 
 public:
@@ -48,7 +50,7 @@ public:
 	int m_areaFloorCnt;
 
 	vector<sContourInfo> m_contours; // 현재 인식된 박스 정보
-	vector<sContourInfo> m_removeRects;
+	vector<sContourInfo> m_removeContours; // 중복 제거된 박스 정보
 	vector<sAvrContour> m_avrContours; // 평균으로 계산된 박스 정보
 	int m_calcAverageCount;
 
