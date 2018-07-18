@@ -22,20 +22,24 @@ public:
 	void PrepareAcquisition();
 	void BeginAcquisition();
 	void EndAcquisition();
+	
 	bool IsEnable();
 	void Clear();
 
 
 public:
+	enum {OUTLIER_TOLERANCE = 1120};
+	//enum { OUTLIER_TOLERANCE = 2496};
+
 	int m_id;
 	bool m_isEnable;
 	bool m_isMaster;
 	bool m_isShow;
 	double m_writeTime;
+	int m_outlierTolerance;
 	CameraInfo m_info;
 	CToFCamera *m_camera;
 	cDatReader m_tempBuffer; // temporary buffer
 	cSensorBuffer m_buffer;
 	common::CriticalSection m_cs;
-	std::thread m_thread;
 };

@@ -75,7 +75,7 @@ bool cDBClient::Create()
 bool cDBClient::Insert(const sMeasureResult &result)
 {
 	// 임시로 파일로 저장한다.
-	if (1)
+	if (0)
 	{
 		using namespace std;
 		string fileName = "jsonoutput_" + common::GetCurrentDateTime() + ".volume";

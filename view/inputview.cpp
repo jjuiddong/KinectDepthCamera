@@ -376,7 +376,7 @@ void cInputView::UpdateDelayMeasure(const float deltaSeconds)
 	{
 		//m_measureTime += deltaSeconds;
 		//if (m_measureTime >= 3.f)
-		if (m_measureCount > 1000)
+		if (m_measureCount > 100)
 		{
 			CalcDelayMeasure();
 			isUpdateVolumeCalc = false; // already show
@@ -492,7 +492,7 @@ void cInputView::CalcDelayMeasure()
 	}
 	//
 
-	CalcDelayMeasureRefine();
+	//CalcDelayMeasureRefine();
 
 	m_state = eState::NORMAL;
 }

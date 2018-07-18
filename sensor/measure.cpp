@@ -18,6 +18,8 @@ cMeasure::cMeasure()
 	m_projMap = cv::Mat((int)g_capture3DHeight, (int)g_capture3DWidth, CV_32FC1);
 
 	ZeroMemory(m_volDistrib, sizeof(m_volDistrib));
+	ZeroMemory(m_horzDistrib, sizeof(m_horzDistrib));
+	ZeroMemory(m_vertDistrib, sizeof(m_vertDistrib));
 	ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
 	ZeroMemory(&m_hDistrib2, sizeof(m_hDistrib2));
 	ZeroMemory(&m_hDistribDifferential, sizeof(m_hDistribDifferential));
@@ -43,11 +45,10 @@ void ThreadFilterAllFunc(cMeasure *fview, bool isCalcHorz)
 	{
 		sAreaFloor *areaFloor = g_root.m_measure.m_areaBuff[i];
 
-		float threshold1 = areaFloor->startIdx * 0.1f;
+		float threshold1 = areaFloor->startIdx * 0.1f - 1;
 		//float threshold2 = areaFloor->endIdx * 0.11f;
-		float threshold2 = areaFloor->endIdx * 0.105f;
+		float threshold2 = areaFloor->endIdx * 0.105f + 1;
 
-		//if (g_root.m_isCalcHorz)
 		if (isCalcHorz)
 		{
 			cv::threshold(grayscaleMat, mbinImg, threshold1, 255, cv::THRESH_BINARY);
@@ -234,11 +235,13 @@ void ThreadFilterSubFunc(cMeasure *fview, sAreaFloor *areaFloor, bool isCalcHorz
 }
 
 
-bool cMeasure::MeasureVolume()
+bool cMeasure::MeasureVolume(
+	const bool isForceMeasure // = false
+)
 {
 	m_areaFloorCnt = 0;
 
-	if (g_root.m_isAutoMeasure)
+	if (g_root.m_isAutoMeasure || isForceMeasure)
 		CalcHeightDistribute();
 
 	Measure2DImage();
@@ -258,7 +261,7 @@ void cMeasure::CalcHeightDistribute()
 	cSensor *sensor = NULL;
 	for (auto s : g_root.m_baslerCam.m_sensors)
 	{
-		if (s->IsEnable() && s->m_isShow)
+		if (s->IsEnable() && s->m_isShow && s->m_buffer.m_isLoaded)
 			sensor = s;
 	}
 	if (!sensor)
@@ -268,23 +271,30 @@ void cMeasure::CalcHeightDistribute()
 	cSensorBuffer &sbuff = sensor->m_buffer;
 
 	// Calculate Height Distribution
-	m_distribCount = 0;
-	ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
-	ZeroMemory(m_hAverage, sizeof(m_hAverage));
-
-	for (auto &vtx : sbuff.m_vertices)
 	{
-		if (abs(vtx.x) > 200.f)
-			continue;
-		if (abs(vtx.z) > 200.f)
-			continue;
+		m_distribCount = 0;
+		ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
+		ZeroMemory(m_hAverage, sizeof(m_hAverage));
 
-		const int h = (int)(vtx.y * 10.f);
-		if ((h >= 0) && (h < ARRAYSIZE(m_hDistrib)))
+		Vector3 *src = &sbuff.m_vertices[0];
+		const u_int vertexSize = sbuff.m_vertices.size();
+		for (u_int i=0; i < vertexSize; ++i)
 		{
-			m_distribCount++;
-			m_hDistrib[h] += 1.f;
-			m_hAverage[h] += vtx.y;
+			const Vector3 &vtx = *src++;
+			if (vtx.IsEmpty())
+				continue;
+			if (abs(vtx.x) > 200.f)
+				continue;
+			if (abs(vtx.z) > 200.f)
+				continue;
+
+			const int h = (int)(vtx.y * 10.f);
+			if ((h >= 0) && (h < ARRAYSIZE(m_hDistrib)))
+			{
+				m_distribCount++;
+				m_hDistrib[h] += 1.f;
+				m_hAverage[h] += vtx.y;
+			}
 		}
 	}
 
@@ -297,12 +307,10 @@ void cMeasure::CalcHeightDistribute()
 	// height distribute pulse
 	ZeroMemory(&m_hDistrib2, sizeof(m_hDistrib2));
 	{
-		const float LIMIT_AREA = 30.f;
-		//const float minArea = 300.f;
-		//const float minArea = 150.f;
+		//const float LIMIT_AREA = 30.f;
+		const float LIMIT_AREA = 50.f;
 		const float minArea = 80.f;
 		float limitLowArea = LIMIT_AREA;
-		//float limitLowArea = 20.f;
 		int state = 0; // 0: check, rising pulse, 1: check down pulse, 2: calc low height
 		int startIdx = 0, endIdx = 0;
 		int maxArea = 0;
@@ -336,27 +344,32 @@ void cMeasure::CalcHeightDistribute()
 			case 2:
 				state = 0;
 
-				//limitLowArea = LIMIT_AREA;
 				limitLowArea = std::max(LIMIT_AREA, m_hDistrib[maxArea] * 0.01f);
 				// find first again
 				for (int k = startIdx; k >= 0; --k)
 				{
 					if (m_hDistrib[k] < limitLowArea)
 					{
+						// 분포가 감소해서 거의 변화가 없거나, 
+						// 다시 급격히 분포가 증가할 때까지, 같은 영역으로 한다.
+
+						//float oldA = m_hDistrib[k];
+						//for (int m = k-1; m >= 0; --m)
+						//{
+						//	float d = m_hDistrib[m] - oldA;
+						//	if (d > 5) // 분포가 다시 증가하면 종료.
+						//	{
+						//		startIdx = m;
+						//		break;
+						//	}
+						//	oldA = m_hDistrib[m];
+						//}
+						//break;
+
 						startIdx = k;
 						break;
 					}
 				}
-
-				// find end again
-				//for (int k = maxArea; k <= i; ++k)
-				//{
-				//	if (g_root.m_hDistrib[k] < limitLowArea)
-				//	{
-				//		endIdx = k;
-				//		break;
-				//	}
-				//}
 
 				for (int k = startIdx; k < endIdx; ++k)
 					m_hDistrib2[k] = 1;
@@ -440,11 +453,16 @@ void cMeasure::CalcHeightDistribute()
 		// Generate AreaFloor Vertex
 		if (sVertex *dst = (sVertex*)areaFloor->vtxBuff->Lock(renderer))
 		{
-			for (auto &vtx : sbuff.m_vertices)
+			Vector3 *src = &sbuff.m_vertices[0];
+			const u_int vertexSize = sbuff.m_vertices.size();
+			for (u_int i = 0; i < vertexSize; ++i)
 			{
-				if (abs(vtx.x) > 200.f) // x axis limit
+				const Vector3 &vtx = *src++;
+				if (vtx.IsEmpty())
 					continue;
-				if (abs(vtx.z) > 200.f) // y axis limit
+				if (abs(vtx.x) > 200.f)
+					continue;
+				if (abs(vtx.z) > 200.f)
 					continue;
 
 				const int h = (int)(vtx.y * 10.f);
@@ -541,7 +559,8 @@ sBoxInfo cMeasure::CalcBoxInfo(const sContourInfo &info)
 {
 	//const float scale = 50.f / 73.2f;
 	//const float scale = 50.f / 74.5f;
-	const float scale = 50.f / 72.3f;
+	//const float scale = 50.f / 72.3f;
+	const float scale = 50.f / 74.3f;
 	//const float scaleH = 0.99f;
 	//const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete) ? -13.f : 3.5f;
 
@@ -570,8 +589,9 @@ sBoxInfo cMeasure::CalcBoxInfo(const sContourInfo &info)
 		box.volume.y *= 1.f;
 		box.volume.z *= scale;
 
-		if ((box.volume.y < 40.f) && (box.volume.y > 1.f)) // 높이가 낮으면 오차가 커져서 없애준다.
-			box.volume.y -= 1.f;
+		// koreanair cargo code
+		//if ((box.volume.y < 40.f) && (box.volume.y > 1.f)) // 높이가 낮으면 오차가 커져서 없애준다.
+		//	box.volume.y -= 1.f;
 
 		//box.volume.x -= (float)info.loop*1.4f;
 		//box.volume.z -= (float)info.loop*1.4f;
@@ -587,8 +607,9 @@ sBoxInfo cMeasure::CalcBoxInfo(const sContourInfo &info)
 		box.volume.y = (info.upperH - info.lowerH);
 		box.volume.z *= 0;
 
-		if ((box.volume.y < 40.f) && (box.volume.y > 1.f)) // 높이가 낮으면 오차가 커져서 없애준다.
-			box.volume.y -= 1.f;
+		// koreanair cargo code
+		//if ((box.volume.y < 40.f) && (box.volume.y > 1.f)) // 높이가 낮으면 오차가 커져서 없애준다.
+		//	box.volume.y -= 1.f;
 
 		box.minVolume = (float)info.contour.Area() * scale * scale * box.volume.y;
 		box.maxVolume = box.minVolume;
@@ -662,6 +683,21 @@ void cMeasure::CalcBoxVolumeAverage()
 		if ((volIdx >= 0) && (volIdx < ARRAYSIZE(m_volDistrib)))
 			++m_volDistrib[volIdx];
 	}
+
+	// 가로,세로 분포 업데이트
+	for (auto &contour : m_contours)
+	{
+		sBoxInfo box = CalcBoxInfo(contour);
+		const float h = std::max(box.volume.x, box.volume.y);
+		const float v = std::min(box.volume.x, box.volume.y);
+		const int hIdx = (int)(h * 10.f);
+		const int vIdx = (int)(v * 10.f);
+		if ((hIdx >= 0) && (hIdx < ARRAYSIZE(m_horzDistrib)))
+			++m_horzDistrib[hIdx];
+		if ((vIdx >= 0) && (vIdx < ARRAYSIZE(m_vertDistrib)))
+			++m_vertDistrib[vIdx];
+	}
+
 
 	for (auto &info : m_avrContours)
 		info.check = false;
@@ -790,6 +826,8 @@ void cMeasure::CalcBoxVolumeAverage()
 void cMeasure::ClearBoxVolumeAverage()
 {
 	ZeroMemory(m_volDistrib, sizeof(m_volDistrib));
+	ZeroMemory(m_horzDistrib, sizeof(m_horzDistrib));
+	ZeroMemory(m_vertDistrib, sizeof(m_vertDistrib));
 	m_avrContours.clear();
 	m_calcAverageCount = 0;
 	g_root.m_dbClient.m_results.clear();
@@ -806,8 +844,6 @@ bool cMeasure::FindBox(cv::Mat &img
 	findContours(img, contours, CV_RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
 	int m_minArea = 300;
-	//double m_minCos = -0.4f; // 직각 체크
-	//double m_maxCos = 0.4f;
 	double m_minCos = (vtxCnt == 4) ? -0.4f : -0.3f; // 직각 체크
 	double m_maxCos = (vtxCnt == 4) ? 0.4f : 0.3f;
 
@@ -817,24 +853,17 @@ bool cMeasure::FindBox(cv::Mat &img
 	{
 		// Approximate contour with accuracy proportional
 		// to the contour perimeter
-		//double ll = cv::arcLength(cv::Mat(contours[i]), true);
 		const double area = cv::contourArea(contours[i]);
 
-		//const double epsilontAlpha = (vtxCnt == 4) ? 0.03f : 0.01f;
 		const double epsilontAlpha = (area < 3000.f) ? 0.03f : 0.015f;
 		cv::approxPolyDP(cv::Mat(contours[i]), approx
 			, cv::arcLength(cv::Mat(contours[i]), true) * epsilontAlpha, true);
-		//, cv::arcLength(cv::Mat(contours[i]), true) * 0.013f, true);
-		//, cv::arcLength(cv::Mat(contours[i]), true) * 0.03f , true);
 
 		// Skip small or non-convex objects 
 		const bool isConvex = cv::isContourConvex(approx);
-		//if (std::fabs(cv::contourArea(contours[i])) < m_minArea || !isConvex)
 		if (std::fabs(cv::contourArea(contours[i])) < m_minArea)
 			continue;
 
-		//m_minCos = (area < 3000.f) ? -0.4f : -0.23f; // 직각 체크
-		//m_maxCos = (area < 3000.f) ? 0.4f : 0.23f;
 		m_minCos = (area < 3000.f) ? -0.4f : -0.33f; // 직각 체크
 		m_maxCos = (area < 3000.f) ? 0.4f : 0.33f;
 
@@ -861,11 +890,30 @@ bool cMeasure::FindBox(cv::Mat &img
 				//(vtc == 4) && 
 				(mincos >= m_minCos) && (maxcos <= m_maxCos))
 			{
-				cContour contour;
-				contour.Init(approx);
-				contour.m_maxCos = maxcos;
-				contour.m_minCos = mincos;
-				out.push_back(contour);
+				if (vtc == 4)
+				{
+					RotatedRect rotateR = minAreaRect(contours[i]);
+					cv::Point2f pts[4];
+					rotateR.points(pts);
+
+					vector<cv::Point> tmpContour(4);
+					for (int k = 0; k < 4; ++k)
+						tmpContour[k] = pts[k];
+
+					cContour contour;
+					contour.Init(tmpContour);
+					contour.m_maxCos = 0;
+					contour.m_minCos = 0;
+					out.push_back(contour);
+				}
+				else
+				{
+					cContour contour;
+					contour.Init(approx);
+					contour.m_maxCos = maxcos;
+					contour.m_minCos = mincos;
+					out.push_back(contour);
+				}
 			}
 		}
 	}
@@ -928,6 +976,22 @@ void cMeasure::RemoveDuplicateContour(vector<sContourInfo> &contours)
 					{
 						// 더 낮은 높이의 박스를 제거한다.
 						if (contour1.upperH > contour2.upperH)
+						{
+							contour2.used = false;
+						}
+						else
+						{
+							contour1.used = false;
+						}
+					}
+				}
+				else
+				{
+					// 높이가 비슷하고, 넓이가 다른 박스가 겹쳐있을 때, 
+					// 넓이가 작은 박스를 제거한다.
+					if (abs(contour1.upperH - contour2.upperH) < 5.f)
+					{
+						if (a1 > a2)
 						{
 							contour2.used = false;
 						}

@@ -27,6 +27,8 @@ cSensor::cSensor()
 	, m_isShow(true)
 	, m_id(0)
 	, m_writeTime(0)
+	//, m_outlierTolerance(6000)
+	, m_outlierTolerance(OUTLIER_TOLERANCE)
 {
 }
 
@@ -50,10 +52,12 @@ bool cSensor::InitCamera(const int id, const CameraInfo &cinfo)
 	// Open camera with camera info.
 	m_camera->Open(cinfo);
 
-	//GenApi::CDeviceInfoPtr ptrDeviceInfo = 
 	//GenApi::CIntegerPtr ptrDeviceChannel = m_camera->GetParameter("DeviceChannel");
 	//int devChannel[4] = {1, 2, 3};
 	//ptrDeviceChannel->SetValue(devChannel[id]);
+	
+	GenApi::CIntegerPtr ptrOutlierTolerance = m_camera->GetParameter("OutlierTolerance");
+	ptrOutlierTolerance->SetValue(m_outlierTolerance);
 	
 	//
 	// Configure camera for synchronous free run.
@@ -105,8 +109,25 @@ bool cSensor::Grab()
 	RETV(!m_isEnable, false);
 	RETV(!m_isShow, false);
 
+	static int oldOutlierTolerance = m_outlierTolerance;
+
 	try
 	{
+		// Check & Update Parameters
+		if (oldOutlierTolerance != m_outlierTolerance)
+		{
+			try {
+				GenApi::CIntegerPtr ptrOutlierTolerance = m_camera->GetParameter("OutlierTolerance");
+				ptrOutlierTolerance->SetValue(m_outlierTolerance);
+			}
+			catch (...)
+			{
+				// nothing~
+			}
+
+			oldOutlierTolerance = m_outlierTolerance;
+		}
+
 		GrabResult grabResult;
 		m_camera->GetGrabResult(grabResult, 100);
 
@@ -175,6 +196,7 @@ bool cSensor::CopyCaptureBuffer(cRenderer &renderer, const char *saveFileName)
 				m_writeTime = curT;
 				// save only processing camera depthmap
 				m_tempBuffer.Write(saveFileName);
+				//m_tempBuffer.WriteAscii(saveFileName);
 			}
 		}
 	}

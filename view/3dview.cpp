@@ -228,8 +228,10 @@ void c3DView::Capture3D()
 		CommonStates states(renderer.GetDevice());
 		renderer.GetDevContext()->RSSetState(states.CullNone());
 
+		//640x480 해상도에서, 1px 정도 오차가 있어 추가함.
 		Transform tfm;
-		tfm.scale = Vector3(1.5f, 1, 1.5f);
+		tfm.scale = Vector3(1.5f, 1, 1.5f);// +(1.f / 480.f));
+
 		for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
 			if (sensor->m_isShow && sensor->m_buffer.m_isLoaded)
 				sensor->m_buffer.Render(renderer, "Heightmap", false

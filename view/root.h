@@ -50,7 +50,7 @@ public:
 	bool DisconnectSensor();
 	void Update(const float deltaSeconds);
 	bool KinectCapture();
-	void MeasureVolume();
+	void MeasureVolume(const bool isForceMeasure = false);
 	bool LoadPlane();
 	bool SavePlane();
 	void GeneratePlane(common::Vector3 pos[3]);
@@ -109,6 +109,9 @@ public:
 	common::Vector3 m_cullRangeMin;
 	common::Vector3 m_cullRangeMax;
 	common::cConfig m_config;
+
+	// *.PCD Write Thread
+	common::cThread m_pcdWriteThread;
 
 	// View
 	c3DView *m_3dView;

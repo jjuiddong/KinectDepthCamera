@@ -123,11 +123,13 @@ bool cRoot::KinectCapture()
 
 
 // camIdx 카메라가 인식한 영상으로 볼륨 측정한다.
-void cRoot::MeasureVolume()
+void cRoot::MeasureVolume(
+	const bool isForceMeasure // = false
+)
 {
 	// 순서 중요!!
 	g_root.m_3dView->Capture3D();
-	g_root.m_measure.MeasureVolume();
+	g_root.m_measure.MeasureVolume(isForceMeasure);
 	g_root.m_filterView->Process();
 	g_root.m_infraredView->Process(0);
 	//((cViewer*)g_application)->m_depthView->Process();
@@ -306,4 +308,6 @@ void cRoot::Clear()
 	m_config.SetValue("basler_connect", m_isTryConnectBasler);
 	m_config.SetValue("inputfilepath", m_inputFilePath.c_str());
 	m_config.Write(m_configFileName.c_str());
+
+	m_pcdWriteThread.Clear();
 }

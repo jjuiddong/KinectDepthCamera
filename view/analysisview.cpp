@@ -22,25 +22,8 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 
 	if (ImGui::Button("Volume Measure"))
 	{
-		g_root.MeasureVolume();
+		g_root.MeasureVolume(true);
 	}
-
-	//ImGui::SameLine();
-	//if (ImGui::Button("Analysis Depth"))
-	//{
-	//	if (!g_root.m_baslerCam.m_sensors.empty())
-	//	{
-	//		cSensor *sensor1 = g_root.m_baslerCam.m_sensors[0];
-	//		sensor1->m_buffer.AnalysisDepth();
-	//	}
-	//}
-
-	//ImGui::Spacing();
-	//ImGui::Separator();
-	//ImGui::Text("Height Area Count = %d", g_root.m_areaCount);
-	//ImGui::Text("Distribute Count = %d", g_root.m_distribCount);
-	//ImGui::Spacing();
-	//ImGui::Spacing();
 
 	ImGui::PushItemWidth(m_rect.Width()-70);
 
@@ -92,6 +75,42 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 	ImGui::Spacing();
 	ImGui::Spacing();
 
+
+	// Horz Distribute
+	{
+		ImGui::Text("Horz Distribute");
+		static int range = ARRAYSIZE(g_root.m_measure.m_horzDistrib);
+		static int scroll = 0;
+		ImGui::PlotLines2("Horz Distribute", &g_root.m_measure.m_horzDistrib[scroll]
+			, range, 0, scroll, "", 0, 100, ImVec2(0, 200));
+
+		if (ImGui::SliderInt("Range4", &range, 100, ARRAYSIZE(g_root.m_measure.m_horzDistrib)))
+			scroll = 0;
+		ImGui::SliderInt("Scroll4", &scroll, 0, ARRAYSIZE(g_root.m_measure.m_horzDistrib) - range);
+	}
+
+	ImGui::Spacing();
+	ImGui::Spacing();
+
+
+	// Vert Distribute
+	{
+		ImGui::Text("Vert Distribute");
+		static int range = ARRAYSIZE(g_root.m_measure.m_horzDistrib);
+		static int scroll = 0;
+		ImGui::PlotLines2("Vert Distribute", &g_root.m_measure.m_vertDistrib[scroll]
+			, range, 0, scroll, "", 0, 100, ImVec2(0, 200));
+
+		if (ImGui::SliderInt("Range5", &range, 100, ARRAYSIZE(g_root.m_measure.m_vertDistrib)))
+			scroll = 0;
+		ImGui::SliderInt("Scroll5", &scroll, 0, ARRAYSIZE(g_root.m_measure.m_vertDistrib) - range);
+	}
+
+	ImGui::Spacing();
+	ImGui::Spacing();
+
+
+
 	// Diff Average
 	{
 		ImGui::Text("Height Different Average");
@@ -104,20 +123,6 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 				, sensor1->m_buffer.m_diffAvrs.idx, 0, "", 0, .5f, ImVec2(0, 200));
 		}
 	}
-
-
-	//ImGui::Spacing();
-	//ImGui::Separator();
-	//ImGui::Spacing();
-	//for (int i = 0; i < g_root.m_areaFloorCnt; ++i)
-	//{
-	//	cRoot::sAreaFloor *area = g_root.m_areaBuff[i];
-	//	ImGui::Text("Area-%d", i + 1);
-	//	ImGui::Text("AreaSize : %d", area->areaCnt);
-	//	ImGui::PlotLines("Area ", area->areaGraph.values
-	//		, ARRAYSIZE(area->areaGraph.values)
-	//		, area->areaGraph.idx, "", 0, 2000, ImVec2(0, 100));
-	//}
-
+	
 	ImGui::PopItemWidth();
 }

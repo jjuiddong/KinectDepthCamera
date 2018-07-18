@@ -47,6 +47,7 @@ void cCameraView::OnRender(const float deltaSeconds)
 			ImGui::TreeNodeEx((void*)(intptr_t)idx++, node_flags, text.c_str());
 			text.Format("IpAddress = %s", sensor->m_info.strIpAddress.c_str());
 			ImGui::TreeNodeEx((void*)(intptr_t)idx++, node_flags, text.c_str());
+			ImGui::DragInt("Outlier Tolerance", &sensor->m_outlierTolerance);
 	
 			ImGui::TreePop();
 		}

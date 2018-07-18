@@ -12,6 +12,7 @@ public:
 		vector<__int64> ids; // convert only filename  to number
 		vector<common::StrPath> fullFileNames; //  Full Filename (UTF-8 encoding)
 		vector<common::StrPath> fileNames; // Only Filename (UTF-8 encoding)
+		int aniIdx;
 	};
 
 	cAnimationView(const string &name);
@@ -49,9 +50,6 @@ public:
 		};
 	};
 	eState::Enum m_state;
-	bool m_isCaptureContinuos;
-	float m_captureTime;
-	float m_triggerDelayTime;
 
 	// Animation
 	bool m_isFileAnimation;
@@ -63,14 +61,10 @@ public:
 	bool m_isAutoSelectFileIndex;
 
 	// Delay Measure (minimum difference error buffer)
-	float m_measureTime;
 	int m_measureCount;
 
 	// Files
 	enum { MAX_FILEPAGE = 100 };
-	int m_filePages;
-	int m_comboFileIdx;
-	common::Str256 m_comboFileStr;
 	int m_selectFileList;
 	vector<int> m_selFileIdx;
 	vector<common::StrPath> m_selectPath; // UTF-16

@@ -204,7 +204,16 @@ bool cSensorBuffer::UpdatePointCloud(cRenderer &renderer
 {
 	InitBuffer(renderer);
 
-	m_srcVertices = vertices;
+	// Copy Vertices
+	{
+		if (m_srcVertices.size() != vertices.size())
+			m_srcVertices.resize(vertices.size());
+		const Vector3 *src = &vertices[0];
+		Vector3 *dst = &m_srcVertices[0];
+		const u_int vertexSize = vertices.size();
+		for (u_int i = 0; i < vertexSize; ++i)
+			*dst++ = *src++;
+	}
 
 	memcpy(&m_intensity[0], &intensity[0], intensity.size() * sizeof(intensity[0]));
 	memcpy(&m_confidence[0], &confidence[0], confidence.size() * sizeof(confidence[0]));
@@ -212,8 +221,12 @@ bool cSensorBuffer::UpdatePointCloud(cRenderer &renderer
 	UpdatePointCloudAllConfig(renderer);
 	UpdatePointCloudBySelf(renderer);
 
-	for (u_int i = (u_int)m_pointCloudCount; i < m_vertices.size(); ++i)
-		m_vertices[i] = Vector3(0, 0, 0);
+	//if (m_vertices.size() > (u_int)m_pointCloudCount)
+	//{
+	//	Vector3 *dst = &m_vertices[m_pointCloudCount];
+	//	for (u_int i = (u_int)m_pointCloudCount; i < m_vertices.size(); ++i)
+	//		*dst++ = Vector3(0, 0, 0);
+	//}
 
 	return true;
 }
@@ -228,39 +241,36 @@ bool cSensorBuffer::UpdatePointCloudBySelf(graphic::cRenderer &renderer)
 
 	if (sVertex *dst = (sVertex*)m_vtxBuff.Lock(renderer))
 	{
-		int cnt = 0;
-		for (int i = 0; i < m_height; ++i)
+		Vector3 *src = &m_vertices[0];
+		const u_int vertexSize = m_vertices.size();
+		for (u_int i = 0; i < vertexSize; ++i)
 		{
-			for (int k = 0; k < m_width; ++k)
+			if (src->IsEmpty())
 			{
-				Vector3 pos = GetVertex(k, i);
-				if (pos.IsEmpty())
-					continue;
-
-				if (g_root.m_isRangeCulling)
-				{
-					const Vector3 gpos = pos;
-
-					if (gpos.x < g_root.m_cullRangeMin.x)
-						continue;
-					if (gpos.y < g_root.m_cullRangeMin.y)
-						continue;
-					if (gpos.z < g_root.m_cullRangeMin.z)
-						continue;
-					if (gpos.x > g_root.m_cullRangeMax.x)
-						continue;
-					if (gpos.y > g_root.m_cullRangeMax.y)
-						continue;
-					if (gpos.z > g_root.m_cullRangeMax.z)
-						continue;
-				}
-
-				dst->p = pos;
-
-				++cnt;
-				++dst;
-				++m_pointCloudCount;
+				++src;
+				continue;
 			}
+
+			if (g_root.m_isRangeCulling)
+			{
+				if (src->x < g_root.m_cullRangeMin.x)
+					continue;
+				if (src->y < g_root.m_cullRangeMin.y)
+					continue;
+				if (src->z < g_root.m_cullRangeMin.z)
+					continue;
+				if (src->x > g_root.m_cullRangeMax.x)
+					continue;
+				if (src->y > g_root.m_cullRangeMax.y)
+					continue;
+				if (src->z > g_root.m_cullRangeMax.z)
+					continue;
+			}
+
+			dst->p = *src;
+			++dst;
+			++src;
+			++m_pointCloudCount;
 		}
 
 		m_vtxBuff.Unlock(renderer);
@@ -310,14 +320,16 @@ bool cSensorBuffer::UpdatePointCloudAllConfig(graphic::cRenderer &renderer)
 
 	float maxDiff = 0.f;
 	float diffAvrs = 0;
-	for (u_int i = 0; i < m_srcVertices.size(); ++i)
+	Vector3 *srcVtx = &m_srcVertices[0];
+	Vector3 *dstVtx = &m_vertices[0];
+	const u_int vertexSize = m_srcVertices.size();
+	for (u_int i = 0; i < vertexSize; ++i)
 	{
-		const Vector3 &vtx = m_vertices[i];
-		Vector3 pos = m_srcVertices[i] * tm;
-		if (!isnan(pos.x) && !isnan(m_srcVertices[i].x))
+		Vector3 pos = *srcVtx * tm;
+		if (!isnan(pos.x) && !isnan(srcVtx->x))
 		{
-			const float diff = abs(pos.y - vtx.y);
-			if (!vtx.IsEmpty())
+			const float diff = abs(pos.y - dstVtx->y);
+			if (!dstVtx->IsEmpty())
 			{
 				diffAvrs += diff;
 				if (diff > maxDiff)
@@ -337,7 +349,9 @@ bool cSensorBuffer::UpdatePointCloudAllConfig(graphic::cRenderer &renderer)
 			pos.z += f * (pos.y - 30.f);
 		}
 
-		m_vertices[i] = pos;
+		*dstVtx = pos;
+		++dstVtx;
+		++srcVtx;
 	}
 	diffAvrs /= (float)m_vertices.size();
 	m_diffAvrs.AddValue(diffAvrs);

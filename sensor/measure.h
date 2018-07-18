@@ -14,7 +14,7 @@ public:
 	cMeasure();
 	virtual ~cMeasure();
 
-	bool MeasureVolume();
+	bool MeasureVolume(const bool isForceMeasure = false);
 	void CalcBoxVolumeAverage();
 	void ClearBoxVolumeAverage();
 	bool FindBox(cv::Mat &img, const u_int vtxCnt, OUT vector<cContour> &out);
@@ -53,5 +53,7 @@ public:
 	int m_calcAverageCount;
 
 	float m_volDistrib[2000]; // scale:10, 소수점 첫번째 자리까지 분포표시, 0.01 ~ 20 volume
+	float m_horzDistrib[2000]; // 가로 분포, 1mm ~ 2000mm
+	float m_vertDistrib[2000]; // 세로 분포, 1mm ~ 2000mm
 	common::CriticalSection m_cs;
 };

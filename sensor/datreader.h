@@ -18,6 +18,7 @@ public:
 
 	bool Read(const char *fileName);
 	bool Write(const char *fileName);
+	bool WriteAscii(const char *fileName);
 	void Clear();
 
 
