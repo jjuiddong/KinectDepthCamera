@@ -27,6 +27,10 @@ public:
 	void Clear();
 
 
+protected:
+	void CheckAndUpdateParameters();
+
+
 public:
 	int m_id;
 	bool m_isEnable;
@@ -34,6 +38,10 @@ public:
 	bool m_isShow;
 	double m_writeTime;
 	int m_outlierTolerance;
+	int m_confidenceThreshold;
+	int m_oldOutlierTolerance;
+	int m_oldConfidenceThreshold;
+
 	CameraInfo m_info;
 	CToFCamera *m_camera;
 	cDatReader m_tempBuffer; // temporary buffer

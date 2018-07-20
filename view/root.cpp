@@ -22,7 +22,7 @@ cRoot::cRoot()
 	, m_baslerCam(true)
 	, m_isGrabLog(false)
 	, m_isRangeCulling(false)
-	, m_cullRangeMin(-200, -200, -200)
+	, m_cullRangeMin(-200, -20, -200)
 	, m_cullRangeMax(200, 200, 200)
 	, m_isCalcHorz(false)
 	, m_plane(Vector3(0, 1, 0), 0)
@@ -35,6 +35,7 @@ cRoot::cRoot()
 	, m_isShowBoxCandidate(true)
 	, m_isShowBoxVertex(true)
 	, m_isSave2DMat(false)
+	, m_isShowBeforeContours(false)
 {
 	// Camera Offset Setting, Korean Air Cargo
 	//m_cameraOffset[0].pos = Vector3(-59.740f, 4.170f, -75.420f);

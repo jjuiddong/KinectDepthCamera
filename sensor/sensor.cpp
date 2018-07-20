@@ -29,6 +29,7 @@ cSensor::cSensor()
 	, m_writeTime(0)
 	//, m_outlierTolerance(6000)
 	, m_outlierTolerance(OUTLIER_TOLERANCE)
+	, m_confidenceThreshold(CONFIDENCE_THRESHOLD)
 {
 }
 
@@ -58,7 +59,16 @@ bool cSensor::InitCamera(const int id, const CameraInfo &cinfo)
 	
 	GenApi::CIntegerPtr ptrOutlierTolerance = m_camera->GetParameter("OutlierTolerance");
 	ptrOutlierTolerance->SetValue(m_outlierTolerance);
-	
+
+	GenApi::CIntegerPtr ptrConfidenceThreshold = m_camera->GetParameter("ConfidenceThreshold");
+	ptrConfidenceThreshold->SetValue(m_confidenceThreshold);
+
+	//GenApi::CIntegerPtr ptrMaxDepth = m_camera->GetParameter("DepthMax");
+	//ptrMaxDepth->SetValue(4000);
+
+	m_oldOutlierTolerance = m_outlierTolerance;
+	m_oldConfidenceThreshold = m_confidenceThreshold;
+
 	//
 	// Configure camera for synchronous free run.
 	// Do not yet configure trigger delays.
@@ -103,30 +113,49 @@ bool cSensor::InitCamera(const int id, const CameraInfo &cinfo)
 }
 
 
+// Check & Update Parameters
+void cSensor::CheckAndUpdateParameters()
+{
+	if (m_oldOutlierTolerance != m_outlierTolerance)
+	{
+		try {
+			GenApi::CIntegerPtr ptrVal = m_camera->GetParameter("OutlierTolerance");
+			ptrVal->SetValue(m_outlierTolerance);
+		}
+		catch (...)
+		{
+			// nothing~
+		}
+
+		m_oldOutlierTolerance = m_outlierTolerance;
+	}
+
+	if (m_oldConfidenceThreshold != m_confidenceThreshold)
+	{
+		try {
+			GenApi::CIntegerPtr ptrVal = m_camera->GetParameter("ConfidenceThreshold");
+			ptrVal->SetValue(m_confidenceThreshold);
+		}
+		catch (...)
+		{
+			// nothing~
+		}
+
+		m_oldConfidenceThreshold = m_confidenceThreshold;
+	}
+}
+
+
 bool cSensor::Grab()
 {
 	RETV(!m_camera, false);
 	RETV(!m_isEnable, false);
 	RETV(!m_isShow, false);
 
-	static int oldOutlierTolerance = m_outlierTolerance;
 
 	try
 	{
-		// Check & Update Parameters
-		if (oldOutlierTolerance != m_outlierTolerance)
-		{
-			try {
-				GenApi::CIntegerPtr ptrOutlierTolerance = m_camera->GetParameter("OutlierTolerance");
-				ptrOutlierTolerance->SetValue(m_outlierTolerance);
-			}
-			catch (...)
-			{
-				// nothing~
-			}
-
-			oldOutlierTolerance = m_outlierTolerance;
-		}
+		CheckAndUpdateParameters();
 
 		GrabResult grabResult;
 		m_camera->GetGrabResult(grabResult, 100);

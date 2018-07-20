@@ -107,6 +107,7 @@ public:
 	bool m_isShowBoxVertex; // filterview, show box vertex, default=true
 	bool m_isShowBox; // filterview, show box vertex, default=true
 	bool m_isShowBoxCandidate; // filterview, show candidate box vertex, default=true
+	bool m_isShowBeforeContours; // filterview, show before remove duplicate contours array
 	common::Vector3 m_cullRangeMin;
 	common::Vector3 m_cullRangeMax;
 	common::cConfig m_config;

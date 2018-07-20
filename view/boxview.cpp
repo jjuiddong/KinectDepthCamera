@@ -204,7 +204,7 @@ void cBoxView::OnRender(const float deltaSeconds)
 	bool isOpen = true;
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 	ImGui::SetNextWindowPos(pos);
-	ImGui::SetNextWindowSize(ImVec2(std::min(m_viewRect.Width(), 500.f), std::min(m_viewRect.Height(), 800.f)));
+	ImGui::SetNextWindowSize(ImVec2(std::min(m_viewRect.Width(), 300.f), m_viewRect.Height()-50.f));
 	ImGui::SetNextWindowBgAlpha(windowAlpha);
 	ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
 	if (ImGui::Begin("Box Volume", &isOpen, flags))

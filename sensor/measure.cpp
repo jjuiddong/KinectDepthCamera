@@ -75,13 +75,18 @@ void ThreadFilterAllFunc(cMeasure *fview, bool isCalcHorz)
 		{
 			int loopCnt = 0;
 			cv::Mat binImg = mbinImg.clone();
-			while (loopCnt < 8)
+			while (loopCnt < 14)
 			{
+				if (isCalcHorz && (vtxCnt == 4))
+				{
+					int a = 0;
+				}
+
 				if (g_root.m_isSave2DMat)
 				{
 					// save mat file
 					StrPath path;
-					path.Format("depthframe_mat_%d_%d_%d_%d.jpg", isCalcHorz, i, vtxCnt, loopCnt);
+					path.Format("filter/mat_calc%d_f%d_v%d_l%d.jpg", isCalcHorz, i, vtxCnt, loopCnt);
 					cv::imwrite(path.c_str(), binImg);
 				}
 
@@ -92,6 +97,14 @@ void ThreadFilterAllFunc(cMeasure *fview, bool isCalcHorz)
 					cv::Mat img2 = binImg.clone();
 					for (int k = 0; k < loopCnt; ++k)
 						cv::erode(img2, img2, element);
+
+					if (g_root.m_isSave2DMat)
+					{
+						// save mat file
+						StrPath path;
+						path.Format("filter/mat_after_calc%d_f%d_v%d_l%d.jpg", isCalcHorz, i, vtxCnt, loopCnt);
+						cv::imwrite(path.c_str(), img2);
+					}
 
 					vector<cContour> out;
 					if (fview->FindBox(img2, vtxCnt, out))
@@ -116,8 +129,8 @@ void ThreadFilterAllFunc(cMeasure *fview, bool isCalcHorz)
 							info.level = vtxCnt;
 							info.loop = loopCnt;
 							info.lowerH = 0;
-							const float scaleH = 0.99f;
-							const float offsetY = (g_root.m_isPalete) ? -13.f : 3.5f;
+							//const float scaleH = 0.99f;
+							//const float offsetY = (g_root.m_isPalete) ? -13.f : 3.5f;
 
 							//info.upperH = (areaFloor->maxIdx * 0.1f) * scaleH + offsetY;
 							//info.upperH = (areaFloor->maxIdx * 0.1f);
@@ -219,8 +232,8 @@ void ThreadFilterSubFunc(cMeasure *fview, sAreaFloor *areaFloor, bool isCalcHorz
 						info.loop = loopCnt;
 						info.lowerH = 0;
 
-						const float scaleH = 0.99f;
-						const float offsetY = (g_root.m_isPalete) ? -13.f : 3.5f;
+						//const float scaleH = 0.99f;
+						//const float offsetY = (g_root.m_isPalete) ? -13.f : 3.5f;
 
 						//info.upperH = (areaFloor->maxIdx * 0.1f) * scaleH + offsetY;
 						info.upperH = areaFloor->avrHeight;
@@ -319,7 +332,7 @@ void cMeasure::CalcHeightDistribute()
 	{
 		//const float LIMIT_AREA = 30.f;
 		const float LIMIT_AREA = 50.f;
-		const float minArea = 80.f;
+		const float minArea = 60.f;
 		float limitLowArea = LIMIT_AREA;
 		int state = 0; // 0: check, rising pulse, 1: check down pulse, 2: calc low height
 		int startIdx = 0, endIdx = 0;
@@ -419,7 +432,7 @@ void cMeasure::CalcHeightDistribute()
 			// 펄스 하강 체크
 			if (m_hDistrib2[i] <= 0)
 			{
-				if ((maxAreaIdx == 0) || (startIdx == 0) || (i - startIdx > 400)) // 범위가 너무크면 무시
+				if ((maxAreaIdx == 0) || (startIdx < 100) || (i - startIdx > 400)) // 범위가 너무크면 무시
 				{
 					state = 0; // 무시되는 펄스 (첫 번째 펄스)
 				}
@@ -523,6 +536,8 @@ void cMeasure::Measure2DImage()
 		}
 	}
 
+	m_beforeRemoveContours = m_contours;
+
 	RemoveDuplicateContour(m_contours);
 
 	// Display Detect Box (for debugging)
@@ -548,8 +563,15 @@ void cMeasure::DrawContourRect()
 	srcImg.convertTo(m_dstImg, CV_8UC1, 255.0f);
 	cvtColor(m_dstImg, m_dstImg, cv::COLOR_GRAY2RGB);
 
-	RenderContourRect(m_dstImg, m_contours);
-	RenderContourRect(m_dstImg, m_removeContours, m_contours.size());
+	if (g_root.m_isShowBeforeContours)
+	{
+		RenderContourRect(m_dstImg, m_beforeRemoveContours);
+	}
+	else
+	{
+		RenderContourRect(m_dstImg, m_contours);
+		RenderContourRect(m_dstImg, m_removeContours, m_contours.size());
+	}
 }
 
 
@@ -979,6 +1001,9 @@ void cMeasure::RemoveDuplicateContour(vector<sContourInfo> &contours)
 
 		for (u_int k = i + 1; k < contours.size(); ++k)
 		{
+			if (!contour1.used)
+				continue;
+
 			sContourInfo &contour2 = contours[k];
 			if (!contour2.used)
 				continue;
@@ -1042,6 +1067,22 @@ void cMeasure::RemoveDuplicateContour(vector<sContourInfo> &contours)
 						else
 						{
 							contour1.used = false;
+						}
+					}
+					else
+					{
+						// 높이가 다른데, 겹쳐져 있을 경우,
+						// 넓이가 작은 박스가 아래에 있다면, 잘못 인식된 것이므로 제거한다.
+						// 넓이가 작은 박스가 위에 있다면, 제대로 인식된 것이므로 제거하지 않는다.
+						if (a1 > a2)
+						{
+							if (contour1.upperH > contour2.upperH)
+								contour2.used = false;
+						}
+						else
+						{
+							if (contour1.upperH < contour2.upperH)
+								contour1.used = false;
 						}
 					}
 				}

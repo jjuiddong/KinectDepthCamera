@@ -87,8 +87,10 @@ struct sMeasureResult
 };
 
 
-enum {OUTLIER_TOLERANCE = 1120};
-//enum { OUTLIER_TOLERANCE = 2496 };
+enum {
+	  OUTLIER_TOLERANCE = 1120
+	, CONFIDENCE_THRESHOLD = 14624
+};
 
 static const common::Vector3 g_3dCaptureScale(1.5f, 1.f, 1.5f);
 

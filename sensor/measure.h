@@ -51,6 +51,7 @@ public:
 
 	vector<sContourInfo> m_contours; // 현재 인식된 박스 정보
 	vector<sContourInfo> m_removeContours; // 중복 제거된 박스 정보
+	vector<sContourInfo> m_beforeRemoveContours; // 중복 제거되기전 박스 정보
 	vector<sAvrContour> m_avrContours; // 평균으로 계산된 박스 정보
 	int m_calcAverageCount;
 

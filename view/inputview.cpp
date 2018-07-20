@@ -432,7 +432,6 @@ void cInputView::UpdateDelayMeasure(const float deltaSeconds)
 
 		if (!result.volumes.empty())
 		{
-
 			m_measureCount++;
 			g_root.m_dbClient.Insert(result);
 			g_root.m_measure.m_results.push_back(result);

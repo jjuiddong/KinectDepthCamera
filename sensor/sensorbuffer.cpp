@@ -245,31 +245,29 @@ bool cSensorBuffer::UpdatePointCloudBySelf(graphic::cRenderer &renderer)
 		const u_int vertexSize = m_vertices.size();
 		for (u_int i = 0; i < vertexSize; ++i)
 		{
-			if (src->IsEmpty())
-			{
-				++src;
+			const Vector3 &pos = *src++;
+
+			if (pos.IsEmpty())
 				continue;
-			}
 
 			if (g_root.m_isRangeCulling)
 			{
-				if (src->x < g_root.m_cullRangeMin.x)
+				if (pos.x < g_root.m_cullRangeMin.x)
 					continue;
-				if (src->y < g_root.m_cullRangeMin.y)
+				if (pos.y < g_root.m_cullRangeMin.y)
 					continue;
-				if (src->z < g_root.m_cullRangeMin.z)
+				if (pos.z < g_root.m_cullRangeMin.z)
 					continue;
-				if (src->x > g_root.m_cullRangeMax.x)
+				if (pos.x > g_root.m_cullRangeMax.x)
 					continue;
-				if (src->y > g_root.m_cullRangeMax.y)
+				if (pos.y > g_root.m_cullRangeMax.y)
 					continue;
-				if (src->z > g_root.m_cullRangeMax.z)
+				if (pos.z > g_root.m_cullRangeMax.z)
 					continue;
 			}
 
-			dst->p = *src;
+			dst->p = pos;
 			++dst;
-			++src;
 			++m_pointCloudCount;
 		}
 
@@ -284,7 +282,7 @@ bool cSensorBuffer::UpdatePointCloudBySelf(graphic::cRenderer &renderer)
 bool cSensorBuffer::UpdatePointCloudAllConfig(graphic::cRenderer &renderer)
 {
 	Transform tfm;
-	tfm.scale = Vector3(1, 1, 1)*0.1f;
+	tfm.scale = Vector3(1, 1, 1)*0.1f; // basler값은 1mm 단위이므로, 1cm 단위로 바꾸기위해서 0.1을 곱한다.
 	Matrix44 tm = tfm.GetMatrix();
 
 	// plane calculation

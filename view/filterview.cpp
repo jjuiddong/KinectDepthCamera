@@ -92,23 +92,43 @@ void cFilterView::OnRender(const float deltaSeconds)
 			isUpdate = true;
 		}
 
-		for (u_int i=0; i < g_root.m_measure.m_contours.size(); ++i)
+		ImGui::SameLine();
+		if (ImGui::Checkbox("Before Contours", &g_root.m_isShowBeforeContours))
 		{
-			auto &contour = g_root.m_measure.m_contours[i];
-			Str64 text;
-			text.Format("Box%d, %.1f, %.1f", i+1, contour.area, contour.upperH);
-			if (ImGui::Checkbox(text.c_str(), &contour.visible))
-				isUpdate = true;
+			isUpdate = true;
 		}
-
-		for (u_int i = 0; i < g_root.m_measure.m_removeContours.size(); ++i)
+		ImGui::Separator();
+		if (g_root.m_isShowBeforeContours)
 		{
-			auto &contour = g_root.m_measure.m_removeContours[i];
-			Str64 text;
-			text.Format("Box%d, %.1f, %.1f", i + 1 + g_root.m_measure.m_contours.size()
-				, contour.area, contour.upperH);
-			if (ImGui::Checkbox(text.c_str(), &contour.visible))
-				isUpdate = true;
+			for (u_int i = 0; i < g_root.m_measure.m_beforeRemoveContours.size(); ++i)
+			{
+				auto &contour = g_root.m_measure.m_beforeRemoveContours[i];
+				Str64 text;
+				text.Format("Box%d, %.1f, %.1f", i + 1, contour.area, contour.upperH);
+				if (ImGui::Checkbox(text.c_str(), &contour.visible))
+					isUpdate = true;
+			}
+		}
+		else
+		{
+			for (u_int i=0; i < g_root.m_measure.m_contours.size(); ++i)
+			{
+				auto &contour = g_root.m_measure.m_contours[i];
+				Str64 text;
+				text.Format("Box%d, %.1f, %.1f", i+1, contour.area, contour.upperH);
+				if (ImGui::Checkbox(text.c_str(), &contour.visible))
+					isUpdate = true;
+			}
+
+			for (u_int i = 0; i < g_root.m_measure.m_removeContours.size(); ++i)
+			{
+				auto &contour = g_root.m_measure.m_removeContours[i];
+				Str64 text;
+				text.Format("Box%d, %.1f, %.1f", i + 1 + g_root.m_measure.m_contours.size()
+					, contour.area, contour.upperH);
+				if (ImGui::Checkbox(text.c_str(), &contour.visible))
+					isUpdate = true;
+			}
 		}
 
 		if (isUpdate)

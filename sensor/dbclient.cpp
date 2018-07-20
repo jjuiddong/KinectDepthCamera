@@ -75,13 +75,16 @@ bool cDBClient::Create()
 bool cDBClient::Insert(const sMeasureResult &result)
 {
 	// 임시로 파일로 저장한다.
-	if (0)
+	if (1)
 	{
-		using namespace std;
-		string fileName = "jsonoutput_" + common::GetCurrentDateTime() + ".volume";
-		ofstream ofs(fileName);
-		if (ofs.is_open())
-			ofs << cDBClient::GetResult2JSon(result);
+		if (0)
+		{
+			using namespace std;
+			string fileName = "measure/jsonoutput_" + common::GetCurrentDateTime() + ".volume";
+			ofstream ofs(fileName);
+			if (ofs.is_open())
+				ofs << cDBClient::GetResult2JSon(result);
+		}
 
 		// test debugging code
 		if (result.type == 1)
@@ -186,30 +189,22 @@ string cDBClient::GetResult2JSon(const sMeasureResult &result)
 bool cDBClient::WriteExcel()
 {
 	using namespace std;
-	string fileName = "exceloutput_" + common::GetCurrentDateTime() + ".volume";
+	string fileName = "measure/exceloutput_" + common::GetCurrentDateTime() + ".volume";
 	ofstream ofs(fileName);
 	if (!ofs.is_open())
 		return false;	
 
 	for (auto &result : m_results)
+	{
 		for (auto &vol : result.volumes)
+		{
 			ofs << vol.horz << "\t";
-	ofs << endl;
-
-	for (auto &result : m_results)
-		for (auto &vol : result.volumes)
 			ofs << vol.vert << "\t";
-	ofs << endl;
-
-	for (auto &result : m_results)
-		for (auto &vol : result.volumes)
 			ofs << vol.height << "\t";
-	ofs << endl;
-
-	for (auto &result : m_results)
-		for (auto &vol : result.volumes)
 			ofs << vol.vw << "\t";
-	ofs << endl;
+		}
+		ofs << endl;
+	}
 
 	return true;
 }
