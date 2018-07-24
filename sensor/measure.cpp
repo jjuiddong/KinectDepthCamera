@@ -115,7 +115,7 @@ void ThreadFilterAllFunc(cMeasure *fview, bool isCalcHorz)
 							bool isSame = false;
 							for (auto &c : contours)
 							{
-								if (c.contour == contour)
+								if ((c.upperH == areaFloor->avrHeight) && (c.contour == contour))
 								{
 									isSame = true;
 									break; // ignore this contour
@@ -156,7 +156,8 @@ void ThreadFilterAllFunc(cMeasure *fview, bool isCalcHorz)
 			bool isSame = false;
 			for (auto &c : fview->m_contours)
 			{
-				if (c.contour == ct.contour)
+				//if (c.contour == ct.contour)
+				if ((c.upperH == ct.upperH) && (c.contour == ct.contour))
 				{
 					isSame = true;
 					break; // ignore this contour

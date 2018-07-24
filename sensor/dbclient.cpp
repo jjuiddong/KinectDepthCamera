@@ -196,13 +196,19 @@ bool cDBClient::WriteExcel()
 
 	for (auto &result : m_results)
 	{
+		std::sort(result.volumes.begin(), result.volumes.end());
+
+		float totalVW = 0;
 		for (auto &vol : result.volumes)
 		{
 			ofs << vol.horz << "\t";
 			ofs << vol.vert << "\t";
 			ofs << vol.height << "\t";
 			ofs << vol.vw << "\t";
+
+			totalVW += vol.vw;
 		}
+		ofs << totalVW << "\t";
 		ofs << endl;
 	}
 

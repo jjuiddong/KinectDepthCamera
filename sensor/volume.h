@@ -76,6 +76,10 @@ struct sMeasureVolume
 	int pointCount;
 
 	sContourInfo contour;
+
+	bool operator<(const sMeasureVolume &rhs) {
+		return vw < rhs.vw;
+	}
 };
 
 
