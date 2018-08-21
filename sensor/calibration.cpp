@@ -292,17 +292,17 @@ bool cCalibration::CalibrationBasePlane(const vector<sRange> &ranges, OUT sResul
 		Transform tfm;
 		tfm.scale = Vector3(1, 1, 1)*0.1f;
 		Matrix44 tm = tfm.GetMatrix();
-		if (!g_root.m_plane.N.IsEmpty())
+		if (!g_root.m_groundPlane.N.IsEmpty())
 		{
 			Quaternion q;
-			q.SetRotationArc(g_root.m_plane.N, Vector3(0, 1, 0));
+			q.SetRotationArc(g_root.m_groundPlane.N, Vector3(0, 1, 0));
 			tm *= q.GetMatrix();
 
 			Vector3 center = g_root.m_volumeCenter * q.GetMatrix();
 			center.y = 0;
 
 			Matrix44 T;
-			T.SetPosition(Vector3(-center.x, g_root.m_plane.D, -center.z));
+			T.SetPosition(Vector3(-center.x, g_root.m_groundPlane.D, -center.z));
 
 			tm *= T;
 		}

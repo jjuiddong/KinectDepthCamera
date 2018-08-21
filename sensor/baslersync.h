@@ -4,11 +4,11 @@
 //
 #pragma once
 
-
+#include "volume.h"
+#include "datreader.h"
 #include <ConsumerImplHelper/ToFCamera.h>
 using namespace GenTLConsumerImplHelper;
 
-#include "datreader.h"
 
 class cSensor;
 
@@ -39,11 +39,9 @@ protected:
 
 
 public:
-	enum { MAX_CAMS = 10 };
-
 	bool m_isThreadMode;
 	vector<cSensor*> m_sensors;
-	bool m_oldCameraEnable[MAX_CAMS]; // 바뀐 값을 비교하기 위한 변수
+	bool m_oldCameraEnable[MAX_CAMERA]; // 바뀐 값을 비교하기 위한 변수
 	bool m_isTrySyncTrigger;
 	uint64_t m_SyncTriggerRate;
 	int64_t m_TriggerDelay;

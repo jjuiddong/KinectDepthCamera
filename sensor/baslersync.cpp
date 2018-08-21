@@ -1,10 +1,9 @@
 
 #include "stdafx.h"
 #include "baslersync.h"
-//#include "3dview.h"
-//#include "depthframe.h"
 #include "StopWatch.h"
 #include "sensor.h"
+#include <direct.h>
 
 using namespace GenApi;
 
@@ -70,13 +69,25 @@ bool cBaslerCameraSync::CreateSensor(const int sensorCount)
 		Sleep(10);
 
 	if (m_sensors.size() >= (u_int)sensorCount)
+	{
+		// Remove Sensor
+		// TODO: Ticky Code, need MultiThreading Lock
+		for (u_int i = (u_int)sensorCount; i < m_sensors.size(); ++i)
+			delete m_sensors[i];
+		const u_int curCnt = m_sensors.size();
+		for (u_int i = (u_int)sensorCount; i < curCnt; ++i)
+			m_sensors.pop_back();
+		//
+
 		return false;
+	}
 
 	const int initSensorCnt = sensorCount - m_sensors.size();
+	const int firstId = m_sensors.size();
 	for (int i = 0; i < initSensorCnt; ++i)
 	{
 		cSensor *sensor = new cSensor();
-		sensor->m_id = i;
+		sensor->m_id = firstId + i;
 		sensor->m_isEnable = true;
 		sensor->m_isShow = true;
 		sensor->m_info.strDisplayName = common::format("temp camera%d", i + 1);
@@ -93,10 +104,6 @@ bool cBaslerCameraSync::CreateSensor(const int sensorCount)
 
 int cBaslerCameraSync::BaslerCameraSetup()
 {
-	const size_t nBuffers = 3;  // Number of buffers to be used for grabbing.
-	//const size_t nImagesToGrab = 10; // Number of images to grab.
-	//size_t nImagesGrabbed = 0;
-
 	try
 	{
 		//
@@ -498,8 +505,22 @@ bool cBaslerCameraSync::CopyCaptureBuffer(graphic::cRenderer &renderer)
 		if (!sensor->IsEnable())
 			continue;
 
+		const char *dir = "../media/DepthSave";
 		common::StrPath fileName;
-		fileName.Format("../media/DepthSave/%d/%s.pcd", sensor->m_id, curTime.c_str());
+		fileName.Format("%s/%d/%s.pcd", dir, sensor->m_id, curTime.c_str());
+
+		// Check Exist Directory, if no such file directory, create directory
+		{
+			common::StrPath dir0(dir);
+			if (!dir0.IsFileExist())
+				_mkdir(dir);
+
+			common::StrPath dir1;
+			dir1.Format("%s/%d", dir, sensor->m_id);
+			if (!dir1.IsFileExist())
+				_mkdir(dir1.c_str());
+		}
+
 		sensor->CopyCaptureBuffer(renderer, fileName.c_str());
 	}
 

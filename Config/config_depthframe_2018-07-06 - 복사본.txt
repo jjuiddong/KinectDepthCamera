@@ -1,0 +1,11 @@
+center-x = 13.792635
+center-y = -11.220645
+center-z = 283.118500
+plane-d2 = 282.969208
+plane-d = 381.026642
+plane-x = -0.021615
+plane-y = -0.017381
+plane-z = -0.999615
+basler_connect = 1
+inputfilepath = ../Media/DepthSave3
+kinect_connect = 0

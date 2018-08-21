@@ -286,17 +286,17 @@ bool cSensorBuffer::UpdatePointCloudAllConfig(graphic::cRenderer &renderer)
 	Matrix44 tm = tfm.GetMatrix();
 
 	// plane calculation
-	if (!g_root.m_plane.N.IsEmpty())
+	if (!g_root.m_groundPlane.N.IsEmpty())
 	{
 		Quaternion q;
-		q.SetRotationArc(g_root.m_plane.N, Vector3(0, 1, 0));
+		q.SetRotationArc(g_root.m_groundPlane.N, Vector3(0, 1, 0));
 		tm *= q.GetMatrix();
 
 		Vector3 center = g_root.m_volumeCenter * q.GetMatrix();
 		center.y = 0;
 
 		Matrix44 T;
-		T.SetPosition(Vector3(-center.x, g_root.m_plane.D, -center.z));
+		T.SetPosition(Vector3(-center.x, g_root.m_groundPlane.D, -center.z));
 
 		tm *= T;
 	}
@@ -466,7 +466,7 @@ Vector3 cSensorBuffer::PickVertex(const Ray &ray)
 void cSensorBuffer::ChangeSpace(cRenderer &renderer)
 {
 	Quaternion q;
-	q.SetRotationArc(g_root.m_plane.N, Vector3(0, 1, 0));
+	q.SetRotationArc(g_root.m_groundPlane.N, Vector3(0, 1, 0));
 	const Matrix44 tm = q.GetMatrix();
 
 	Vector3 center = g_root.m_volumeCenter * tm;
@@ -476,7 +476,7 @@ void cSensorBuffer::ChangeSpace(cRenderer &renderer)
 	{
 		Vector3 pos = m_vertices[i];
 		m_vertices[i] = pos * tm;
-		m_vertices[i].y += g_root.m_plane.D;
+		m_vertices[i].y += g_root.m_groundPlane.D;
 		m_vertices[i].x -= center.x;
 		m_vertices[i].z -= center.z;
 	}

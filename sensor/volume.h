@@ -4,6 +4,7 @@
 //
 #pragma once
 
+#include "contour.h"
 #include "rectcontour.h"
 
 
@@ -94,6 +95,7 @@ struct sMeasureResult
 enum {
 	  OUTLIER_TOLERANCE = 1120
 	, CONFIDENCE_THRESHOLD = 14624
+	, MAX_CAMERA = 10
 };
 
 static const common::Vector3 g_3dCaptureScale(1.5f, 1.f, 1.5f);

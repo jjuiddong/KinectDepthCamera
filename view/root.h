@@ -23,7 +23,6 @@ static const int g_baslerColorHeight = 480;
 static const float g_capture3DWidth = 640.f * 1.f;
 static const float g_capture3DHeight = 480.f * 1.f;
 
-
 class c3DView;
 class cColorView;
 class cDepthView;
@@ -88,12 +87,13 @@ public:
 	bool m_isSave2DMat;
 
 	// Ground Calibration
+	int m_masterSensor;
 	common::StrPath m_configFileName;
-	common::Plane m_plane;
-	common::Plane m_planeSub[5];
+	common::Plane m_groundPlane;
+	common::Plane m_planeSub[ MAX_CAMERA];
 	common::Vector3 m_volumeCenter;
-	common::Transform m_cameraOffset[5];
-	float m_cameraOffsetYAngle[5];
+	common::Transform m_cameraOffset[ MAX_CAMERA];
+	float m_cameraOffsetYAngle[ MAX_CAMERA];
 
 	cCalibration m_calib;
 	common::Vector3 m_rangeCenter;

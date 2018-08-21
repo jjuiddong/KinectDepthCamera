@@ -25,7 +25,7 @@ cRoot::cRoot()
 	, m_cullRangeMin(-200, -20, -200)
 	, m_cullRangeMax(200, 200, 200)
 	, m_isCalcHorz(false)
-	, m_plane(Vector3(0, 1, 0), 0)
+	, m_groundPlane(Vector3(0, 1, 0), 0)
 	, m_volumeCenter(0, 0, 0)
 	, m_rangeMinMax(50, 50)
 	, m_isContinuousCalibrationPlane(false)
@@ -36,6 +36,7 @@ cRoot::cRoot()
 	, m_isShowBoxVertex(true)
 	, m_isSave2DMat(false)
 	, m_isShowBeforeContours(false)
+	, m_masterSensor(0)
 {
 	// Camera Offset Setting, Korean Air Cargo
 	//m_cameraOffset[0].pos = Vector3(-59.740f, 4.170f, -75.420f);
@@ -153,10 +154,10 @@ bool cRoot::LoadPlane()
 
 	if (m_config.GetString("plane-x", "none") != "none")
 	{
-		m_plane.N.x = m_config.GetFloat("plane-x");
-		m_plane.N.y = m_config.GetFloat("plane-y");
-		m_plane.N.z = m_config.GetFloat("plane-z");
-		m_plane.D = m_config.GetFloat("plane-d");
+		m_groundPlane.N.x = m_config.GetFloat("plane-x");
+		m_groundPlane.N.y = m_config.GetFloat("plane-y");
+		m_groundPlane.N.z = m_config.GetFloat("plane-z");
+		m_groundPlane.D = m_config.GetFloat("plane-d");
 	}
 
 	if (g_root.m_config.GetString("center-x", "none") != "none")
@@ -167,7 +168,7 @@ bool cRoot::LoadPlane()
 	}
 
 	// Load PlaneSub
-	for (int i = 0; i < 5; ++i)
+	for (int i = 0; i < MAX_CAMERA; ++i)
 	{
 		StrId id;
 
@@ -205,12 +206,12 @@ bool cRoot::LoadPlane()
 // Calibration에 관련된 변수들을 파일에 저장한다.
 bool cRoot::SavePlane()
 {
-	if (m_plane.N != Vector3(0,1,0))
+	if (m_groundPlane.N != Vector3(0,1,0))
 	{
-		m_config.SetValue("plane-x", m_plane.N.x);
-		m_config.SetValue("plane-y", m_plane.N.y);
-		m_config.SetValue("plane-z", m_plane.N.z);
-		m_config.SetValue("plane-d", m_plane.D);
+		m_config.SetValue("plane-x", m_groundPlane.N.x);
+		m_config.SetValue("plane-y", m_groundPlane.N.y);
+		m_config.SetValue("plane-z", m_groundPlane.N.z);
+		m_config.SetValue("plane-d", m_groundPlane.D);
 	}
 
 	if (!m_volumeCenter.IsEmpty())
@@ -221,7 +222,7 @@ bool cRoot::SavePlane()
 	}
 
 	// Save PlaneSub
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < MAX_CAMERA; ++i)
 	{
 		StrId id;
 
@@ -256,25 +257,23 @@ bool cRoot::SavePlane()
 
 void cRoot::GeneratePlane(common::Vector3 pos[3])
 {
-	Matrix44 tm;
-	if (m_plane.N.IsEmpty())
+	if (m_groundPlane.N == Vector3(0,1,0))
 	{
 		Plane plane(pos[0], pos[1], pos[2]);
-		m_plane = plane;
+		m_groundPlane = plane;
 	}
 	else
 	{
-		// old plane
+		// change original vertex space
+		Matrix44 tm;
 		{
 			Quaternion q;
-			q.SetRotationArc(m_plane.N, Vector3(0, 1, 0));
+			q.SetRotationArc(Vector3(0, 1, 0), m_groundPlane.N);
 			tm *= q.GetMatrix();
 			Matrix44 T;
-			T.SetPosition(Vector3(0, m_plane.D, 0));
+			T.SetPosition(m_groundPlane.N * -m_groundPlane.D);
 			tm *= T;
 		}
-
-		tm.Inverse2();
 
 		common::Vector3 p[3];
 		p[0] = pos[0] * tm;
@@ -294,7 +293,7 @@ void cRoot::GeneratePlane(common::Vector3 pos[3])
 		//}
 		//Vector3 N = Vector3(0, 1, 0) * tm.Inverse();
 		//Plane p(N.Normal(), 0);
-		m_plane = plane;
+		m_groundPlane = plane;
 	}
 }
 

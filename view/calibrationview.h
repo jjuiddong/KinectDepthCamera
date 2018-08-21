@@ -15,9 +15,12 @@ public:
 
 
 protected:
-	void SingleSensorGroundCalibration();
+	void CalibrationGroundPlane();
+	void SingleSensorSubPlaneCalibration();
 	void MultiSensorGroundCalibration();
 	double CalcBasePlaneStandardDeviation(const size_t camIdx = 0);
+	bool CalibrationSubPlane(const int sensorIdx, const common::Vector3 &rangeCenter, const common::Vector2 &rangeMinMax);
+
 	common::StrPath OpenFileDialog();
 
 

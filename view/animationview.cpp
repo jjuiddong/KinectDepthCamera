@@ -47,7 +47,7 @@ void cAnimationView::OnRender(const float deltaSeconds)
 		m_aniTime += deltaSeconds;
 		if ((m_aniTime > 0.1f) && !m_files.empty() && g_root.m_baslerCam.IsReadyCapture())
 		{
-			const int masterIdx = 0;
+			const int masterIdx = g_root.m_masterSensor;
 			bool result = false;
 
 			for (u_int idx = 0; idx < m_files.size(); ++idx)
@@ -57,6 +57,9 @@ void cAnimationView::OnRender(const float deltaSeconds)
 
 				sFileInfo &finfo1 = m_files[masterIdx];
 				sFileInfo &finfo2 = m_files[idx];
+				if (finfo2.fileNames.empty())
+					continue;
+
 				cSensor *sensor1 = g_root.m_baslerCam.m_sensors[masterIdx];
 				cSensor *sensor2 = g_root.m_baslerCam.m_sensors[idx];
 
@@ -82,6 +85,7 @@ void cAnimationView::OnRender(const float deltaSeconds)
 				}
 			}
 
+			// master load pcd file
 			sFileInfo &finfoMaster = m_files[masterIdx];
 			cSensor *masterSensor = g_root.m_baslerCam.m_sensors[masterIdx];
 			if ((finfoMaster.aniIdx >= 0) && masterSensor->m_isShow)
@@ -125,9 +129,19 @@ void cAnimationView::OnRender(const float deltaSeconds)
 	ImGui::Separator();
 
 	ImGui::Text("Camera Count ");
-	ImGui::SameLine(); ImGui::RadioButton("Cam1", &m_aniCameraCount, 0);
-	ImGui::SameLine(); ImGui::RadioButton("Cam2", &m_aniCameraCount, 1);
-	ImGui::SameLine(); ImGui::RadioButton("Cam3", &m_aniCameraCount, 2);
+	ImGui::SameLine(); ImGui::RadioButton("1", &m_aniCameraCount, 0);
+	ImGui::SameLine(); ImGui::RadioButton("2", &m_aniCameraCount, 1);
+	ImGui::SameLine(); ImGui::RadioButton("3", &m_aniCameraCount, 2);
+	ImGui::SameLine(); ImGui::RadioButton("4", &m_aniCameraCount, 3);
+	ImGui::SameLine(); ImGui::RadioButton("5", &m_aniCameraCount, 4);
+	//ImGui::Spacing();
+
+	ImGui::Text("Master Camera");
+	ImGui::SameLine(); ImGui::RadioButton("Cam1", &g_root.m_masterSensor, 0);
+	ImGui::SameLine(); ImGui::RadioButton("Cam2", &g_root.m_masterSensor, 1);
+	ImGui::SameLine(); ImGui::RadioButton("Cam3", &g_root.m_masterSensor, 2);
+	ImGui::SameLine(); ImGui::RadioButton("Cam4", &g_root.m_masterSensor, 3);
+	ImGui::SameLine(); ImGui::RadioButton("Cam5", &g_root.m_masterSensor, 4);
 	ImGui::Spacing();
 
 	// File Animation
@@ -379,6 +393,7 @@ void cAnimationView::UpdateFileList()
 	{
 		g_root.m_baslerCam.CreateSensor(m_aniCameraCount + 1);
 
+		m_files.clear();
 		m_files.reserve(std::max(g_root.m_baslerCam.m_sensors.size(), (size_t)3));
 
 		for (auto *sensor : g_root.m_baslerCam.m_sensors)

@@ -363,54 +363,56 @@ void c3DView::OnRender(const float deltaSeconds)
 		ImGui::SameLine();
 		ImGui::Checkbox("Box Volume", &m_showBoxVolume);
 
-		if (ImGui::Button("Gen Plane"))
-		{
-			m_genPlane = 0;
-		}
+		//if (ImGui::Button("Gen Plane"))
+		//{
+		//	m_genPlane = 0;
+		//}
 
-		ImGui::SameLine();
-		if (ImGui::Button("Save Plane"))
-		{
-			g_root.SavePlane();
-		}
+		//ImGui::SameLine();
+		//if (ImGui::Button("Save Plane"))
+		//{
+		//	g_root.SavePlane();
+		//}
 
-		ImGui::SameLine();
-		if (ImGui::Button("Load Plane"))
-		{
-			if (g_root.LoadPlane())
-			{
-				m_isGenPlane = true;
-				m_isGenVolumeCenter = true;
-			}
+		//ImGui::SameLine();
+		//if (ImGui::Button("Load Plane"))
+		//{
+		//	if (g_root.LoadPlane())
+		//	{
+		//		m_isGenPlane = true;
+		//		m_isGenVolumeCenter = true;
+		//	}
 
-			for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
-			{
-				sensor->m_buffer.UpdatePointCloudAllConfig(GetRenderer());
-				sensor->m_buffer.UpdatePointCloudBySelf(GetRenderer());
-			}
-		}
+		//	for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
+		//	{
+		//		sensor->m_buffer.UpdatePointCloudAllConfig(GetRenderer());
+		//		sensor->m_buffer.UpdatePointCloudBySelf(GetRenderer());
+		//	}
+		//}
 
-		ImGui::SameLine();
+		//ImGui::SameLine();
 		if (ImGui::Button("Pick Pos"))
 		{
 			m_state = eState::PICKPOS;
 		}
+		
+		ImGui::SameLine();
 		ImGui::Text("pick pos = %f, %f, %f", m_pickPos.x, m_pickPos.y, m_pickPos.z);
 
-		if (ImGui::Button("Volume Center"))
-		{
-			m_state = eState::VCENTER;
-		}
+		//if (ImGui::Button("Volume Center"))
+		//{
+		//	m_state = eState::VCENTER;
+		//}
 
-		cSensor *sensor1 = g_root.m_baslerCam.m_sensors.empty() ? NULL : g_root.m_baslerCam.m_sensors[0];
-		if (sensor1)
-		{
-			//const Vector3 &volumeCenter = g_root.m_volumeCenter;
-			//ImGui::Text("volume center = %f, %f, %f", volumeCenter.x, volumeCenter.y, volumeCenter.z);
+		//cSensor *sensor1 = g_root.m_baslerCam.m_sensors.empty() ? NULL : g_root.m_baslerCam.m_sensors[0];
+		//if (sensor1)
+		//{
+		//	//const Vector3 &volumeCenter = g_root.m_volumeCenter;
+		//	//ImGui::Text("volume center = %f, %f, %f", volumeCenter.x, volumeCenter.y, volumeCenter.z);
 
-			if (ImGui::Button("Change Space"))
-				sensor1->m_buffer.ChangeSpace(GetRenderer());
-		}
+		//	if (ImGui::Button("Change Space"))
+		//		sensor1->m_buffer.ChangeSpace(GetRenderer());
+		//}
 
 		ImGui::End();
 	}
@@ -590,7 +592,7 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 			g_root.m_volumeCenter = vtxPos;
 			m_isGenVolumeCenter = true;
 
-			const Plane &plane = g_root.m_plane;
+			const Plane &plane = g_root.m_groundPlane;
 			const float d = plane.Distance(vtxPos) * 10.f;
 			m_volumeCenterLine.SetLine(vtxPos + plane.N*d, vtxPos - plane.N*d, 0.1f);
 			

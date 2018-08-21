@@ -22,7 +22,8 @@ void cCalibrationView::OnRender(const float deltaSeconds)
 	if (!g_root.m_baslerCam.IsReadyCapture())
 		return;
 
-	SingleSensorGroundCalibration();
+	CalibrationGroundPlane();
+	SingleSensorSubPlaneCalibration();
 	MultiSensorGroundCalibration();
 
 	ImGui::Spacing();
@@ -60,23 +61,25 @@ void cCalibrationView::OnRender(const float deltaSeconds)
 	}
 
 	{
-		ImGui::Text("Global Ground Plane");
-		const bool update1 = ImGui::DragFloat4("Ground Plane", (float*)&g_root.m_plane, 0.01f, -1000, 1000, "%.5f");
+		ImGui::Text("Ground Plane");
+		const bool update1 = ImGui::DragFloat4("Ground Plane", (float*)&g_root.m_groundPlane, 0.01f, -1000, 1000, "%.5f");
 		if (update1)
-			g_root.m_plane.N.Normalize();
+			g_root.m_groundPlane.N.Normalize();
 		const bool update2 = ImGui::DragFloat3("Ground Center", (float*)&g_root.m_volumeCenter, 0.01f);
+		ImGui::Separator();
+		ImGui::Spacing();
 	}
 
-	ImGui::Text("Camera Offset");
+	ImGui::Text("Camera Offset - SubPlane");
 	for (u_int i = 0; i < g_root.m_baslerCam.m_sensors.size(); ++i)
 	{
 		cSensor *sensor = g_root.m_baslerCam.m_sensors[i];
 		Str128 text;
-		text.Format("Position Offset-%d", i);
+		text.Format("%d-Position Offset", i);
 		const bool update1 = ImGui::DragFloat3(text.c_str(), (float*)&sensor->m_buffer.m_offset.pos, 0.01f);
-		text.Format("RotateY-%d", i);
+		text.Format("%d-RotateY", i);
 		const bool update2 = ImGui::DragFloat(text.c_str(), &g_root.m_cameraOffsetYAngle[i], 0.01f);
-		text.Format("SubPlane-%d", i);
+		text.Format("%d-SubPlane", i);
 		const bool update3 = ImGui::DragFloat4(text.c_str(), (float*)&g_root.m_planeSub[i], 0.01f, -1000, 1000, "%.5f");
 		if (update1)
 		{
@@ -96,6 +99,8 @@ void cCalibrationView::OnRender(const float deltaSeconds)
 			sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
 			sensor->m_buffer.UpdatePointCloudBySelf(g_root.m_3dView->GetRenderer());
 		}
+
+		ImGui::Separator();
 	}
 
 	ImGui::Spacing();
@@ -121,19 +126,45 @@ void cCalibrationView::OnRender(const float deltaSeconds)
 }
 
 
-void cCalibrationView::SingleSensorGroundCalibration()
+void cCalibrationView::CalibrationGroundPlane()
 {
-	if (ImGui::CollapsingHeader("Single Sensor Ground Calibration"))
+	if (ImGui::CollapsingHeader("Ground Plane Calibration"))
 	{
-		if (ImGui::Button("Pick Center Point"))
+		if (ImGui::Button("Pick 3-Point"))
 		{
-			g_root.m_3dView->m_state = c3DView::eState::RANGE;
+			g_root.m_3dView->m_genPlane = 0;
 		}
 
-		ImGui::DragFloat3("Range Center", (float*)&g_root.m_rangeCenter, 0.01f);
-		ImGui::DragFloat2("MinMax", (float*)&g_root.m_rangeMinMax, 0.1f);
-		ImGui::Checkbox("Continuous Calibration", &g_root.m_isContinuousCalibrationPlane);
+		ImGui::SameLine();
+		if (ImGui::Button("Pick Center Point"))
+		{
+			g_root.m_3dView->m_state = c3DView::eState::VCENTER;
+		}
 
+		ImGui::SameLine();
+		if (ImGui::Button("Change Space"))
+		{
+			for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
+			{
+				sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
+				sensor->m_buffer.UpdatePointCloudBySelf(g_root.m_3dView->GetRenderer());
+			}
+		}
+
+		ImGui::Spacing();
+		const bool update1 = ImGui::DragFloat4("Ground Plane", (float*)&g_root.m_groundPlane, 0.01f, -1000, 1000, "%.5f");
+		if (update1)
+			g_root.m_groundPlane.N.Normalize();
+		const bool update2 = ImGui::DragFloat3("Ground Center", (float*)&g_root.m_volumeCenter, 0.01f);
+		ImGui::Spacing();
+	}
+}
+
+
+void cCalibrationView::SingleSensorSubPlaneCalibration()
+{
+	if (ImGui::CollapsingHeader("Single Sensor SubPlane Calibration"))
+	{
 		static int sensorIdx = 0;
 		for (u_int i = 0; i < g_root.m_baslerCam.m_sensors.size(); ++i)
 		{
@@ -145,41 +176,31 @@ void cCalibrationView::SingleSensorGroundCalibration()
 			ImGui::RadioButton(text.c_str(), &sensorIdx, i);
 		}
 
+		if (!g_root.m_baslerCam.m_sensors.empty())
+		{
+			ImGui::SameLine();
+			if (ImGui::Button("Pick Calibration Pos"))
+			{
+				g_root.m_3dView->m_state = c3DView::eState::RANGE;
+			}
+		}
+		
+		ImGui::Spacing();
+
+		ImGui::DragFloat3("Range Center", (float*)&g_root.m_rangeCenter, 0.01f);
+		ImGui::DragFloat2("Range MinMax", (float*)&g_root.m_rangeMinMax, 0.1f);
+		ImGui::Checkbox("Continuous Calibration", &g_root.m_isContinuousCalibrationPlane);
+
 		static bool isCalcCalibration = false;
 		cCalibration &calib = g_root.m_calib;
 
 		// SubPlane Calibration
 		if (ImGui::Button("Ground Calibration"))
 		{
-			if (g_root.m_baslerCam.m_sensors.size() > (u_int)sensorIdx)
+			if (CalibrationSubPlane(sensorIdx, g_root.m_rangeCenter, g_root.m_rangeMinMax))
 			{
-				auto &sensor = g_root.m_baslerCam.m_sensors[sensorIdx];
-
-				// sub plane을 초기화 한 상태에서 컬리브레이션 해야한다.
-				sensor->m_buffer.m_planeSub = Plane(Vector3(0, 1, 0), 0);
-				sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
-				calib.CalibrationBasePlane(g_root.m_rangeCenter, g_root.m_rangeMinMax, sensor);
-
-				// update sub plane and reload point cloud
-				sensor->m_buffer.m_planeSub = calib.m_result.plane;
-				sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
-				sensor->m_buffer.UpdatePointCloudBySelf(g_root.m_3dView->GetRenderer());
-
 				isCalcCalibration = true;
-				dbg::Logp("calib plane xyzd, %f, %f, %f, %f\n"
-					, calib.m_result.plane.N.x, calib.m_result.plane.N.y, calib.m_result.plane.N.z, calib.m_result.plane.D);
 			}
-
-			// update config variabl
-			g_root.m_config.SetValue("calib-center-x", g_root.m_rangeCenter.x);
-			g_root.m_config.SetValue("calib-center-y", g_root.m_rangeCenter.y);
-			g_root.m_config.SetValue("calib-center-z", g_root.m_rangeCenter.z);
-			g_root.m_config.SetValue("calib-minmax-x", g_root.m_rangeMinMax.x);
-			g_root.m_config.SetValue("calib-minmax-y", g_root.m_rangeMinMax.y);
-
-			// save calibration variable
-			g_root.m_planeSub[sensorIdx] = calib.m_result.plane;
-			g_root.SavePlane();
 		}
 
 		ImGui::SameLine();
@@ -211,6 +232,43 @@ void cCalibrationView::SingleSensorGroundCalibration()
 			}
 		}
 	}
+}
+
+
+bool cCalibrationView::CalibrationSubPlane(const int sensorIdx
+	, const Vector3 &rangeCenter, const Vector2 &rangeMinMax)
+{
+	if (g_root.m_baslerCam.m_sensors.size() <= (u_int)sensorIdx)
+		return false;
+
+	cCalibration &calib = g_root.m_calib;
+	auto &sensor = g_root.m_baslerCam.m_sensors[sensorIdx];
+
+	// sub plane을 초기화 한 상태에서 컬리브레이션 해야한다.
+	sensor->m_buffer.m_planeSub = Plane(Vector3(0, 1, 0), 0);
+	sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
+	calib.CalibrationBasePlane(rangeCenter, rangeMinMax, sensor);
+
+	// update sub plane and reload point cloud
+	sensor->m_buffer.m_planeSub = calib.m_result.plane;
+	sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
+	sensor->m_buffer.UpdatePointCloudBySelf(g_root.m_3dView->GetRenderer());
+
+	dbg::Logp("calib plane xyzd, %f, %f, %f, %f\n"
+		, calib.m_result.plane.N.x, calib.m_result.plane.N.y, calib.m_result.plane.N.z, calib.m_result.plane.D);
+
+	// update config variable
+	g_root.m_config.SetValue("calib-center-x", rangeCenter.x);
+	g_root.m_config.SetValue("calib-center-y", rangeCenter.y);
+	g_root.m_config.SetValue("calib-center-z", rangeCenter.z);
+	g_root.m_config.SetValue("calib-minmax-x", rangeMinMax.x);
+	g_root.m_config.SetValue("calib-minmax-y", rangeMinMax.y);
+
+	// save calibration variable
+	g_root.m_planeSub[sensorIdx] = calib.m_result.plane;
+	g_root.SavePlane();
+
+	return true;
 }
 
 
