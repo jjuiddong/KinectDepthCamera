@@ -167,7 +167,7 @@ bool cRoot::LoadPlane()
 	}
 
 	// Load PlaneSub
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < 5; ++i)
 	{
 		StrId id;
 

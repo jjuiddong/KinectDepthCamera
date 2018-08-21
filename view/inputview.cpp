@@ -473,7 +473,7 @@ void cInputView::CancelDelayMeasure()
 }
 
 
-// 1초간 정보를 받아서, 가장 적은 오차가 있는 정보로 계산한다.
+// 일정한 횟수만큼 정보를 저장한 후, 많이 인식된 정보를 저장한다.
 void cInputView::CalcDelayMeasure()
 {
 	// 누적된 평균값을 저장한다.

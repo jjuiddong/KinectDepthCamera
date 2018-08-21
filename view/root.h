@@ -90,10 +90,10 @@ public:
 	// Ground Calibration
 	common::StrPath m_configFileName;
 	common::Plane m_plane;
-	common::Plane m_planeSub[3];
+	common::Plane m_planeSub[5];
 	common::Vector3 m_volumeCenter;
-	common::Transform m_cameraOffset[3];
-	float m_cameraOffsetYAngle[3];
+	common::Transform m_cameraOffset[5];
+	float m_cameraOffsetYAngle[5];
 
 	cCalibration m_calib;
 	common::Vector3 m_rangeCenter;

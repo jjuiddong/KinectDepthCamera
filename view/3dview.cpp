@@ -211,7 +211,6 @@ void c3DView::Capture3D()
 	camera.SetCamera(eyePos, lookAt, Vector3(0, 0, 1));
 	camera.SetProjectionOrthogonal(width, height, 1, 10000.f); // 직교투영
 	
-	const sRectf curViewRect = { 0, 0, m_rect.Width() - 15, m_rect.Height() - 50 };
 	const sRectf viewRect = { 0, 0, width, height};
 	camera.SetViewPort(viewRect.Width(), viewRect.Height());
 
