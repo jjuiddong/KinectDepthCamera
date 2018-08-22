@@ -88,6 +88,9 @@ bool cViewer::OnInit()
 	result = m_aniView->Init(m_renderer);
 	assert(result);
 
+	m_calibView = new cCalibrationView("Calibration");
+	m_calibView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_aniView);
+
 	m_infraredView = new cInfraredView("Infrared View");
 	m_infraredView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_aniView, 0.5f);
 	result = m_infraredView->Init(m_renderer);
@@ -129,8 +132,6 @@ bool cViewer::OnInit()
 	m_camView = new cCameraView("Camera");
 	m_camView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_analysisView);
 
-	m_calibView = new cCalibrationView("Calibration");
-	m_calibView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_aniView);
 
 	g_root.m_3dView = m_3dView;
 	g_root.m_colorView = m_colorView;

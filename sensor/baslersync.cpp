@@ -71,14 +71,12 @@ bool cBaslerCameraSync::CreateSensor(const int sensorCount)
 	if (m_sensors.size() >= (u_int)sensorCount)
 	{
 		// Remove Sensor
-		// TODO: Ticky Code, need MultiThreading Lock
+		common::AutoCSLock cs(m_cs);
 		for (u_int i = (u_int)sensorCount; i < m_sensors.size(); ++i)
-			delete m_sensors[i];
-		const u_int curCnt = m_sensors.size();
-		for (u_int i = (u_int)sensorCount; i < curCnt; ++i)
+			SAFE_DELETE(m_sensors[i]);
+		const u_int sensorSize = m_sensors.size();
+		for (u_int i = (u_int)sensorCount; i < sensorSize; ++i)
 			m_sensors.pop_back();
-		//
-
 		return false;
 	}
 
@@ -608,8 +606,12 @@ void BaslerCameraThread(cBaslerCameraSync *basler)
 					basler->m_isTrySyncTrigger = false;
 				}
 
-				basler->ProcessCmd();
-				basler->Grab();
+				// Grab
+				{
+					common::AutoCSLock cs(basler->m_cs);
+					basler->ProcessCmd();
+					basler->Grab();
+				}
 			}
 
 			basler->m_state = cBaslerCameraSync::eThreadState::DISCONNECT;

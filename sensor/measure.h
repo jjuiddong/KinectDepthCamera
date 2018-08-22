@@ -11,10 +11,16 @@
 class cMeasure
 {
 public:
+	enum MEASURE_TYPE {
+		OBJECT		// Detect Object Shape, and then Measure Volume
+		, INTEGRAL  // No Detect Object, Integral total 2D Project HeightMap
+	};
+
+
 	cMeasure();
 	virtual ~cMeasure();
 
-	bool MeasureVolume(const bool isForceMeasure = false);
+	bool MeasureVolume(const MEASURE_TYPE type, const bool isForceMeasure = false);
 	void CalcBoxVolumeAverage();
 	void ClearBoxVolumeAverage();
 	bool FindBox(cv::Mat &img, const u_int vtxCnt, OUT vector<cContour> &out);
@@ -25,10 +31,12 @@ public:
 protected:
 	void CalcHeightDistribute();
 	void Measure2DImage();
+	void MeasureIntegral();
 	void RemoveDuplicateContour(vector<sContourInfo> &contours);
 	sBoxInfo CalcBoxInfo(const sContourInfo &info);
 	void RenderContourRect(cv::Mat &dst, const vector<sContourInfo> &contours
 		, const int offsetId=0);
+	cv::Rect FindBiggestBlob(cv::Mat &src);
 
 
 public:

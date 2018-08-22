@@ -37,6 +37,7 @@ cRoot::cRoot()
 	, m_isSave2DMat(false)
 	, m_isShowBeforeContours(false)
 	, m_masterSensor(0)
+	, m_measureType(cMeasure::OBJECT)
 {
 	// Camera Offset Setting, Korean Air Cargo
 	//m_cameraOffset[0].pos = Vector3(-59.740f, 4.170f, -75.420f);
@@ -132,7 +133,7 @@ void cRoot::MeasureVolume(
 {
 	// 순서 중요!!
 	g_root.m_3dView->Capture3D();
-	g_root.m_measure.MeasureVolume(isForceMeasure);
+	g_root.m_measure.MeasureVolume(m_measureType, isForceMeasure);
 	g_root.m_filterView->Process();
 	g_root.m_infraredView->Process(0);
 	//((cViewer*)g_application)->m_depthView->Process();

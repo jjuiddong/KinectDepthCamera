@@ -15,6 +15,7 @@ cBoxView::cBoxView(const string &name)
 	, m_showBoxVertex(true)
 	, m_showBoxAverageShape(true)
 	, m_showBoxMeasureShape(true)
+	, m_showProjectionMap(true)
 {
 }
 
@@ -71,22 +72,72 @@ void cBoxView::OnPreRender(const float deltaSeconds)
 
 		if (m_showPointCloud)
 		{
-			CommonStates states(renderer.GetDevice());
-			renderer.GetDevContext()->OMSetBlendState(states.NonPremultiplied(), 0, 0xffffffff);
+			if (m_showProjectionMap)
+			{
+				RenderProjectionMap(renderer);
+			}
+			else
+			{
+				CommonStates states(renderer.GetDevice());
+				renderer.GetDevContext()->OMSetBlendState(states.NonPremultiplied(), 0, 0xffffffff);
 
-			for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
-				if (sensor->m_isShow)
-					if (sensor->m_buffer.m_isLoaded)
-						sensor->m_buffer.Render(renderer, "Unlit", true);
+				for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
+					if (sensor->m_isShow)
+						if (sensor->m_buffer.m_isLoaded)
+							sensor->m_buffer.Render(renderer, "Unlit", true);
 
-
-			renderer.GetDevContext()->OMSetBlendState(states.Opaque(), 0, 0xffffffff);
+				renderer.GetDevContext()->OMSetBlendState(states.Opaque(), 0, 0xffffffff);
+			}
 		}
 
-		RenderBoxVolume3D(renderer);
-
+		if (!m_showProjectionMap)
+			RenderBoxVolume3D(renderer);
 	}
 	m_renderTarget.End(renderer);
+}
+
+
+void cBoxView::RenderProjectionMap(graphic::cRenderer &renderer)
+{
+	// Render Max Boundary
+	renderer.m_dbgLine.SetColor(cColor::GREEN);
+	for (int i = 0; i < 4; ++i)
+	{
+		const Vector3 p0 = g_root.m_projRoi[i];
+		const Vector3 p1 = g_root.m_projRoi[(i + 1) % 4];
+		renderer.m_dbgLine.SetLine(p0, p1 + Vector3(0, 0, 0), 1);
+		renderer.m_dbgLine.Render(renderer);
+	}
+
+
+	CommonStates states(renderer.GetDevice());
+	renderer.GetDevContext()->RSSetState(states.Wireframe());
+	renderer.GetDevContext()->OMSetBlendState(states.NonPremultiplied(), 0, 0xffffffff);
+
+	g_root.m_tessPos.SetTechnique("Unlit");
+	g_root.m_tessPos.Begin();
+	g_root.m_tessPos.BeginPass(renderer, 0);
+
+	// 원본 버텍스가 1.5배 되어 있는 상태.
+	const float scale = 1.f / 1.5f;
+	Transform tfm;
+	tfm.scale = Vector3(scale, 1, scale);
+
+	XMMATRIX parentTm = XMMatrixIdentity();
+	renderer.m_cbPerFrame.m_v->mWorld = tfm.GetMatrixXM();
+	renderer.m_cbPerFrame.Update(renderer);
+	XMVECTOR diffuse = XMLoadFloat4((XMFLOAT4*)&common::Vector4(1.f, 1.f, 1.f, 0.9f));
+	renderer.m_cbMaterial.m_v->diffuse = diffuse;
+	renderer.m_cbMaterial.Update(renderer, 2);
+	renderer.m_cbTessellation.m_v->size = Vector2(1, 1) * scale;
+	renderer.m_cbTessellation.Update(renderer, 6);
+
+	g_root.m_projVtxBuff.Bind(renderer);
+	renderer.GetDevContext()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST);
+	renderer.GetDevContext()->Draw((int)(g_capture3DWidth * g_capture3DHeight), 0);
+
+	renderer.GetDevContext()->OMSetBlendState(states.Opaque(), 0, 0xffffffff);
+	renderer.UnbindShaderAll();
 }
 
 
@@ -229,6 +280,7 @@ void cBoxView::OnRender(const float deltaSeconds)
 		ImGui::Checkbox("Box Vertex", &m_showBoxVertex);
 		ImGui::SameLine();
 		ImGui::Checkbox("Box Average", &m_showBoxAverageShape);
+		ImGui::Checkbox("ProjectionMap", &m_showProjectionMap);
 
 		//ImGui::Spacing();
 		ImGui::Separator();

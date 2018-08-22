@@ -19,14 +19,22 @@ cAnalysisView::~cAnalysisView()
 void cAnalysisView::OnRender(const float deltaSeconds)
 {
 	//ImGui::Checkbox("calc horz", &g_root.m_isCalcHorz);
+	ImGui::Text("Measure Type : ");
+	ImGui::SameLine();
+	ImGui::RadioButton("Object", (int*)&g_root.m_measureType, 0);
+	ImGui::SameLine();
+	ImGui::RadioButton("Integral", (int*)&g_root.m_measureType, 1);
+	ImGui::SameLine();
 
 	if (ImGui::Button("Volume Measure"))
 	{
 		g_root.MeasureVolume(true);
 	}
 
-	ImGui::SameLine();
-	ImGui::Checkbox("Save 2D Mat", &g_root.m_isSave2DMat);
+	//ImGui::SameLine();
+	//ImGui::Checkbox("Save 2D Mat", &g_root.m_isSave2DMat);
+	ImGui::Separator();
+	ImGui::Spacing();
 
 	ImGui::PushItemWidth(m_rect.Width()-70);
 

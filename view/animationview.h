@@ -53,9 +53,6 @@ public:
 
 	// Animation
 	bool m_isFileAnimation;
-	int m_aniIndex1;
-	int m_aniIndex2;
-	int m_aniIndex3;
 	float m_aniTime;
 	int m_aniCameraCount; // + 1
 	bool m_isAutoSelectFileIndex;

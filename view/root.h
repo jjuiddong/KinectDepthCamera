@@ -77,6 +77,7 @@ public:
 
 	// Measure
 	cMeasure m_measure;
+	cMeasure::MEASURE_TYPE m_measureType;
 
 	// Option
 	bool m_isAutoSaveCapture;
@@ -87,7 +88,7 @@ public:
 	bool m_isSave2DMat;
 
 	// Ground Calibration
-	int m_masterSensor;
+	int m_masterSensor; // Master Sensor Index for Animation, Volume Measure Calculation
 	common::StrPath m_configFileName;
 	common::Plane m_groundPlane;
 	common::Plane m_planeSub[ MAX_CAMERA];
@@ -101,6 +102,10 @@ public:
 	double m_planeStandardDeviation;
 	bool m_isContinuousCalibrationPlane; // calibration 된 정보를 평균화해서 출력한다.
 
+	graphic::cShader11 m_tessPos; // ProjectionMap Tessellation Shader
+	graphic::cVertexBuffer m_projVtxBuff; // ProjectionMap VertexBuffer
+	common::Vector3 m_projRoi[4];
+
 	// Config
 	common::StrPath m_inputFilePath;
 	bool m_isRangeCulling;
@@ -113,7 +118,7 @@ public:
 	common::cConfig m_config;
 
 	// *.PCD Write Thread
-	common::cThread m_pcdWriteThread;
+	common::cThread m_pcdWriteThread; // not used
 
 	// View
 	c3DView *m_3dView;

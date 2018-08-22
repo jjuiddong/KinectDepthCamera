@@ -12,9 +12,6 @@ using namespace framework;
 cAnimationView::cAnimationView(const string &name)
 	: framework::cDockWindow(name)
 	, m_isFileAnimation(false)
-	, m_aniIndex1(-1)
-	, m_aniIndex2(-1)
-	, m_aniIndex3(-1)
 	, m_selectFileList(0)
 	, m_state(eState::NORMAL)
 	, m_aniCameraCount(2)
@@ -171,13 +168,16 @@ void cAnimationView::OnRender(const float deltaSeconds)
 	}
 
 	// Animation Index Slider
-	if (m_files.size() >= 3)
+	if (m_files.size() > (u_int)g_root.m_masterSensor)
 	{
-		if (ImGui::SliderInt("Ani Idx3", &m_aniIndex3, 0, m_files[2].fileNames.size(), NULL))
+		sFileInfo &finfo = m_files[g_root.m_masterSensor];
+
+		if (ImGui::SliderInt("Master Ani Idx"
+			, &finfo.aniIdx, 0, finfo.fileNames.size(), NULL))
 		{
 			if (!m_isFileAnimation)
 			{
-				OpenFileFromIndex(2, m_aniIndex3, true);
+				OpenFileFromIndex(g_root.m_masterSensor, finfo.aniIdx, true);
 			}
 		}
 	}
@@ -429,10 +429,6 @@ void cAnimationView::UpdateFileList()
 			}
 		}
 	}
-
-	m_aniIndex1 = -1;
-	m_aniIndex2 = -1;
-	m_aniIndex3 = -1;
 }
 
 

@@ -58,6 +58,14 @@ bool c3DView::Init(cRenderer &renderer)
 	m_volumeCenterLine.Create(renderer);
 	m_boxLine.Create(renderer);
 
+	// Integral ProjectMap VertexBuffer
+	if (!g_root.m_projVtxBuff.Create(renderer, (int)(g_capture3DWidth * g_capture3DHeight)
+		, sizeof(Vector3), D3D11_USAGE_DYNAMIC))
+		return false;
+
+	if (!g_root.m_tessPos.Create(renderer, "../media/shader11/tess-pos-box.fxo", "Unlit", eVertexType::POSITION))
+		return false;
+
 	return true;
 }
 
@@ -260,6 +268,24 @@ void c3DView::Capture3D()
 		{
 			for (int i = 0; i < width * height; ++i)
 				*dst++ = *src++;
+
+			// Update ProjectionMap Vertex
+			if (Vector3 *dst = (Vector3*)g_root.m_projVtxBuff.Lock(renderer))
+			{
+				float *src = (float*)map.pData;
+				for (int z = 0; z < height; ++z)
+				{
+					for (int x = 0; x < width; ++x)
+					{
+						const common::Vector3 pos((float)x - 320
+							, std::max(*src++, 0.f) * 500.f
+							, (float)(240-z));
+						*dst++ = pos;
+					}
+				}
+				g_root.m_projVtxBuff.Unlock(renderer);
+			}
+
 			renderer.GetDevContext()->Unmap(pStaging.Get(), 0);
 		}
 	}
@@ -413,6 +439,15 @@ void c3DView::OnRender(const float deltaSeconds)
 		//	if (ImGui::Button("Change Space"))
 		//		sensor1->m_buffer.ChangeSpace(GetRenderer());
 		//}
+
+		if (ImGui::Button("Load Plane"))
+		{
+			if (g_root.LoadPlane())
+			{
+				m_isGenPlane = true;
+				m_isGenVolumeCenter = true;
+			}
+		}
 
 		ImGui::End();
 	}

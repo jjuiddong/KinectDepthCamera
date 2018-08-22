@@ -55,5 +55,6 @@ public:
 
 	eThreadState::Enum m_state;
 	std::thread m_thread;
+	common::CriticalSection m_cs;
 };
 

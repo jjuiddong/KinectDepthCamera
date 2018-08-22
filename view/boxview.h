@@ -21,6 +21,7 @@ public:
 
 
 protected:
+	void RenderProjectionMap(graphic::cRenderer &renderer);
 	void RenderBoxVolume3D(graphic::cRenderer &renderer);
 
 	void UpdateLookAt();
@@ -36,6 +37,7 @@ public:
 	bool m_showBoxVertex;
 	bool m_showBoxMeasureShape;
 	bool m_showBoxAverageShape;
+	bool m_showProjectionMap;
 
 	graphic::cGridLine m_ground;
 	graphic::cLine m_boxLine;

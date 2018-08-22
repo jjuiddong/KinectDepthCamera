@@ -260,16 +260,29 @@ void ThreadFilterSubFunc(cMeasure *fview, sAreaFloor *areaFloor, bool isCalcHorz
 
 
 bool cMeasure::MeasureVolume(
-	const bool isForceMeasure // = false
+	const MEASURE_TYPE type
+	, const bool isForceMeasure // = false
 )
 {
 	m_areaFloorCnt = 0;
 
-	if (g_root.m_isAutoMeasure || isForceMeasure)
-		CalcHeightDistribute();
+	if (type == OBJECT)
+	{
+		if (g_root.m_isAutoMeasure || isForceMeasure)
+			CalcHeightDistribute();
 
-	Measure2DImage();
-	CalcBoxVolumeAverage();
+		Measure2DImage();
+		CalcBoxVolumeAverage();
+	}
+	else if (type == INTEGRAL)
+	{
+		if (g_root.m_isAutoMeasure || isForceMeasure)
+			MeasureIntegral();
+	}
+	else
+	{
+		assert(0);
+	}
 
 	return true;
 }
@@ -281,14 +294,13 @@ void cMeasure::CalcHeightDistribute()
 	// 포인트 클라우드에서 높이 분포를 계산한다.
 	// 높이분포를 이용해서 면적분포 메쉬를 생성한다.
 	// 높이 별로 포인트 클라우드를 생성한다.
-	// 가장 마지막 카메라를 선택한다. (꽁수)
-	cSensor *sensor = NULL;
-	for (auto s : g_root.m_baslerCam.m_sensors)
-	{
-		if (s->IsEnable() && s->m_isShow && s->m_buffer.m_isLoaded)
-			sensor = s;
-	}
-	if (!sensor)
+	if (g_root.m_baslerCam.m_sensors.size() <= (u_int)g_root.m_masterSensor)
+		return;
+
+	cSensor *sensor = g_root.m_baslerCam.m_sensors[g_root.m_masterSensor];
+	if (!sensor->IsEnable()
+		|| !sensor->m_isShow
+		|| !sensor->m_buffer.m_isLoaded)
 		return;
 
 	graphic::cRenderer &renderer = g_root.m_3dView->GetRenderer();
@@ -557,6 +569,71 @@ void cMeasure::Measure2DImage()
 }
 
 
+// integral projection heightmap
+void cMeasure::MeasureIntegral()
+{
+	cv::Mat &srcImg = g_root.m_measure.m_projMap;
+	Mat grayscaleMat;
+	srcImg.convertTo(grayscaleMat, CV_16UC1, 500.f);
+	cv::threshold(grayscaleMat, grayscaleMat, 10, 500.f, THRESH_TOZERO);
+
+	// Calc Maximum Boundary
+	const float scale = 1.f / 1.5f;
+
+	const int space = 20;
+	const cv::Rect tmp = FindBiggestBlob(grayscaleMat);
+	const cv::Rect2f roi((float)tmp.x- space, (float)tmp.y- space, (float)tmp.width+ space*2, (float)tmp.height+ space*2);
+	const float hw = srcImg.cols / 2.f;
+	const float hh = srcImg.rows / 2.f;
+	g_root.m_projRoi[0] = Vector3(roi.x - hw, 0, hh - roi.y) * scale;
+	g_root.m_projRoi[1] = Vector3(roi.x - hw + roi.width, 0, hh - roi.y) * scale;
+	g_root.m_projRoi[3] = Vector3(roi.x - hw, 0, hh - (roi.y + roi.height)) * scale;
+	g_root.m_projRoi[2] = Vector3(roi.x - hw + roi.width, 0, hh - (roi.y + roi.height)) * scale;
+
+	const cv::Rect newRoi(
+		std::max(0, (int)roi.x), std::max(0, (int)roi.y)
+		, std::min(srcImg.cols, (int)roi.width)
+		, std::min(srcImg.rows, (int)roi.height));
+
+	Mat m(grayscaleMat, newRoi);
+	m = m * scale * scale;
+	const double vw = cv::sum(m)[0] / 6000.f;
+}
+
+
+cv::Rect cMeasure::FindBiggestBlob(cv::Mat &src)
+{
+	Mat temp = src.clone();
+	temp.convertTo(temp, CV_8UC1);
+
+	vector<vector<Point>> contours; // storing contour
+	vector<Vec4i> hierarchy;
+	findContours(temp, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+	if (contours.empty())
+		return {};
+
+	int largest_area = 0;
+	int largest_contour_index = 0;
+	for (u_int i = 0; i< contours.size(); i++) // iterate
+	{
+		double a = contourArea(contours[i], false);  //Find the largest area of contour
+		if (a>largest_area)
+		{
+			largest_area = (int)a;
+			largest_contour_index = i;
+		}
+	}
+
+	//Mat dst = temp.clone();
+	//cvtColor(temp, dst, cv::COLOR_GRAY2RGB);
+	//drawContours(dst, contours, largest_contour_index, Scalar(255), CV_FILLED, 8, hierarchy);
+	//cv::Rect bounding_rect = boundingRect(contours[largest_contour_index]);
+	//rectangle(dst, bounding_rect, Scalar(0, 255, 0), 1, 8, 0);
+
+	return boundingRect(contours[largest_contour_index]);
+}
+
+
 // 인식된 박스를 m_dstImg에 그린다.
 void cMeasure::DrawContourRect()
 {
@@ -610,7 +687,8 @@ sBoxInfo cMeasure::CalcBoxInfo(const sContourInfo &info)
 	//const float scale = 50.f / 73.2f;
 	//const float scale = 50.f / 74.5f;
 	//const float scale = 50.f / 72.3f;
-	const float scale = 50.f / 74.3f;
+	//const float scale = 50.f / 74.3f;
+	const float scale = 1.f / 1.5f;
 	//const float scaleH = 0.99f;
 	//const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete) ? -13.f : 3.5f;
 
@@ -626,7 +704,7 @@ sBoxInfo cMeasure::CalcBoxInfo(const sContourInfo &info)
 		const float l1 = std::max((v1 - v2).Length(), (v3 - v4).Length());
 		const float l2 = std::max((v2 - v3).Length(), (v4 - v1).Length());
 		box.volume.x = std::max(l1, l2); // 큰 값이 가로
-										 //box.volume.y = (info.upperH - info.lowerH) * scaleH + offsetY;
+		//box.volume.y = (info.upperH - info.lowerH) * scaleH + offsetY;
 		box.volume.y = (info.upperH - info.lowerH);
 		box.volume.z = std::min(l1, l2); // 작은 값이 세로
 
@@ -1017,8 +1095,8 @@ void cMeasure::RemoveDuplicateContour(vector<sContourInfo> &contours)
 				const bool isDuplciate = abs(((float)a1 / (float)a2) - 1.f) < 0.01f; // 거의 같은 사이즈
 				contour2.duplicate = isDuplciate;
 
-				contour1.area = a1;
-				contour2.area = a2;
+				contour1.area = (float)a1;
+				contour2.area = (float)a2;
 
 				// 중복 인식된 박스일 때, 더 낮은 높이의 박스를 제거한다.
 				// 높이가 거의 같다면, 더 적은 loop로 발견된 박스를 남기고, 나머지를 제거한다.
