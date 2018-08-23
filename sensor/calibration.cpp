@@ -40,25 +40,25 @@ cCalibration::~cCalibration()
 // 가장 작게되는 편차가 될 때까지 반복한다.
 //
 cCalibration::sResult cCalibration::CalibrationBasePlane(const common::Vector3 &center0
-	, const common::Vector2 minMax, const cSensor *sensor)
+	, const common::Vector2 &size, const cSensor *sensor)
 {
 	// 위치값을 기본 좌표계로 복원한다.
 	const Vector3 center = center0;
-	const sRectf range = sRectf(center.x - minMax.x, center.z + minMax.y,
-		center.x + minMax.x, center.z - minMax.y);
+	const sRectf region = sRectf(center.x - size.x, center.z + size.y,
+		center.x + size.x, center.z - size.y);
 
 	//float offset = 5.f; // 5cm
 	float offset = 2.f; // 2cm
 	const float LIMIT_Y = 5.f;
 	sRectf rects[4] = {
-		sRectf(center.x - minMax.x, center.z + minMax.y
+		sRectf(center.x - size.x, center.z + size.y
 		, center.x, center.z)
-		, sRectf(center.x, center.z + minMax.y
-			, center.x + minMax.x, center.z)
+		, sRectf(center.x, center.z + size.y
+			, center.x + size.x, center.z)
 		, sRectf(center.x, center.z
-			, center.x + minMax.x, center.z - minMax.y)
-		, sRectf(center.x - minMax.x, center.z
-			, center.x, center.z - minMax.y)
+			, center.x + size.x, center.z - size.y)
+		, sRectf(center.x - size.x, center.z
+			, center.x, center.z - size.y)
 	};
 
 	// 오프셋 적용
@@ -94,7 +94,7 @@ cCalibration::sResult cCalibration::CalibrationBasePlane(const common::Vector3 &
 		}
 	}
 
-	const double curSD = CalcHeightStandardDeviation(sensor->m_buffer.m_vertices, center, range, Matrix44::Identity);
+	const double curSD = CalcHeightStandardDeviation(sensor->m_buffer.m_vertices, center, region, Matrix44::Identity);
 	double minSD = FLT_MAX;
 	Plane minPlane;
 	int cnt = 0;
@@ -129,7 +129,7 @@ cCalibration::sResult cCalibration::CalibrationBasePlane(const common::Vector3 &
 		}
 
 		// 편차를 구하고, 가장 낮은 편차가 될 때까지 반복한다.
-		const double sd = CalcHeightStandardDeviation(sensor->m_buffer.m_vertices, center, range, tm);
+		const double sd = CalcHeightStandardDeviation(sensor->m_buffer.m_vertices, center, region, tm);
 		if (minSD > sd)
 		{
 			minSD = sd;
@@ -185,12 +185,12 @@ bool cCalibration::CalibrationBasePlane(const char *scriptFileName, OUT sResult 
 	if (!ifs.is_open())
 		return false;
 
-	vector<sRange> ranges;
+	vector<sRegion> regions;
 
 	int state = 0;
 	Str256 line;
 	char temp[64];
-	sRange *range = NULL;
+	sRegion *region = NULL;
 	while (ifs.getline(line.m_str, line.SIZE))
 	{
 		if (line.empty())
@@ -202,91 +202,91 @@ bool cCalibration::CalibrationBasePlane(const char *scriptFileName, OUT sResult 
 			if (line == "range info")
 			{
 				state = 1;
-				ranges.push_back({});
-				range = &ranges.back();
+				regions.push_back({});
+				region = &regions.back();
 			}
 			break;
 
 		case 1: // parse...sensor index
 		{
-			if (!range)
+			if (!region)
 				break;
 
 			stringstream ss(line.c_str());
-			ss >> temp >> range->sensorId;
+			ss >> temp >> region->sensorId;
 			state = 2;
 		}
 		break;
 
 		case 2: // parse...center x y z
 		{
-			if (!range)
+			if (!region)
 				break;
 
 			stringstream ss(line.c_str());
-			ss >> temp >> range->center.x >> range->center.y >> range->center.z;
+			ss >> temp >> region->center.x >> region->center.y >> region->center.z;
 			state = 3;
 		}
 		break;
 
 		case 3: // parse...minmax x z
 		{			
-			if (!range)
+			if (!region)
 				break;
 
 			stringstream ss(line.c_str());
-			ss >> temp >> range->minMax.x >> range->minMax.y;
+			ss >> temp >> region->size.x >> region->size.y;
 			state = 4;
 		}
 		break;
 
 		case 4: // parse...filename
 		{
-			if (!range)
+			if (!region)
 				break;
 
 			if (line == "range info")
 			{
 				state = 1;
-				ranges.push_back({});
-				range = &ranges.back();
+				regions.push_back({});
+				region = &regions.back();
 			}
 			else
 			{
-				range->files.push_back(line.c_str());
+				region->files.push_back(line.c_str());
 			}
 		}
 		break;
 		}
 	}
 
-	return CalibrationBasePlane(ranges, out);
+	return CalibrationBasePlane(regions, out);
 }
 
 
 // 여려개의 영역을 이용해 컬리브레이션 한다.
-// ranges 는 최소 3개 이상이어야 한다.
-bool cCalibration::CalibrationBasePlane(const vector<sRange> &ranges, OUT sResult &out)
+// regions 는 최소 3개 이상이어야 한다.
+bool cCalibration::CalibrationBasePlane(const vector<sRegion> &regions, OUT sResult &out)
 {
-	if (ranges.size() < 3)
+	if (regions.size() < 3)
 		return false;
 
-	vector<vector<Vector3>> *range_files = new vector<vector<Vector3>>[ranges.size()];
+	vector<vector<Vector3>> *region_files = new vector<vector<Vector3>>[regions.size()];
 
 	// 각 영역의 Vertex 정보를 읽는다.
 	// 지정된 영역만 저장하며, 이후에 이 정보만 계산한다.
 	const float offset = 5.f;
-	for (u_int i = 0; i < ranges.size(); ++i)
+	for (u_int i = 0; i < regions.size(); ++i)
 	{
-		const sRange &range = ranges[i];
+		const sRegion &region = regions[i];
 
-		if (g_root.m_baslerCam.m_sensors.size() <= (u_int)range.sensorId)
+		if (g_root.m_baslerCam.m_sensors.size() <= (u_int)region.sensorId)
 		{
-			delete[] range_files;
+			delete[] region_files;
 			return false; // error occur
 		}
 
-		cSensor *sensor = g_root.m_baslerCam.m_sensors[range.sensorId];
+		cSensor *sensor = g_root.m_baslerCam.m_sensors[region.sensorId];
 
 		// plane calculation
 		Transform tfm;
@@ -309,16 +309,16 @@ bool cCalibration::CalibrationBasePlane(const vector<sRange> &ranges, OUT sResul
 
 		tm *= sensor->m_buffer.m_offset.GetMatrix();
 
-		const sRectf range_rect(range.center.x - range.minMax.x, range.center.z + range.minMax.y
-			, range.center.x + range.minMax.x, range.center.z - range.minMax.y);
+		const sRectf region_rect(region.center.x - region.size.x, region.center.z + region.size.y
+			, region.center.x + region.size.x, region.center.z - region.size.y);
 
-		for (auto &filename : range.files)
+		for (auto &filename : region.files)
 		{
 			cDatReader reader;
 			if (reader.Read(filename.c_str()))
 			{
-				range_files[i].push_back({});
-				range_files[i].back().reserve(1024 * 5);
+				region_files[i].push_back({});
+				region_files[i].back().reserve(1024 * 5);
 
 				for (auto &vtx : reader.m_vertices)
 				{
@@ -327,13 +327,13 @@ bool cCalibration::CalibrationBasePlane(const vector<sRange> &ranges, OUT sResul
 
 					const Vector3 pos = vtx * tm;
 
-					if ((range_rect.left < pos.x)
-						&& (range_rect.right > pos.x)
-						&& (range_rect.top > pos.z)
-						&& (range_rect.bottom < pos.z))
+					if ((region_rect.left < pos.x)
+						&& (region_rect.right > pos.x)
+						&& (region_rect.top > pos.z)
+						&& (region_rect.bottom < pos.z))
 					{
-						if (abs(range.center.y - pos.y) < offset)
-							range_files[i].back().push_back(pos);
+						if (abs(region.center.y - pos.y) < offset)
+							region_files[i].back().push_back(pos);
 					}
 				}
 			}
@@ -349,36 +349,36 @@ bool cCalibration::CalibrationBasePlane(const vector<sRange> &ranges, OUT sResul
 	double minSD = FLT_MAX;
 	Plane minPlane;
 	bool checkSD = true; // 현재 편차를 구하기 위한 플래그
-	int *rectIdAr = new int[ranges.size()];
+	int *rectIdAr = new int[regions.size()];
 
 	// 파일이 없는 영역이 있으면, 함수를 종료한다.
-	for (u_int i = 0; i < ranges.size(); ++i)
-		for (auto &files : range_files[i])
+	for (u_int i = 0; i < regions.size(); ++i)
+		for (auto &files : region_files[i])
 			if (files.empty())
 				goto error;
 	
 	while (cnt++ < MAX_GROUNDPLANE_CALIBRATION)
 	{
 		// 각 영역을 랜덤하게 3 영역을 선택한다.
-		for (u_int i = 0; i < ranges.size(); ++i)
+		for (u_int i = 0; i < regions.size(); ++i)
 			rectIdAr[i] = i;
 
 		int ids[3];
 		for (int i = 0; i < 3; ++i)
 		{
-			const int k = rand() % (ranges.size() - i);
+			const int k = rand() % (regions.size() - i);
 			ids[i] = rectIdAr[k];
-			rectIdAr[k] = rectIdAr[ranges.size() - 1 - i];
+			rectIdAr[k] = rectIdAr[regions.size() - 1 - i];
 		}
 
 		// 각영역의 파일을 랜덤하게 선택한다.
-		const int fileIdx1 = common::randint(0, range_files[ids[0]].size() - 1);
-		const int fileIdx2 = common::randint(0, range_files[ids[1]].size() - 1);
-		const int fileIdx3 = common::randint(0, range_files[ids[2]].size() - 1);
+		const int fileIdx1 = common::randint(0, region_files[ids[0]].size() - 1);
+		const int fileIdx2 = common::randint(0, region_files[ids[1]].size() - 1);
+		const int fileIdx3 = common::randint(0, region_files[ids[2]].size() - 1);
 
-		const vector<Vector3> &vertices1 = range_files[ids[0]][fileIdx1];
-		const vector<Vector3> &vertices2 = range_files[ids[1]][fileIdx2];
-		const vector<Vector3> &vertices3 = range_files[ids[2]][fileIdx3];
+		const vector<Vector3> &vertices1 = region_files[ids[0]][fileIdx1];
+		const vector<Vector3> &vertices2 = region_files[ids[1]][fileIdx2];
+		const vector<Vector3> &vertices3 = region_files[ids[2]][fileIdx3];
 
 		// 선택한 영역에서 랜덤하게 포인트를 선택한다.
 		const Vector3 p1 = vertices1[common::randint(0, vertices1.size() - 1)];
@@ -405,11 +405,11 @@ bool cCalibration::CalibrationBasePlane(const vector<sRange> &ranges, OUT sResul
 		{
 			const double sd = CalcHeightStandardDeviation(*vtxAr[i], newTm);
 			
-			//const sRectf range_rect(ranges[ids[i]].center.x - ranges[ids[i]].minMax.x
-			//	, ranges[ids[i]].center.z + ranges[ids[i]].minMax.y
-			//	, ranges[ids[i]].center.x + ranges[ids[i]].minMax.x
-			//	, ranges[ids[i]].center.z - ranges[ids[i]].minMax.y);
-			//const double sd = CalcHeightStandardDeviation(*vtxAr[i], ranges[ids[i]].center, range_rect, newTm);
+			//const sRectf region_rect(regions[ids[i]].center.x - regions[ids[i]].size.x
+			//	, regions[ids[i]].center.z + regions[ids[i]].size.y
+			//	, regions[ids[i]].center.x + regions[ids[i]].size.x
+			//	, regions[ids[i]].center.z - regions[ids[i]].size.y);
+			//const double sd = CalcHeightStandardDeviation(*vtxAr[i], regions[ids[i]].center, region_rect, newTm);
 			avrSD += sd;
 		}
 		avrSD /= 3.f;
@@ -434,12 +434,12 @@ bool cCalibration::CalibrationBasePlane(const vector<sRange> &ranges, OUT sResul
 	out.minSD = minSD;
 	out.plane = minPlane;
 
-	delete[] range_files;
+	delete[] region_files;
 	delete[] rectIdAr;
 	return true;
 
 error:
-	delete[] range_files;
+	delete[] region_files;
 	delete[] rectIdAr;
 	return false;
 }
@@ -526,6 +526,143 @@ double cCalibration::CalcHeightStandardDeviation(const vector<Vector3> &vertices
 	sd = sqrt(sd);
 
 	return sd;
+}
+
+
+float cCalibration::CalcHeightDistribute(const common::Vector3 &center0, const common::Vector2 &size
+	, const cSensor *sensor)
+{
+	const cSensorBuffer &sbuff = sensor->m_buffer;
+	cMeasure &measure = g_root.m_measure;
+	const float left = center0.x - size.x;
+	const float right = center0.x + size.x;
+	const float top = center0.z + size.y;
+	const float bottom = center0.z - size.y;
+	const int OFFSET_Y = 200;
+	measure.m_offsetDistrib = -OFFSET_Y;
+
+	// Calculate Height Distribution
+	{
+		measure.m_distribCount = 0;
+		ZeroMemory(measure.m_hDistrib, sizeof(measure.m_hDistrib));
+		ZeroMemory(measure.m_hAverage, sizeof(measure.m_hAverage));
+
+		const Vector3 *src = &sbuff.m_vertices[0];
+		const u_int vertexSize = sbuff.m_vertices.size();
+		for (u_int i = 0; i < vertexSize; ++i)
+		{
+			const Vector3 &vtx = *src++;
+			if (vtx.IsEmpty())
+				continue;
+			if (left > vtx.x)
+				continue;
+			if (right < vtx.x)
+				continue;
+			if (top < vtx.z)
+				continue;
+			if (bottom > vtx.z)
+				continue;
+
+			const int h = (int)(vtx.y * 10.f) + OFFSET_Y; // + 20cm
+			if ((h >= 0) && (h < ARRAYSIZE(measure.m_hDistrib)))
+			//if (h < ARRAYSIZE(measure.m_hDistrib))
+			{
+				measure.m_distribCount++;
+				measure.m_hDistrib[h] += 1.f;
+				measure.m_hAverage[h] += vtx.y;
+			}
+		}
+	}
+
+	// Calculate Height Average
+	for (int i = 0; i < ARRAYSIZE(measure.m_hAverage); ++i)
+		if (measure.m_hDistrib[i] > 0.f)
+			measure.m_hAverage[i] /= (float)measure.m_hDistrib[i];
+
+	// height distribute pulse
+	ZeroMemory(&measure.m_hDistrib2, sizeof(measure.m_hDistrib2));
+	{
+		//const float LIMIT_AREA = 30.f;
+		const float LIMIT_AREA = 50.f;
+		const float minArea = 60.f;
+		float limitLowArea = LIMIT_AREA;
+		int state = 0; // 0: check, rising pulse, 1: check down pulse, 2: calc low height
+		int startIdx = 0, endIdx = 0;
+		int maxArea = 0;
+		for (int i = 0; i < ARRAYSIZE(measure.m_hDistrib); ++i)
+		{
+			const float a = measure.m_hDistrib[i];
+
+			switch (state)
+			{
+			case 0:
+				if (a > minArea)
+				{
+					state = 1;
+					startIdx = i;
+					maxArea = i;
+				}
+				break;
+
+			case 1:
+				if (a > measure.m_hDistrib[maxArea])
+				{
+					maxArea = i;
+				}
+				if (a < limitLowArea)
+				{
+					state = 2;
+					endIdx = i;
+				}
+				break;
+
+			case 2:
+				state = 0;
+
+				limitLowArea = std::max(LIMIT_AREA, measure.m_hDistrib[maxArea] * 0.01f);
+				// find first again
+				for (int k = startIdx; k >= 0; --k)
+				{
+					if (measure.m_hDistrib[k] < limitLowArea)
+					{
+						// 분포가 감소해서 거의 변화가 없거나, 
+						// 다시 급격히 분포가 증가할 때까지, 같은 영역으로 한다.
+
+						//float oldA = m_hDistrib[k];
+						//for (int m = k-1; m >= 0; --m)
+						//{
+						//	float d = m_hDistrib[m] - oldA;
+						//	if (d > 5) // 분포가 다시 증가하면 종료.
+						//	{
+						//		startIdx = m;
+						//		break;
+						//	}
+						//	oldA = m_hDistrib[m];
+						//}
+						//break;
+
+						startIdx = k;
+						break;
+					}
+				}
+
+				for (int k = startIdx; k < endIdx; ++k)
+					measure.m_hDistrib2[k] = 1;
+				measure.m_hDistrib2[maxArea] = 2; // 가장 분포가 큰 높이에는 2를 설정한다.
+
+				limitLowArea = LIMIT_AREA; // recovery
+				break;
+			}
+		}
+	}
+
+	for (int i = 0; i < ARRAYSIZE(measure.m_hDistrib2); ++i)
+	{
+		if (2 == measure.m_hDistrib2[i])
+			return (i - OFFSET_Y) * 0.1f;
+	}
+
+	return 0.f;
 }
 
 

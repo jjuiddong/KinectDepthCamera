@@ -27,7 +27,7 @@ cRoot::cRoot()
 	, m_isCalcHorz(false)
 	, m_groundPlane(Vector3(0, 1, 0), 0)
 	, m_volumeCenter(0, 0, 0)
-	, m_rangeMinMax(50, 50)
+	, m_regionSize(50, 50)
 	, m_isContinuousCalibrationPlane(false)
 	, m_planeStandardDeviation(0)
 	, m_configFileName("config_depthframe.txt")
@@ -38,6 +38,7 @@ cRoot::cRoot()
 	, m_isShowBeforeContours(false)
 	, m_masterSensor(0)
 	, m_measureType(cMeasure::OBJECT)
+	, m_hdistribSize(0,0)
 {
 	// Camera Offset Setting, Korean Air Cargo
 	//m_cameraOffset[0].pos = Vector3(-59.740f, 4.170f, -75.420f);
@@ -69,11 +70,11 @@ bool cRoot::Create()
 		m_isTryConnectBasler = m_config.GetBool("basler_connect", true);
 		m_inputFilePath = m_config.GetString("inputfilepath", "../Media/Depth");
 
-		m_rangeCenter.x = m_config.GetFloat("calib-center-x");
-		m_rangeCenter.y = m_config.GetFloat("calib-center-y");
-		m_rangeCenter.z = m_config.GetFloat("calib-center-z");
-		m_rangeMinMax.x = m_config.GetFloat("calib-minmax-x", 50);
-		m_rangeMinMax.y = m_config.GetFloat("calib-minmax-y", 50);
+		m_regionCenter.x = m_config.GetFloat("calib-center-x");
+		m_regionCenter.y = m_config.GetFloat("calib-center-y");
+		m_regionCenter.z = m_config.GetFloat("calib-center-z");
+		m_regionSize.x = m_config.GetFloat("calib-minmax-x", 50);
+		m_regionSize.y = m_config.GetFloat("calib-minmax-y", 50);
 	}
 	else
 	{
@@ -296,6 +297,16 @@ void cRoot::GeneratePlane(common::Vector3 pos[3])
 		//Plane p(N.Normal(), 0);
 		m_groundPlane = plane;
 	}
+}
+
+
+// 화면에 보이는 센서 중, 첫번째 센서를 선택한다.
+cSensor* cRoot::GetFirstVisibleSensor()
+{
+	for (auto sensor : m_baslerCam.m_sensors)
+		if (sensor->m_isEnable && sensor->m_buffer.m_isLoaded && sensor->m_isShow)
+			return sensor;
+	return NULL;
 }
 
 

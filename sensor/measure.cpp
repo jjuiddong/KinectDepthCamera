@@ -16,6 +16,8 @@ cMeasure::cMeasure()
 	, m_areaCount(0)
 	, m_areaFloorCnt(0)
 	, m_measureId(0)
+	, m_integralVW(0)
+	, m_offsetDistrib(0)
 {
 	m_projMap = cv::Mat((int)g_capture3DHeight, (int)g_capture3DWidth, CV_32FC1);
 
@@ -266,22 +268,22 @@ bool cMeasure::MeasureVolume(
 {
 	m_areaFloorCnt = 0;
 
-	if (type == OBJECT)
+	if ((type == OBJECT) || (type == BOTH))
 	{
 		if (g_root.m_isAutoMeasure || isForceMeasure)
+		{
 			CalcHeightDistribute();
+			m_offsetDistrib = 0;
+		}
 
 		Measure2DImage();
 		CalcBoxVolumeAverage();
 	}
-	else if (type == INTEGRAL)
+	
+	if ((type == INTEGRAL) || (type == BOTH))
 	{
 		if (g_root.m_isAutoMeasure || isForceMeasure)
 			MeasureIntegral();
-	}
-	else
-	{
-		assert(0);
 	}
 
 	return true;
@@ -598,6 +600,9 @@ void cMeasure::MeasureIntegral()
 	Mat m(grayscaleMat, newRoi);
 	m = m * scale * scale;
 	const double vw = cv::sum(m)[0] / 6000.f;
+
+	m_projImageRoi = newRoi;
+	m_integralVW = (float)vw;
 }
 
 

@@ -25,6 +25,7 @@ void cCalibrationView::OnRender(const float deltaSeconds)
 	CalibrationGroundPlane();
 	SingleSensorSubPlaneCalibration();
 	MultiSensorGroundCalibration();
+	HeightDistrubution();
 
 	ImGui::Spacing();
 	ImGui::Separator();
@@ -187,8 +188,8 @@ void cCalibrationView::SingleSensorSubPlaneCalibration()
 		
 		ImGui::Spacing();
 
-		ImGui::DragFloat3("Range Center", (float*)&g_root.m_rangeCenter, 0.01f);
-		ImGui::DragFloat2("Range MinMax", (float*)&g_root.m_rangeMinMax, 0.1f);
+		ImGui::DragFloat3("Region Center", (float*)&g_root.m_regionCenter, 0.01f);
+		ImGui::DragFloat2("Region Size", (float*)&g_root.m_regionSize, 0.1f);
 		ImGui::Checkbox("Continuous Calibration", &g_root.m_isContinuousCalibrationPlane);
 
 		static bool isCalcCalibration = false;
@@ -197,7 +198,7 @@ void cCalibrationView::SingleSensorSubPlaneCalibration()
 		// SubPlane Calibration
 		if (ImGui::Button("Ground Calibration"))
 		{
-			if (CalibrationSubPlane(sensorIdx, g_root.m_rangeCenter, g_root.m_rangeMinMax))
+			if (CalibrationSubPlane(sensorIdx, g_root.m_regionCenter, g_root.m_regionSize))
 			{
 				isCalcCalibration = true;
 			}
@@ -236,7 +237,7 @@ void cCalibrationView::SingleSensorSubPlaneCalibration()
 
 
 bool cCalibrationView::CalibrationSubPlane(const int sensorIdx
-	, const Vector3 &rangeCenter, const Vector2 &rangeMinMax)
+	, const Vector3 &regionCenter, const Vector2 &regionSize)
 {
 	if (g_root.m_baslerCam.m_sensors.size() <= (u_int)sensorIdx)
 		return false;
@@ -247,7 +248,7 @@ bool cCalibrationView::CalibrationSubPlane(const int sensorIdx
 	// sub plane을 초기화 한 상태에서 컬리브레이션 해야한다.
 	sensor->m_buffer.m_planeSub = Plane(Vector3(0, 1, 0), 0);
 	sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
-	calib.CalibrationBasePlane(rangeCenter, rangeMinMax, sensor);
+	calib.CalibrationBasePlane(regionCenter, regionSize, sensor);
 
 	// update sub plane and reload point cloud
 	sensor->m_buffer.m_planeSub = calib.m_result.plane;
@@ -258,11 +259,11 @@ bool cCalibrationView::CalibrationSubPlane(const int sensorIdx
 		, calib.m_result.plane.N.x, calib.m_result.plane.N.y, calib.m_result.plane.N.z, calib.m_result.plane.D);
 
 	// update config variable
-	g_root.m_config.SetValue("calib-center-x", rangeCenter.x);
-	g_root.m_config.SetValue("calib-center-y", rangeCenter.y);
-	g_root.m_config.SetValue("calib-center-z", rangeCenter.z);
-	g_root.m_config.SetValue("calib-minmax-x", rangeMinMax.x);
-	g_root.m_config.SetValue("calib-minmax-y", rangeMinMax.y);
+	g_root.m_config.SetValue("calib-center-x", regionCenter.x);
+	g_root.m_config.SetValue("calib-center-y", regionCenter.y);
+	g_root.m_config.SetValue("calib-center-z", regionCenter.z);
+	g_root.m_config.SetValue("calib-minmax-x", regionSize.x);
+	g_root.m_config.SetValue("calib-minmax-y", regionSize.y);
 
 	// save calibration variable
 	g_root.m_planeSub[sensorIdx] = calib.m_result.plane;
@@ -314,8 +315,59 @@ void cCalibrationView::MultiSensorGroundCalibration()
 }
 
 
+// 높이 분포맵을 구한다.
+void cCalibrationView::HeightDistrubution()
+{
+	static float calcOffsetY = 0.f;
+
+	if (ImGui::CollapsingHeader("Height Distribution"))
+	{
+		if (ImGui::Button("Set Region"))
+		{
+			g_root.m_3dView->m_state = c3DView::eState::HDISTRIB;
+		}
+
+		if (cSensor *sensor = g_root.GetFirstVisibleSensor())
+		{
+			Str64 text;
+			text.Format("Calc Height Distribution - Cam%d", sensor->m_id);
+			ImGui::SameLine();
+			if (ImGui::Button(text.c_str()))
+			{
+				cCalibration &calib = g_root.m_calib;
+				calcOffsetY = calib.CalcHeightDistribute(g_root.m_hdistribCenter
+					, g_root.m_hdistribSize, sensor);
+			}
+		}
+
+		ImGui::DragFloat3("Region Center", (float*)&g_root.m_hdistribCenter, 0.1f);
+		ImGui::DragFloat2("Region Size", (float*)&g_root.m_hdistribSize, 0.1f);
+
+		if (cSensor *sensor = g_root.GetFirstVisibleSensor())
+		{
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0, 0, 255));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0, 0, 255));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.4f, 0, 0, 255));
+
+			Str64 text;
+			text.Format("Update Ground Zero Y (%.3f) - Cam%d", calcOffsetY, sensor->m_id);
+			if (ImGui::Button(text.c_str()))
+			{
+				sensor->m_buffer.m_offset.pos.y -= calcOffsetY;
+				sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
+				sensor->m_buffer.UpdatePointCloudBySelf(g_root.m_3dView->GetRenderer());
+			}
+
+			ImGui::PopStyleColor(3);
+		}
+
+	}
+}
+
+
 // 바닥 높이의 표준편차를 구한다.
-double cCalibrationView::CalcBasePlaneStandardDeviation(const size_t camIdx //=0
+double cCalibrationView::CalcBasePlaneStandardDeviation(
+	const size_t camIdx //=0
 )
 {
 	if (camIdx >= g_root.m_baslerCam.m_sensors.size())
@@ -359,7 +411,6 @@ double cCalibrationView::CalcBasePlaneStandardDeviation(const size_t camIdx //=0
 
 	return sd;
 }
-
 
 
 // 파일열기 다이얼로그를 띄운다.

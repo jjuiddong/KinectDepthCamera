@@ -20,6 +20,7 @@ c3DView::c3DView(const string &name)
 	, m_showPointCloud(true)
 	, m_showBoxAreaPointCloud(true)
 	, m_showBoxVolume(false)
+	, m_showHDisribRegion(true)
 	, m_isUpdateOrthogonalProjection(true)
 {
 }
@@ -113,6 +114,9 @@ void c3DView::OnPreRender(const float deltaSeconds)
 		if (m_showBoxVolume)
 			RenderBoxVolume3D(renderer);
 
+		if (m_showHDisribRegion)
+			RenderHDistributeRegion(renderer);
+
 		m_sphere.Render(renderer);
 
 		// Render Point Cloud
@@ -154,8 +158,8 @@ void c3DView::OnPreRender(const float deltaSeconds)
 
 		if (eState::RANGE2 == m_state)
 		{
-			const Vector2 &minMax = g_root.m_rangeMinMax;
-			const Vector3 &center = g_root.m_rangeCenter;
+			const Vector2 &minMax = g_root.m_regionSize;
+			const Vector3 &center = g_root.m_regionCenter;
 			const Vector3 offset[4] = {
 				Vector3(-minMax.x, -center.y, -minMax.y) // left-top
 				, Vector3(minMax.x, -center.y, -minMax.y) // right-top
@@ -320,6 +324,31 @@ void c3DView::RenderBoxVolume3D(graphic::cRenderer &renderer)
 }
 
 
+// Render Calc Height Distributeion Region (from CalibrationView)
+void c3DView::RenderHDistributeRegion(graphic::cRenderer &renderer)
+{
+	if (g_root.m_hdistribSize == common::Vector2(0, 0))
+		return;
+
+	const common::Vector3 pos[] = {
+		g_root.m_hdistribCenter + common::Vector3(-g_root.m_hdistribSize.x, 0, -g_root.m_hdistribSize.y)
+		, g_root.m_hdistribCenter + common::Vector3(g_root.m_hdistribSize.x, 0, -g_root.m_hdistribSize.y)
+		, g_root.m_hdistribCenter + common::Vector3(g_root.m_hdistribSize.x, 0, g_root.m_hdistribSize.y)
+		, g_root.m_hdistribCenter + common::Vector3(-g_root.m_hdistribSize.x, 0, g_root.m_hdistribSize.y)
+	};
+
+	const float yOffset = 0.f;
+	renderer.m_dbgLine.SetColor(cColor::GREEN);
+	for (int i = 0; i < ARRAYSIZE(pos); ++i)
+	{
+		const common::Vector3 &p0 = pos[i];
+		const common::Vector3 &p1 = pos[(i+1) % ARRAYSIZE(pos)];
+		renderer.m_dbgLine.SetLine(p0, p1, 0.5f);
+		renderer.m_dbgLine.Render(renderer);
+	}
+}
+
+
 void c3DView::OnRender(const float deltaSeconds)
 {
 	ImVec2 pos = ImGui::GetCursorScreenPos();
@@ -388,6 +417,8 @@ void c3DView::OnRender(const float deltaSeconds)
 		ImGui::Checkbox("Box Aread Point Cloud", &m_showBoxAreaPointCloud);
 		ImGui::SameLine();
 		ImGui::Checkbox("Box Volume", &m_showBoxVolume);
+		//ImGui::SameLine();
+		ImGui::Checkbox("HDist Region", &m_showHDisribRegion);
 
 		//if (ImGui::Button("Gen Plane"))
 		//{
@@ -532,9 +563,23 @@ void c3DView::OnMouseMove(const POINT mousePt)
 		right.y = 0;
 		right.Normalize();
 
-		GetMainCamera().MoveRight(-delta.x * m_rotateLen * 0.001f);
-		GetMainCamera().MoveFrontHorizontal(delta.y * m_rotateLen * 0.001f);
-		isUpdateCam = true;
+		// Picking Height Distribute Region
+		if (eState::HDISTRIB_DRAG == m_state)
+		{
+			const Ray ray = GetMainCamera().GetRay(mousePt.x, mousePt.y);
+			const common::Plane ground(Vector3(0, 1, 0), -m_pickPos.y);
+			const Vector3 pos = ground.Pick(ray.orig, ray.dir);
+			const Vector3 size = (m_pickPos - pos) / 2.f;
+
+			g_root.m_hdistribCenter = (m_pickPos + pos) / 2.f;
+			g_root.m_hdistribSize = Vector2(abs(size.x), abs(size.z));
+		}
+		else
+		{
+			GetMainCamera().MoveRight(-delta.x * m_rotateLen * 0.001f);
+			GetMainCamera().MoveFrontHorizontal(delta.y * m_rotateLen * 0.001f);
+			isUpdateCam = true;
+		}
 	}
 	else if (m_mouseDown[1])
 	{
@@ -575,15 +620,7 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 		m_rotateLen = (p1 - ray.orig).Length();// min(500.f, (p1 - ray.orig).Length());
 
 		// 화면에 보이는 센서 중, 첫번째 센서를 선택한다.
-		cSensor *curSensor = NULL;
-		for (auto sensor : g_root.m_baslerCam.m_sensors)
-		{
-			if (sensor->m_buffer.m_isLoaded && sensor->m_isShow)
-			{
-				curSensor = sensor;
-				break;
-			}
-		}
+		cSensor *curSensor = g_root.GetFirstVisibleSensor();
 		if (!curSensor)
 			break;
 
@@ -638,11 +675,18 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 		if (eState::RANGE == m_state)
 		{
 			const Vector3 vtxPos = curSensor->m_buffer.PickVertex(ray);
-			g_root.m_rangeCenter = vtxPos;
+			g_root.m_regionCenter = vtxPos;
 			m_sphere.SetPos(vtxPos);
 			m_state = eState::RANGE2;
 		}
 
+		// Picking Height Distribute Region
+		if (eState::HDISTRIB == m_state)
+		{
+			const Vector3 vtxPos = curSensor->m_buffer.PickVertex(ray);
+			m_pickPos = vtxPos;// Vector3(vtxPos.x, 0, vtxPos.z);
+			m_state = eState::HDISTRIB_DRAG;
+		}
 	}
 	break;
 
@@ -673,6 +717,20 @@ void c3DView::OnMouseUp(const sf::Mouse::Button &button, const POINT mousePt)
 	{
 	case sf::Mouse::Left:
 		m_mouseDown[0] = false;
+
+		if (eState::HDISTRIB_DRAG == m_state)
+		{
+			const Ray ray = GetMainCamera().GetRay(mousePt.x, mousePt.y);
+			//const Vector3 pos = m_groundPlane1.Pick(ray.orig, ray.dir);
+			const common::Plane ground(Vector3(0, 1, 0), -m_pickPos.y);
+			const Vector3 pos = ground.Pick(ray.orig, ray.dir);
+			const Vector3 size = (m_pickPos - pos) / 2.f;
+
+			g_root.m_hdistribCenter = (m_pickPos + pos) / 2.f;
+			g_root.m_hdistribSize = Vector2(abs(size.x), abs(size.z));
+
+			m_state = eState::NORMAL;
+		}
 		break;
 	case sf::Mouse::Right:
 		m_mouseDown[1] = false;

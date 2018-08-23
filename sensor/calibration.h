@@ -14,10 +14,10 @@ public:
 		common::Plane plane;
 	};
 
-	struct sRange {
+	struct sRegion {
 		int sensorId;
 		common::Vector3 center;
-		common::Vector2 minMax;
+		common::Vector2 size;
 		vector<common::StrPath> files;
 	};
 
@@ -25,10 +25,12 @@ public:
 	cCalibration();
 	virtual ~cCalibration();
 
-	sResult CalibrationBasePlane(const common::Vector3 &center0, const common::Vector2 range
+	sResult CalibrationBasePlane(const common::Vector3 &center0, const common::Vector2 &size
 		, const cSensor *sensor);
 	bool CalibrationBasePlane(const char *scriptFileName, OUT sResult &out);
-	bool CalibrationBasePlane(const vector<sRange> &ranges, OUT sResult &out);
+	bool CalibrationBasePlane(const vector<sRegion> &regions, OUT sResult &out);
+	float CalcHeightDistribute(const common::Vector3 &center0, const common::Vector2 &size
+		, const cSensor *sensor);
 
 	void Clear();
 

@@ -105,10 +105,9 @@ void cBoxView::RenderProjectionMap(graphic::cRenderer &renderer)
 	{
 		const Vector3 p0 = g_root.m_projRoi[i];
 		const Vector3 p1 = g_root.m_projRoi[(i + 1) % 4];
-		renderer.m_dbgLine.SetLine(p0, p1 + Vector3(0, 0, 0), 1);
+		renderer.m_dbgLine.SetLine(p0 + Vector3(0, 5, 0), p1 + Vector3(0, 5, 0), 0.2f);
 		renderer.m_dbgLine.Render(renderer);
 	}
-
 
 	CommonStates states(renderer.GetDevice());
 	renderer.GetDevContext()->RSSetState(states.Wireframe());
@@ -282,7 +281,6 @@ void cBoxView::OnRender(const float deltaSeconds)
 		ImGui::Checkbox("Box Average", &m_showBoxAverageShape);
 		ImGui::Checkbox("ProjectionMap", &m_showProjectionMap);
 
-		//ImGui::Spacing();
 		ImGui::Separator();
 		for (u_int i = 0; i < g_root.m_measure.m_boxes.size(); ++i)
 		{
@@ -296,6 +294,22 @@ void cBoxView::OnRender(const float deltaSeconds)
 			ImGui::Text("\t Loop = %d", box.loopCnt);
 			ImGui::Spacing();
 			ImGui::Separator();
+		}
+
+		// Display Total V/W
+		if (!g_root.m_measure.m_boxes.empty())
+		{
+			float totalVW = 0;
+			for (u_int i = 0; i < g_root.m_measure.m_boxes.size(); ++i)
+				totalVW += g_root.m_measure.m_boxes[i].minVolume / 6000.f;
+
+			ImGui::Text("Total V/W = %f", totalVW);
+		}
+
+		if ((cMeasure::OBJECT == g_root.m_measureType)
+			|| (cMeasure::BOTH == g_root.m_measureType))
+		{
+			ImGui::Text("Integral V/W = %f", g_root.m_measure.m_integralVW);
 		}
 
 		ImGui::End();

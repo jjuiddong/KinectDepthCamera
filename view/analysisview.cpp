@@ -25,6 +25,8 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 	ImGui::SameLine();
 	ImGui::RadioButton("Integral", (int*)&g_root.m_measureType, 1);
 	ImGui::SameLine();
+	ImGui::RadioButton("Both", (int*)&g_root.m_measureType, 2);
+	ImGui::SameLine();
 
 	if (ImGui::Button("Volume Measure"))
 	{
@@ -44,7 +46,7 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 		static int range1 = ARRAYSIZE(g_root.m_measure.m_hDistrib);
 		static int scroll1 = 0;
 		ImGui::PlotLines2("Height Distribute", &g_root.m_measure.m_hDistrib[scroll1]
-			, range1, 0, scroll1, "", 0, 3000, ImVec2(0, 200));
+			, range1, 0, scroll1 + g_root.m_measure.m_offsetDistrib, "", 0, 3000, ImVec2(0, 200));
 
 		if (ImGui::SliderInt("Range", &range1, 100, ARRAYSIZE(g_root.m_measure.m_hDistrib)))
 			scroll1 = 0;
@@ -60,7 +62,7 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 		static int range = ARRAYSIZE(g_root.m_measure.m_hDistrib2);
 		static int scroll = 0;
 		ImGui::PlotLines2("Height Distribute2", &g_root.m_measure.m_hDistrib2[scroll]
-			, range, 0, scroll, "", 0, 1, ImVec2(0, 200));
+			, range, 0, scroll + g_root.m_measure.m_offsetDistrib, "", 0, 1, ImVec2(0, 200));
 
 		if (ImGui::SliderInt("Range2", &range, 100, ARRAYSIZE(g_root.m_measure.m_hDistrib2)))
 			scroll = 0;

@@ -25,6 +25,7 @@ protected:
 	void UpdateLookAt();
 	double CalcBasePlaneStandardDeviation(const size_t camIdx = 0);
 	void RenderBoxVolume3D(graphic::cRenderer &renderer);
+	void RenderHDistributeRegion(graphic::cRenderer &renderer);
 
 	void OnWheelMove(const float delta, const POINT mousePt);
 	void OnMouseMove(const POINT mousePt);
@@ -42,11 +43,12 @@ public:
 	bool m_showPointCloud;
 	bool m_showBoxAreaPointCloud;
 	bool m_showBoxVolume;
+	bool m_showHDisribRegion;
 	bool m_isUpdateOrthogonalProjection;
 
 	struct eState {
 		enum Enum {
-			NORMAL, PLANE, PICKPOS, VCENTER, RANGE, RANGE2
+			NORMAL, PLANE, PICKPOS, VCENTER, RANGE, RANGE2, HDISTRIB, HDISTRIB_DRAG
 		};
 	};
 

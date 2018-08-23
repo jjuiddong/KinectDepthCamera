@@ -53,6 +53,7 @@ public:
 	bool LoadPlane();
 	bool SavePlane();
 	void GeneratePlane(common::Vector3 pos[3]);
+	cSensor* GetFirstVisibleSensor();
 	void Clear();
 
 
@@ -97,10 +98,12 @@ public:
 	float m_cameraOffsetYAngle[ MAX_CAMERA];
 
 	cCalibration m_calib;
-	common::Vector3 m_rangeCenter;
-	common::Vector2 m_rangeMinMax;
+	common::Vector3 m_regionCenter;
+	common::Vector2 m_regionSize;
 	double m_planeStandardDeviation;
 	bool m_isContinuousCalibrationPlane; // calibration 된 정보를 평균화해서 출력한다.
+	common::Vector3 m_hdistribCenter; // CalibrationView height distribution region center
+	common::Vector2 m_hdistribSize; // CalibrationView height distribution region size
 
 	graphic::cShader11 m_tessPos; // ProjectionMap Tessellation Shader
 	graphic::cVertexBuffer m_projVtxBuff; // ProjectionMap VertexBuffer

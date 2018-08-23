@@ -14,6 +14,7 @@ public:
 	enum MEASURE_TYPE {
 		OBJECT		// Detect Object Shape, and then Measure Volume
 		, INTEGRAL  // No Detect Object, Integral total 2D Project HeightMap
+		, BOTH		// Object,Integral both measure
 	};
 
 
@@ -47,15 +48,22 @@ public:
 
 	int m_distribCount;
 	int m_areaCount;
-	float m_hDistrib[2000]; // 0 ~ 2000 분포, 1mm 단위, (ex) m_hDistrib[100] = 높이 10cm 위치의 분포)
-	float m_hDistrib2[2000]; // height distribution pulse
-	float m_hAverage[2000]; // 1mm 단위 분포에서의 높이 평균 
-	sGraph<2000> m_hDistribDifferential; // 2 differential
+	float m_hDistrib[2200]; // 0 ~ 2200 분포, 1mm 단위, (ex) m_hDistrib[100] = 높이 10cm 위치의 분포)
+	float m_hDistrib2[2200]; // height distribution pulse
+	float m_hAverage[2200]; // 1mm 단위 분포에서의 높이 평균 
+	sGraph<2200> m_hDistribDifferential; // 2 differential
+	int m_offsetDistrib; // for -200 ~ 2000 (calibrationview calc height distribution)
+
+	// OBJECT MEASURE
 	vector<sBoxInfo> m_boxes; // 현재 인식된 박스 정보
 	vector<sBoxInfo> m_boxesStored; // 평균으로 계산된 박스 정보
 	vector<sMeasureResult> m_results;
 	vector<sAreaFloor*> m_areaBuff;
 	int m_areaFloorCnt;
+	
+	// INTEGRAL MEASURE
+	cv::Rect m_projImageRoi;
+	float m_integralVW;
 
 	vector<sContourInfo> m_contours; // 현재 인식된 박스 정보
 	vector<sContourInfo> m_removeContours; // 중복 제거된 박스 정보
