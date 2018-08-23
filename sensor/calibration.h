@@ -11,6 +11,7 @@ public:
 	struct sResult {
 		double curSD;
 		double minSD;
+		common::Vector3 pos[3];
 		common::Plane plane;
 	};
 

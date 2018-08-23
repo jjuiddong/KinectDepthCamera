@@ -156,7 +156,7 @@ void c3DView::OnPreRender(const float deltaSeconds)
 			}
 		}
 
-		if (eState::RANGE2 == m_state)
+		if ((eState::REGION2 == m_state) || (eState::REGION3 == m_state))
 		{
 			const Vector2 &minMax = g_root.m_regionSize;
 			const Vector3 &center = g_root.m_regionCenter;
@@ -477,6 +477,12 @@ void c3DView::OnRender(const float deltaSeconds)
 			{
 				m_isGenPlane = true;
 				m_isGenVolumeCenter = true;
+
+				for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
+				{
+					sensor->m_buffer.UpdatePointCloudAllConfig(GetRenderer());
+					sensor->m_buffer.UpdatePointCloudBySelf(GetRenderer());
+				}
 			}
 		}
 
@@ -563,8 +569,18 @@ void c3DView::OnMouseMove(const POINT mousePt)
 		right.y = 0;
 		right.Normalize();
 
+		if (eState::REGION2 == m_state)
+		{
+			const Ray ray = GetMainCamera().GetRay(mousePt.x, mousePt.y);
+			const common::Plane ground(Vector3(0, 1, 0), -m_pickPos.y);
+			const Vector3 pos = ground.Pick(ray.orig, ray.dir);
+			const Vector3 size = (m_pickPos - pos) / 2.f;
+
+			g_root.m_regionCenter = (m_pickPos + pos) / 2.f;
+			g_root.m_regionSize = Vector2(abs(size.x), abs(size.z));
+		}
 		// Picking Height Distribute Region
-		if (eState::HDISTRIB_DRAG == m_state)
+		else if (eState::HDISTRIB_DRAG == m_state)
 		{
 			const Ray ray = GetMainCamera().GetRay(mousePt.x, mousePt.y);
 			const common::Plane ground(Vector3(0, 1, 0), -m_pickPos.y);
@@ -672,19 +688,20 @@ void c3DView::OnMouseDown(const sf::Mouse::Button &button, const POINT mousePt)
 		}
 
 		// Picking Range Center
-		if (eState::RANGE == m_state)
+		if (eState::REGION == m_state)
 		{
 			const Vector3 vtxPos = curSensor->m_buffer.PickVertex(ray);
-			g_root.m_regionCenter = vtxPos;
-			m_sphere.SetPos(vtxPos);
-			m_state = eState::RANGE2;
+			m_pickPos = vtxPos;
+			//g_root.m_regionCenter = vtxPos;
+			//m_sphere.SetPos(vtxPos);
+			m_state = eState::REGION2;
 		}
 
 		// Picking Height Distribute Region
 		if (eState::HDISTRIB == m_state)
 		{
 			const Vector3 vtxPos = curSensor->m_buffer.PickVertex(ray);
-			m_pickPos = vtxPos;// Vector3(vtxPos.x, 0, vtxPos.z);
+			m_pickPos = vtxPos;
 			m_state = eState::HDISTRIB_DRAG;
 		}
 	}
@@ -718,7 +735,19 @@ void c3DView::OnMouseUp(const sf::Mouse::Button &button, const POINT mousePt)
 	case sf::Mouse::Left:
 		m_mouseDown[0] = false;
 
-		if (eState::HDISTRIB_DRAG == m_state)
+		if (eState::REGION2 == m_state)
+		{
+			const Ray ray = GetMainCamera().GetRay(mousePt.x, mousePt.y);
+			const common::Plane ground(Vector3(0, 1, 0), -m_pickPos.y);
+			const Vector3 pos = ground.Pick(ray.orig, ray.dir);
+			const Vector3 size = (m_pickPos - pos) / 2.f;
+
+			g_root.m_regionCenter = (m_pickPos + pos) / 2.f;
+			g_root.m_regionSize = Vector2(abs(size.x), abs(size.z));
+
+			m_state = eState::REGION3;
+		}
+		else if (eState::HDISTRIB_DRAG == m_state)
 		{
 			const Ray ray = GetMainCamera().GetRay(mousePt.x, mousePt.y);
 			//const Vector3 pos = m_groundPlane1.Pick(ray.orig, ray.dir);

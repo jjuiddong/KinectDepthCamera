@@ -94,9 +94,20 @@ cCalibration::sResult cCalibration::CalibrationBasePlane(const common::Vector3 &
 		}
 	}
 
+	// check empty pts
+	for (int i = 0; i < 4; ++i)
+	{
+		if (pts[i].empty())
+		{
+			m_result = {};
+			return {};
+		}
+	}
+
 	const double curSD = CalcHeightStandardDeviation(sensor->m_buffer.m_vertices, center, region, Matrix44::Identity);
 	double minSD = FLT_MAX;
 	Plane minPlane;
+	Vector3 pickPos[3];
 	int cnt = 0;
 	while (cnt++ < MAX_GROUNDPLANE_CALIBRATION)
 	{
@@ -134,6 +145,9 @@ cCalibration::sResult cCalibration::CalibrationBasePlane(const common::Vector3 &
 		{
 			minSD = sd;
 			minPlane = plane;
+			pickPos[0] = p1;
+			pickPos[1] = p2;
+			pickPos[2] = p3;
 		}
 	}
 
@@ -141,6 +155,9 @@ cCalibration::sResult cCalibration::CalibrationBasePlane(const common::Vector3 &
 	result.curSD = curSD;
 	result.minSD = minSD;
 	result.plane = minPlane;
+	result.pos[0] = pickPos[0];
+	result.pos[1] = pickPos[1];
+	result.pos[2] = pickPos[2];
 
 	m_result = result;
 	m_planes.push_back(minPlane);
@@ -668,5 +685,8 @@ float cCalibration::CalcHeightDistribute(const common::Vector3 &center0, const c
 
 void cCalibration::Clear()
 {
+	//m_result.curSD = 0;
+	//m_result.minSD = 0;
+	//m_result.plane = Plane(Vector3(0, 1, 0), 0);
 	m_planes.clear();
 }

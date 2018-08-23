@@ -69,6 +69,15 @@ void cCalibrationView::OnRender(const float deltaSeconds)
 		const bool update2 = ImGui::DragFloat3("Ground Center", (float*)&g_root.m_volumeCenter, 0.01f);
 		ImGui::Separator();
 		ImGui::Spacing();
+
+		if (update1 || update2)
+		{
+			for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
+			{
+				sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
+				sensor->m_buffer.UpdatePointCloudBySelf(g_root.m_3dView->GetRenderer());
+			}
+		}
 	}
 
 	ImGui::Text("Camera Offset - SubPlane");
@@ -158,6 +167,15 @@ void cCalibrationView::CalibrationGroundPlane()
 			g_root.m_groundPlane.N.Normalize();
 		const bool update2 = ImGui::DragFloat3("Ground Center", (float*)&g_root.m_volumeCenter, 0.01f);
 		ImGui::Spacing();
+
+		if (update1 || update2)
+		{
+			for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
+			{
+				sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
+				sensor->m_buffer.UpdatePointCloudBySelf(g_root.m_3dView->GetRenderer());
+			}
+		}
 	}
 }
 
@@ -182,7 +200,7 @@ void cCalibrationView::SingleSensorSubPlaneCalibration()
 			ImGui::SameLine();
 			if (ImGui::Button("Pick Calibration Pos"))
 			{
-				g_root.m_3dView->m_state = c3DView::eState::RANGE;
+				g_root.m_3dView->m_state = c3DView::eState::REGION;
 			}
 		}
 		
@@ -231,6 +249,29 @@ void cCalibrationView::SingleSensorSubPlaneCalibration()
 				dbg::Logp("Clear Base Plane Calibration \n");
 				calib.Clear();
 			}
+
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0, 0, 255));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0, 0, 255));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.4f, 0, 0, 255));
+			ImGui::SameLine();
+			if (ImGui::Button("Update Ground Plane"))
+			{
+				// 기존 SubPlane 초기화
+				g_root.m_baslerCam.m_sensors[sensorIdx]->m_buffer.m_planeSub = Plane(Vector3(0,1,0),0);
+				g_root.m_baslerCam.m_sensors[sensorIdx]->m_buffer.m_offset.pos.y = 0;
+				g_root.m_cameraOffset[sensorIdx].pos.y = 0;
+				g_root.m_planeSub[sensorIdx] = Plane(Vector3(0, 1, 0), 0);
+
+				g_root.GeneratePlane(calib.m_result.pos);
+
+				for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
+				{
+					sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
+					sensor->m_buffer.UpdatePointCloudBySelf(g_root.m_3dView->GetRenderer());
+				}
+			}
+
+			ImGui::PopStyleColor(3);
 		}
 	}
 }
@@ -354,13 +395,14 @@ void cCalibrationView::HeightDistrubution()
 			if (ImGui::Button(text.c_str()))
 			{
 				sensor->m_buffer.m_offset.pos.y -= calcOffsetY;
+				g_root.m_cameraOffset[sensor->m_id].pos.y -= calcOffsetY;
+
 				sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
 				sensor->m_buffer.UpdatePointCloudBySelf(g_root.m_3dView->GetRenderer());
 			}
 
 			ImGui::PopStyleColor(3);
 		}
-
 	}
 }
 
