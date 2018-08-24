@@ -178,7 +178,7 @@ void c3DView::OnPreRender(const float deltaSeconds)
 			}
 
 			// render horizontal range line
-			renderer.m_dbgLine.SetColor(cColor::GREEN);
+			renderer.m_dbgLine.SetColor(cColor::BLUE);
 			for (int i = 0; i < 4; ++i)
 			{
 				const int next = (i + 1) % 4;

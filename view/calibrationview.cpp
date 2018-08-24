@@ -135,7 +135,7 @@ void cCalibrationView::OnRender(const float deltaSeconds)
 	ImGui::Spacing();
 }
 
-
+	
 void cCalibrationView::CalibrationGroundPlane()
 {
 	if (ImGui::CollapsingHeader("Ground Plane Calibration"))
@@ -206,14 +206,17 @@ void cCalibrationView::SingleSensorSubPlaneCalibration()
 		
 		ImGui::Spacing();
 
-		ImGui::DragFloat3("Region Center", (float*)&g_root.m_regionCenter, 0.01f);
-		ImGui::DragFloat2("Region Size", (float*)&g_root.m_regionSize, 0.1f);
+		ImGui::DragFloat3("SubPlan Region Center", (float*)&g_root.m_regionCenter, 0.01f);
+		ImGui::DragFloat2("SubPlan Region Size", (float*)&g_root.m_regionSize, 0.1f);
 		ImGui::Checkbox("Continuous Calibration", &g_root.m_isContinuousCalibrationPlane);
 
 		static bool isCalcCalibration = false;
 		cCalibration &calib = g_root.m_calib;
 
 		// SubPlane Calibration
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0, 0, 255));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0, 0, 255));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.4f, 0, 0, 255));
 		if (ImGui::Button("Ground Calibration"))
 		{
 			if (CalibrationSubPlane(sensorIdx, g_root.m_regionCenter, g_root.m_regionSize))
@@ -221,6 +224,8 @@ void cCalibrationView::SingleSensorSubPlaneCalibration()
 				isCalcCalibration = true;
 			}
 		}
+		ImGui::PopStyleColor(3);
+
 
 		ImGui::SameLine();
 		if (ImGui::Button("Calc Ground Standard Deviation"))
@@ -250,46 +255,46 @@ void cCalibrationView::SingleSensorSubPlaneCalibration()
 				calib.Clear();
 			}
 
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0, 0, 255));
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0, 0, 255));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.4f, 0, 0, 255));
-			ImGui::SameLine();
-			if (ImGui::Button("Update Ground Plane"))
-			{
-				// 기존 SubPlane 초기화
-				g_root.m_baslerCam.m_sensors[sensorIdx]->m_buffer.m_planeSub = Plane(Vector3(0,1,0),0);
-				g_root.m_baslerCam.m_sensors[sensorIdx]->m_buffer.m_offset.pos.y = 0;
-				g_root.m_cameraOffset[sensorIdx].pos.y = 0;
-				g_root.m_planeSub[sensorIdx] = Plane(Vector3(0, 1, 0), 0);
+			//ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0, 0, 255));
+			//ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0, 0, 255));
+			//ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.4f, 0, 0, 255));
+			//ImGui::SameLine();
+			//if (ImGui::Button("Update Ground Plane"))
+			//{
+			//	// 기존 SubPlane 초기화
+			//	g_root.m_baslerCam.m_sensors[sensorIdx]->m_buffer.m_planeSub = Plane(Vector3(0,1,0),0);
+			//	g_root.m_baslerCam.m_sensors[sensorIdx]->m_buffer.m_offset.pos.y = 0;
+			//	g_root.m_cameraOffset[sensorIdx].pos.y = 0;
+			//	g_root.m_planeSub[sensorIdx] = Plane(Vector3(0, 1, 0), 0);
 
-				g_root.GeneratePlane(calib.m_result.pos);
+			//	g_root.GeneratePlane(calib.m_result.pos);
 
-				for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
-				{
-					sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
-					sensor->m_buffer.UpdatePointCloudBySelf(g_root.m_3dView->GetRenderer());
-				}
-			}
+			//	for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
+			//	{
+			//		sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
+			//		sensor->m_buffer.UpdatePointCloudBySelf(g_root.m_3dView->GetRenderer());
+			//	}
+			//}
 
-			ImGui::SameLine();
-			if (ImGui::Button("Update SubPlane"))
-			{
-				// 기존 SubPlane 초기화
-				//g_root.m_baslerCam.m_sensors[sensorIdx]->m_buffer.m_planeSub = Plane(Vector3(0, 1, 0), 0);
-				//g_root.m_baslerCam.m_sensors[sensorIdx]->m_buffer.m_offset.pos.y = 0;
-				//g_root.m_cameraOffset[sensorIdx].pos.y = 0;
-				//g_root.m_planeSub[sensorIdx] = Plane(Vector3(0, 1, 0), 0);
+			//ImGui::SameLine();
+			//if (ImGui::Button("Update SubPlane"))
+			//{
+			//	// 기존 SubPlane 초기화
+			//	g_root.m_baslerCam.m_sensors[sensorIdx]->m_buffer.m_planeSub = Plane(Vector3(0, 1, 0), 0);
+			//	g_root.m_baslerCam.m_sensors[sensorIdx]->m_buffer.m_offset.pos.y = 0;
+			//	g_root.m_cameraOffset[sensorIdx].pos.y = 0;
+			//	g_root.m_planeSub[sensorIdx] = Plane(Vector3(0, 1, 0), 0);
 
-				//g_root.GeneratePlane(calib.m_result.pos);
+			//	g_root.GeneratePlane(calib.m_result.pos);
 
-				//for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
-				//{
-				//	sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
-				//	sensor->m_buffer.UpdatePointCloudBySelf(g_root.m_3dView->GetRenderer());
-				//}
-			}
+			//	for (cSensor *sensor : g_root.m_baslerCam.m_sensors)
+			//	{
+			//		sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
+			//		sensor->m_buffer.UpdatePointCloudBySelf(g_root.m_3dView->GetRenderer());
+			//	}
+			//}
 
-			ImGui::PopStyleColor(3);
+			//ImGui::PopStyleColor(3);
 		}
 	}
 }
@@ -305,14 +310,14 @@ bool cCalibrationView::CalibrationSubPlane(const int sensorIdx
 	auto &sensor = g_root.m_baslerCam.m_sensors[sensorIdx];
 
 	// sub plane을 초기화 한 상태에서 컬리브레이션 해야한다.
-	//sensor->m_buffer.m_planeSub = Plane(Vector3(0, 1, 0), 0);
-	//sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
+	sensor->m_buffer.m_planeSub = Plane(Vector3(0, 1, 0), 0);
+	sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
 	calib.CalibrationBasePlane(regionCenter, regionSize, sensor);
 
 	// update sub plane and reload point cloud
-	//sensor->m_buffer.m_planeSub = calib.m_result.plane;
-	//sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
-	//sensor->m_buffer.UpdatePointCloudBySelf(g_root.m_3dView->GetRenderer());
+	sensor->m_buffer.m_planeSub = calib.m_result.plane;
+	sensor->m_buffer.UpdatePointCloudAllConfig(g_root.m_3dView->GetRenderer());
+	sensor->m_buffer.UpdatePointCloudBySelf(g_root.m_3dView->GetRenderer());
 
 	dbg::Logp("calib plane xyzd, %f, %f, %f, %f\n"
 		, calib.m_result.plane.N.x, calib.m_result.plane.N.y, calib.m_result.plane.N.z, calib.m_result.plane.D);
@@ -325,8 +330,8 @@ bool cCalibrationView::CalibrationSubPlane(const int sensorIdx
 	g_root.m_config.SetValue("calib-minmax-y", regionSize.y);
 
 	// save calibration variable
-	//g_root.m_planeSub[sensorIdx] = calib.m_result.plane;
-	//g_root.SavePlane();
+	g_root.m_planeSub[sensorIdx] = calib.m_result.plane;
+	g_root.SavePlane();
 
 	return true;
 }
