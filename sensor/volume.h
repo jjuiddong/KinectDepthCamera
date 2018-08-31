@@ -42,6 +42,7 @@ struct sAreaFloor
 // Box Information
 struct sBoxInfo 
 {
+	bool integral;
 	float minVolume;
 	float maxVolume;
 	common::Vector3 pos;
@@ -93,8 +94,12 @@ struct sMeasureResult
 
 
 enum {
-	  OUTLIER_TOLERANCE = 1120
-	, CONFIDENCE_THRESHOLD = 14624
+	 OUTLIER_TOLERANCE = 6000 // default
+	  //OUTLIER_TOLERANCE = 1120
+
+	, CONFIDENCE_THRESHOLD = 2048 // default
+	//, CONFIDENCE_THRESHOLD = 14624
+
 	, MAX_CAMERA = 10
 };
 

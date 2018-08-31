@@ -285,7 +285,12 @@ void cBoxView::OnRender(const float deltaSeconds)
 		for (u_int i = 0; i < g_root.m_measure.m_boxes.size(); ++i)
 		{
 			auto &box = g_root.m_measure.m_boxes[i];
-			ImGui::Text("Box%d", i + 1);
+			 
+			if (box.integral)
+				ImGui::Text("Integral Box");
+			else
+				ImGui::Text("Box%d", i + 1);
+
 			ImGui::Text("\t X = %f", box.volume.x);
 			ImGui::Text("\t Y = %f", box.volume.z);
 			ImGui::Text("\t H = %f", box.volume.y);
@@ -306,7 +311,7 @@ void cBoxView::OnRender(const float deltaSeconds)
 			ImGui::Text("Total V/W = %f", totalVW);
 		}
 
-		if ((cMeasure::OBJECT == g_root.m_measureType)
+		if ((cMeasure::INTEGRAL == g_root.m_measureType)
 			|| (cMeasure::BOTH == g_root.m_measureType))
 		{
 			ImGui::Text("Integral V/W = %f", g_root.m_measure.m_integralVW);

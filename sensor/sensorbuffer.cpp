@@ -314,7 +314,9 @@ bool cSensorBuffer::UpdatePointCloudAllConfig(graphic::cRenderer &renderer)
 
 	tm *= m_offset.GetMatrix();
 
-	const float f = (75.290f - 78.090f) / 120.f;
+	//const float f = (75.290f - 78.090f) / 120.f;
+
+	const bool isCull = !m_cullRect.IsEmpty();
 
 	float maxDiff = 0.f;
 	float diffAvrs = 0;
@@ -324,28 +326,60 @@ bool cSensorBuffer::UpdatePointCloudAllConfig(graphic::cRenderer &renderer)
 	for (u_int i = 0; i < vertexSize; ++i)
 	{
 		Vector3 pos = *srcVtx * tm;
-		if (!isnan(pos.x) && !isnan(srcVtx->x))
+
+		if (isCull) // Culling Enable?
 		{
-			const float diff = abs(pos.y - dstVtx->y);
-			if (!dstVtx->IsEmpty())
+			if (!isnan(pos.x) && !isnan(srcVtx->x))
 			{
-				diffAvrs += diff;
-				if (diff > maxDiff)
+				if (m_cullRect.IsIn(pos.x, pos.z)
+					&& !m_cullExtraRect.IsIn(pos.x, pos.z))
 				{
-					maxDiff = diff;
+					// Calc Max Difference
+					const float diff = abs(pos.y - dstVtx->y);
+					if (!dstVtx->IsEmpty())
+					{
+						diffAvrs += diff;
+						if (diff > maxDiff)
+						{
+							maxDiff = diff;
+						}
+					}
 				}
+				else
+				{
+					pos = Vector3(0, 0, 0);
+				}
+			}
+			else
+			{
+				pos = Vector3(0, 0, 0);
 			}
 		}
 		else
 		{
-			pos = Vector3(0, 0, 0);
+			if (!isnan(pos.x) && !isnan(srcVtx->x))
+			{
+				const float diff = abs(pos.y - dstVtx->y);
+				if (!dstVtx->IsEmpty())
+				{
+					diffAvrs += diff;
+					if (diff > maxDiff)
+					{
+						maxDiff = diff;
+					}
+				}
+			}
+			else
+			{
+				pos = Vector3(0, 0, 0);
+			}
 		}
 
 		// 높이에 따라, z축으로 줄어든다. (Right 카메라)
-		if (m_mergeOffset)
-		{
-			pos.z += f * (pos.y - 30.f);
-		}
+		//if (m_mergeOffset)
+		//{
+		//	pos.z += f * (pos.y - 30.f);
+		//}
 
 		*dstVtx = pos;
 		++dstVtx;

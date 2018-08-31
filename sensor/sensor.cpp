@@ -29,7 +29,12 @@ cSensor::cSensor()
 	, m_writeTime(0)
 	//, m_outlierTolerance(6000)
 	, m_outlierTolerance(OUTLIER_TOLERANCE)
+	//, m_confidenceThreshold(560)
 	, m_confidenceThreshold(CONFIDENCE_THRESHOLD)
+	, m_totalGrabCount(0)
+	, m_grabSeconds(0)
+	, m_grabFPS(0)
+	, m_grabTime(0)
 {
 }
 
@@ -60,11 +65,59 @@ bool cSensor::InitCamera(const int id, const CameraInfo &cinfo)
 	GenApi::CIntegerPtr ptrOutlierTolerance = m_camera->GetParameter("OutlierTolerance");
 	ptrOutlierTolerance->SetValue(m_outlierTolerance);
 
+	if ((cinfo.strDisplayName == "Camera1") || (cinfo.strDisplayName == "Camera2"))
+	{
+		//m_confidenceThreshold = 1200;
+	}
+
+	if ((cinfo.strDisplayName == "Camera1"))
+	{
+		GenApi::CIntegerPtr ptrDeviceChannel = m_camera->GetParameter("DeviceChannel");
+		ptrDeviceChannel->SetValue(0);
+	}
+
+	if ((cinfo.strDisplayName == "Camera2"))
+	{
+		GenApi::CIntegerPtr ptrDeviceChannel = m_camera->GetParameter("DeviceChannel");
+		ptrDeviceChannel->SetValue(1);
+	}
+	
+	if ((cinfo.strDisplayName == "Camera3"))
+	{
+		GenApi::CIntegerPtr ptrDeviceChannel = m_camera->GetParameter("DeviceChannel");
+		ptrDeviceChannel->SetValue(3);
+	}
+
+	if ((cinfo.strDisplayName == "Camera4"))
+	{
+		GenApi::CIntegerPtr ptrDeviceChannel = m_camera->GetParameter("DeviceChannel");
+		ptrDeviceChannel->SetValue(1);
+	}
+
+	if ((cinfo.strDisplayName == "Camera5"))
+	{
+		GenApi::CIntegerPtr ptrDeviceChannel = m_camera->GetParameter("DeviceChannel");
+		ptrDeviceChannel->SetValue(3);
+	}
+
 	GenApi::CIntegerPtr ptrConfidenceThreshold = m_camera->GetParameter("ConfidenceThreshold");
 	ptrConfidenceThreshold->SetValue(m_confidenceThreshold);
 
-	//GenApi::CIntegerPtr ptrMaxDepth = m_camera->GetParameter("DepthMax");
-	//ptrMaxDepth->SetValue(4000);
+	GenApi::CIntegerPtr ptrWidth = m_camera->GetParameter("Width");
+	ptrWidth->SetValue(640);
+	GenApi::CIntegerPtr ptrHeight = m_camera->GetParameter("Height");
+	ptrHeight->SetValue(480);
+	//GenApi::CFloatPtr ptrFrameRate = m_camera->GetParameter("AcquisitionFrameRate");
+	//ptrFrameRate->SetValue(2.f);
+
+	//GenApi::CIntegerPtr ptrInterPacketDelay = m_camera->GetParameter("GevSCPD");
+	//ptrInterPacketDelay->SetValue(454352); // 500ms
+
+	//GenApi::CIntegerPtr ptrFrameTransmissionDelay = m_camera->GetParameter("GevSCFTD");
+	//ptrFrameTransmissionDelay->SetValue(m_id*8); //ns
+
+	GenApi::CIntegerPtr ptrMaxDepth = m_camera->GetParameter("DepthMax");
+	ptrMaxDepth->SetValue(6000);
 
 	m_oldOutlierTolerance = m_outlierTolerance;
 	m_oldConfidenceThreshold = m_confidenceThreshold;
@@ -103,10 +156,10 @@ bool cSensor::InitCamera(const int id, const CameraInfo &cinfo)
 	ptrPixelFormat->FromString("Coord3D_ABC32f");
 
 	ptrComponentSelector->FromString("Intensity");
-	ptrComponentEnable->SetValue(true);
+	ptrComponentEnable->SetValue(false);
 
 	ptrComponentSelector->FromString("Confidence");
-	ptrComponentEnable->SetValue(true);
+	ptrComponentEnable->SetValue(false);
 
 	m_isEnable = true; // success
 	return true;
@@ -125,6 +178,7 @@ void cSensor::CheckAndUpdateParameters()
 		catch (...)
 		{
 			// nothing~
+			common::dbg::Logp("Error update camera configuration\n");
 		}
 
 		m_oldOutlierTolerance = m_outlierTolerance;
@@ -139,6 +193,7 @@ void cSensor::CheckAndUpdateParameters()
 		catch (...)
 		{
 			// nothing~
+			common::dbg::Logp("Error update camera configuration\n");
 		}
 
 		m_oldConfidenceThreshold = m_confidenceThreshold;
@@ -146,11 +201,16 @@ void cSensor::CheckAndUpdateParameters()
 }
 
 
-bool cSensor::Grab()
+// return type
+// 1 : success
+// 2 : not ready
+// 3 : time out
+// 4 : grabbed fail
+int cSensor::Grab()
 {
-	RETV(!m_camera, false);
-	RETV(!m_isEnable, false);
-	RETV(!m_isShow, false);
+	RETV(!m_camera, 2);
+	RETV(!m_isEnable, 2);
+	RETV(!m_isShow, 2);
 
 
 	try
@@ -164,14 +224,14 @@ bool cSensor::Grab()
 		{
 			if (g_root.m_isGrabLog)
 				common::dbg::ErrLogp("Err Timeout occurred. camIdx = %d\n", m_id);
-			return false;
+			return 3;
 		}
 
 		if (grabResult.status != GrabResult::Ok)
 		{
 			if (g_root.m_isGrabLog)
 				common::dbg::ErrLog("Err Got a buffer, but it hasn't been successfully grabbed. camIdx = %d\n", m_id);
-			return false;
+			return 4;
 		}
 
 		if (grabResult.status == GrabResult::Ok)
@@ -184,11 +244,27 @@ bool cSensor::Grab()
 				common::AutoCSLock cs(m_cs);
 
 				CToFCamera::Coord3D *p3DCoordinate = (CToFCamera::Coord3D*) parts[0].pData;
-				uint16_t *pIntensity = (uint16_t*)parts[1].pData;
 				const size_t nPixel = parts[0].width * parts[0].height;
 				memcpy(&m_tempBuffer.m_vertices[0], p3DCoordinate, sizeof(float) * 3 * 640 * 480);
-				memcpy(&m_tempBuffer.m_intensity[0], pIntensity, sizeof(unsigned short) * 640 * 480);
-				m_tempBuffer.m_time = g_root.m_timer.GetMilliSeconds(); // Update Time
+
+				if (parts.size() >= 2)
+				{
+					uint16_t *pIntensity = (uint16_t*)parts[1].pData;
+					memcpy(&m_tempBuffer.m_intensity[0], pIntensity, sizeof(unsigned short) * 640 * 480);
+				}
+
+				const double curT = g_root.m_timer.GetMilliSeconds();
+				m_tempBuffer.m_time = curT; // Update Time
+
+				m_totalGrabCount++;
+				m_grabSeconds++;
+				
+				if (curT - m_grabTime > 1000.f)
+				{
+					m_grabFPS = (float)m_grabSeconds;
+					m_grabSeconds = 0.f;
+					m_grabTime = curT;
+				}
 			}
 		}
 
@@ -200,10 +276,11 @@ bool cSensor::Grab()
 	}
 	catch (...)
 	{
-		return false;
+		common::dbg::Logp("Error Grab \n");
+		return 4;
 	}
 
-	return true;
+	return 1;
 }
 
 

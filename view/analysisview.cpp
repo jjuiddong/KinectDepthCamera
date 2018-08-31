@@ -33,6 +33,20 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 		g_root.MeasureVolume(true);
 	}
 
+	// Show GrabCount
+	{
+		ImGui::Separator();
+		ImGui::Spacing();
+		common::Str128 text;
+		for (auto &sensor : g_root.m_baslerCam.m_sensors)
+		{
+			text.Format("%s - Grab Count = %d, FPS = %.1f"
+				, sensor->m_info.strDisplayName.c_str(), sensor->m_totalGrabCount, sensor->m_grabFPS);
+			ImGui::Text(text.c_str());
+		}
+		ImGui::Spacing();
+	}
+
 	//ImGui::SameLine();
 	//ImGui::Checkbox("Save 2D Mat", &g_root.m_isSave2DMat);
 	ImGui::Separator();
@@ -136,6 +150,6 @@ void cAnalysisView::OnRender(const float deltaSeconds)
 				, sensor1->m_buffer.m_diffAvrs.idx, 0, "", 0, .5f, ImVec2(0, 200));
 		}
 	}
-	
+
 	ImGui::PopItemWidth();
 }

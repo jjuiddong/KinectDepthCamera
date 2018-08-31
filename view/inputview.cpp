@@ -123,6 +123,8 @@ void cInputView::OnRender(const float deltaSeconds)
 	ImGui::SameLine();
 	ImGui::Checkbox("Palete", &g_root.m_isPalete);
 	ImGui::Checkbox("Grab-Log", &g_root.m_isGrabLog);
+	ImGui::SameLine();
+	ImGui::Checkbox("Grab-ErrLog", &g_root.m_isGrabErrLog);
 
 	if (m_isCaptureContinuos && g_root.m_baslerCam.IsReadyCapture())
 	{
@@ -376,7 +378,7 @@ void cInputView::UpdateDelayMeasure(const float deltaSeconds)
 	{
 		//m_measureTime += deltaSeconds;
 		//if (m_measureTime >= 3.f)
-		if (m_measureCount > 100)
+		if (m_measureCount > 200)
 		{
 			CalcDelayMeasure();
 			isUpdateVolumeCalc = false; // already show
@@ -405,11 +407,11 @@ void cInputView::UpdateDelayMeasure(const float deltaSeconds)
 		int id = 0;
 
 		cMeasure &measure = g_root.m_measure;
-		if (g_root.m_measure.m_boxes.size() == measure.m_contours.size())
+		//if (g_root.m_measure.m_boxes.size() == measure.m_contours.size())
 		{
-			for (u_int i=0; i < measure.m_contours.size(); ++i)
+			for (u_int i=0; i < measure.m_boxes.size(); ++i)
 			{
-				auto &contour = measure.m_contours[i];
+				//auto &contour = measure.m_contours[i];
 				auto &box = g_root.m_measure.m_boxes[i];
 
 				const float l1 = std::max(box.volume.x, box.volume.z);
@@ -425,7 +427,7 @@ void cInputView::UpdateDelayMeasure(const float deltaSeconds)
 				info.volume = box.minVolume;
 				info.vw = box.minVolume / 6000.f;
 				info.pointCount = box.pointCnt;
-				info.contour = contour;
+				//info.contour = contour;
 				result.volumes.push_back(info);
 			}
 		}
@@ -494,6 +496,8 @@ void cInputView::CalcDelayMeasure()
 	//CalcDelayMeasureRefine();
 
 	m_state = eState::NORMAL;
+
+	g_root.m_dbClient.WriteExcel();
 }
 
 

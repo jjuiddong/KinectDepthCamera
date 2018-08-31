@@ -267,6 +267,7 @@ bool cMeasure::MeasureVolume(
 )
 {
 	m_areaFloorCnt = 0;
+	m_boxes.clear();
 
 	if ((type == OBJECT) || (type == BOTH))
 	{
@@ -283,7 +284,15 @@ bool cMeasure::MeasureVolume(
 	if ((type == INTEGRAL) || (type == BOTH))
 	{
 		if (g_root.m_isAutoMeasure || isForceMeasure)
-			MeasureIntegral();
+		{
+			try {
+				MeasureIntegral();
+			}
+			catch (...)
+			{
+				common::dbg::Logp("Error!! MeasureIntegra exception\n");
+			}
+		}
 	}
 
 	return true;
@@ -592,17 +601,30 @@ void cMeasure::MeasureIntegral()
 	g_root.m_projRoi[3] = Vector3(roi.x - hw, 0, hh - (roi.y + roi.height)) * scale;
 	g_root.m_projRoi[2] = Vector3(roi.x - hw + roi.width, 0, hh - (roi.y + roi.height)) * scale;
 
-	const cv::Rect newRoi(
-		std::max(0, (int)roi.x), std::max(0, (int)roi.y)
-		, std::min(srcImg.cols, (int)roi.width)
-		, std::min(srcImg.rows, (int)roi.height));
+	const float w = (srcImg.cols < (int)(roi.x + roi.width)) ? (srcImg.cols - roi.x) : roi.width;
+	const float h = (srcImg.rows < (int)(roi.y + roi.height)) ? (srcImg.rows - roi.y) : roi.height;
+	const cv::Rect newRoi(std::max(0, (int)roi.x), std::max(0, (int)roi.y)
+		, w, h);
 
 	Mat m(grayscaleMat, newRoi);
 	m = m * scale * scale;
-	const double vw = cv::sum(m)[0] / 6000.f;
+	const double volume = cv::sum(m)[0];
+
+	double minVal = 0, maxVal = 0;
+	cv::minMaxLoc(m, &minVal, &maxVal);
 
 	m_projImageRoi = newRoi;
-	m_integralVW = (float)vw;
+	m_integralVW = (float)(volume / 6000.f);
+
+	sBoxInfo box;
+	box.integral = true;
+	box.minVolume = volume;
+	box.maxVolume = volume;
+	box.loopCnt = 1;
+	box.pointCnt = 0;
+	box.volume = common::Vector3(tmp.width * scale, (float)(maxVal / scale / scale), tmp.height * scale);
+	ZeroMemory(box.box3d, sizeof(box.box3d));
+	m_boxes.push_back(box);
 }
 
 
@@ -614,6 +636,7 @@ cv::Rect cMeasure::FindBiggestBlob(cv::Mat &src)
 	vector<vector<Point>> contours; // storing contour
 	vector<Vec4i> hierarchy;
 	findContours(temp, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+	//findContours(temp, contours, CV_RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 	if (contours.empty())
 		return {};
 
@@ -698,6 +721,8 @@ sBoxInfo cMeasure::CalcBoxInfo(const sContourInfo &info)
 	//const float offsetY = ((info.lowerH <= 0) && g_root.m_isPalete) ? -13.f : 3.5f;
 
 	sBoxInfo box;
+	box.integral = false;
+
 	if (info.contour.Size() == 4)
 	{
 		const Vector2 v1((float)info.contour[0].x, (float)info.contour[0].y);

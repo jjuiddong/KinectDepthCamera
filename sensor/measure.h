@@ -55,9 +55,9 @@ public:
 	int m_offsetDistrib; // for -200 ~ 2000 (calibrationview calc height distribution)
 
 	// OBJECT MEASURE
-	vector<sBoxInfo> m_boxes; // 현재 인식된 박스 정보
-	vector<sBoxInfo> m_boxesStored; // 평균으로 계산된 박스 정보
-	vector<sMeasureResult> m_results;
+	vector<sBoxInfo> m_boxes; // 현재 인식된 박스 정보 (update Measure2DImage())
+	vector<sBoxInfo> m_boxesStored; // 평균으로 계산된 박스 정보, 외부에서 세팅 (cInputView)
+	vector<sMeasureResult> m_results; // cInputView 에서 세팅
 	vector<sAreaFloor*> m_areaBuff;
 	int m_areaFloorCnt;
 	
@@ -65,6 +65,7 @@ public:
 	cv::Rect m_projImageRoi;
 	float m_integralVW;
 
+	// Box Raw Data
 	vector<sContourInfo> m_contours; // 현재 인식된 박스 정보
 	vector<sContourInfo> m_removeContours; // 중복 제거된 박스 정보
 	vector<sContourInfo> m_beforeRemoveContours; // 중복 제거되기전 박스 정보

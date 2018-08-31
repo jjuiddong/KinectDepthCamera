@@ -64,6 +64,7 @@ public:
 	common::Vector3 m_3dEyePos;
 	common::Vector3 m_3dLookAt;
 	common::cTimer m_timer;
+	HWND m_hwnd;
 	
 	// Kinect
 	bool m_isConnectKinect;
@@ -85,6 +86,7 @@ public:
 	bool m_isAutoMeasure;
 	bool m_isPalete;
 	bool m_isGrabLog;
+	bool m_isGrabErrLog;
 	bool m_isCalcHorz;
 	bool m_isSave2DMat;
 
@@ -96,6 +98,9 @@ public:
 	common::Vector3 m_volumeCenter;
 	common::Transform m_cameraOffset[ MAX_CAMERA];
 	float m_cameraOffsetYAngle[ MAX_CAMERA];
+	int m_devChannel[MAX_CAMERA]; // DeviceChannel
+	common::sRectf m_cullRect[MAX_CAMERA];
+	common::sRectf m_extraCullRect[MAX_CAMERA];
 
 	cCalibration m_calib;
 	common::Vector3 m_regionCenter;

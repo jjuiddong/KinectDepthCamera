@@ -205,7 +205,7 @@ void cCalibrationView::SingleSensorSubPlaneCalibration()
 		}
 		
 		ImGui::Spacing();
-
+		 
 		ImGui::DragFloat3("SubPlan Region Center", (float*)&g_root.m_regionCenter, 0.01f);
 		ImGui::DragFloat2("SubPlan Region Size", (float*)&g_root.m_regionSize, 0.1f);
 		ImGui::Checkbox("Continuous Calibration", &g_root.m_isContinuousCalibrationPlane);

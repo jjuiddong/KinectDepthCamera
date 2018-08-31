@@ -53,7 +53,8 @@ bool cBaslerCameraSync::Init()
 		{
 			common::Str128 msg = "Exception occurred: ";
 			msg += e.GetDescription();
-			::MessageBoxA(NULL, msg.c_str(), "Error", MB_OK);
+			::MessageBoxA(g_root.m_hwnd, msg.c_str(), "Error", MB_OK);
+			common::dbg::Logp(msg.c_str());
 
 			return false;
 		}
@@ -91,6 +92,8 @@ bool cBaslerCameraSync::CreateSensor(const int sensorCount)
 		sensor->m_info.strDisplayName = common::format("temp camera%d", i + 1);
 		sensor->m_buffer.m_offset = g_root.m_cameraOffset[i];
 		sensor->m_buffer.m_planeSub = g_root.m_planeSub[i];
+		sensor->m_buffer.m_cullRect = g_root.m_cullRect[i];
+		sensor->m_buffer.m_cullExtraRect = g_root.m_extraCullRect[i];
 		sensor->m_buffer.m_mergeOffset = (i == 1);
 
 		m_sensors.push_back(sensor);
@@ -123,10 +126,11 @@ int cBaslerCameraSync::BaslerCameraSetup()
 		// Prepare cameras and buffers for image exposure.
 		for (cSensor *sensor : m_sensors)
 		{
+			sensor->PrepareAcquisition();
+
 			if (!sensor->IsEnable())
 				continue;
 
-			sensor->PrepareAcquisition();
 			sensor->BeginAcquisition();
 		}
 
@@ -146,7 +150,8 @@ int cBaslerCameraSync::BaslerCameraSetup()
 			}
 		}
 
-		::MessageBoxA(NULL, msg.c_str(), "Error", MB_OK);
+		::MessageBoxA(g_root.m_hwnd, msg.c_str(), "Error", MB_OK);
+		common::dbg::Logp(msg.c_str());
 
 		return EXIT_FAILURE;
 	}
@@ -164,6 +169,38 @@ void cBaslerCameraSync::setupCamera()
 	CameraList camList = CToFCamera::EnumerateCameras();
 	common::dbg::Logp("found %d ToF cameras \n", camList.size());
 
+	// Parsing camera-connect
+	// ex) Camera1,Camera2,Camera3
+	string cfgCameraConnect = g_root.m_config.GetString("camera-connect");
+	vector<string> conCams;
+	common::tokenizer(cfgCameraConnect, ",", "", conCams);
+
+	// Parsing camera-mapping
+	// ex) Camera1:0,Camera2:1
+	string cfgCameraOffsetmap = g_root.m_config.GetString("camera-mapping");
+	vector<string> tokCameraOffsetmap;
+	common::tokenizer(cfgCameraOffsetmap, ",", "", tokCameraOffsetmap);
+
+	vector<std::pair<string, int>> cameraOffsetmap;
+ 	if (!tokCameraOffsetmap.empty())
+	{
+		for (const auto &tok : tokCameraOffsetmap)
+		{
+			if (tok.empty())
+				continue;
+
+			vector<string> out;
+			common::tokenizer(tok, ":", "", out);
+			if (out.size() < 2)
+			{
+				assert(0); // error occur
+				continue;
+			}
+
+			cameraOffsetmap.push_back( std::make_pair<string, int>(out[0].c_str(), atoi(out[1].c_str())) );
+		}
+	}
+
 	// Iterate over list of cameras.
 	size_t camIdx = 0;
 	for (CameraInfo &cInfo : camList)
@@ -171,13 +208,50 @@ void cBaslerCameraSync::setupCamera()
 		if (eThreadState::CONNECT_TRY != m_state)
 			continue;
 
+		if (!conCams.empty())
+		{
+			auto it = std::find(conCams.begin(), conCams.end(), cInfo.strDisplayName);
+			if (conCams.end() == it)
+				continue;
+		}
+
 		cSensor *sensor = new cSensor;
 		sensor->InitCamera(camIdx, cInfo);
 
-		sensor->m_buffer.m_offset = g_root.m_cameraOffset[camIdx];
-		sensor->m_buffer.m_planeSub = g_root.m_planeSub[camIdx];
+		// Setting Offset Parameter
+		if (cameraOffsetmap.empty())
+		{
+			sensor->m_buffer.m_offset = g_root.m_cameraOffset[camIdx];
+			sensor->m_buffer.m_planeSub = g_root.m_planeSub[camIdx];
+		}
+		else
+		{
+			int parameterIdx = -1;
+			for (u_int i=0; i < cameraOffsetmap.size(); ++i)
+			{
+				const auto &val = cameraOffsetmap[i];
+				if (val.first == cInfo.strDisplayName)
+				{
+					parameterIdx = val.second;
+					common::dbg::Logp("%s Camera Parameter Idx = %d\n", cInfo.strDisplayName.c_str(), val.second);
+					break;
+				}
+			}
+			if ((parameterIdx < 0) || (parameterIdx >= MAX_CAMERA))
+			{
+				assert(0);
+				parameterIdx = camIdx;
+			}
+
+			sensor->m_buffer.m_offset = g_root.m_cameraOffset[parameterIdx];
+			sensor->m_buffer.m_planeSub = g_root.m_planeSub[parameterIdx];
+			sensor->m_buffer.m_cullRect = g_root.m_cullRect[parameterIdx];
+			sensor->m_buffer.m_cullExtraRect = g_root.m_extraCullRect[parameterIdx];
+		}
+		
 		sensor->m_buffer.m_mergeOffset = (camIdx == 1);
 		m_oldCameraEnable[camIdx] = true;
+		//m_oldCameraEnable[camIdx] = false;
 
 		m_sensors.push_back(sensor);
 
@@ -188,6 +262,9 @@ void cBaslerCameraSync::setupCamera()
 
 void cBaslerCameraSync::findMaster()
 {
+	if (m_sensors.size() <= 1)
+		return;
+
 	// Number of masters found ( != 1 ) 
 	unsigned int nMaster;
 
@@ -204,11 +281,10 @@ void cBaslerCameraSync::findMaster()
 		// Note that if a PTP master clock is present in the subnet, all TOF cameras
 		// ultimately assume the slave role.
 		//
-		//for (size_t i = 0; i < .size(); i++)
 		for (cSensor *sensor : m_sensors)
 		{
-			if (!sensor->IsEnable())
-				continue;
+			//if (!sensor->IsEnable())
+			//	continue;
 
 			// Latch IEEE1588 status.
 			CCommandPtr ptrGevIEEE1588DataSetLatch = sensor->m_camera->GetParameter("GevIEEE1588DataSetLatch");
@@ -276,8 +352,8 @@ void cBaslerCameraSync::syncCameras()
 	//for (size_t camIdx = 0; camIdx < m_CameraInfos.size(); camIdx++)
 	for (cSensor *sensor : m_sensors)
 	{
-		if (!sensor->IsEnable())
-			continue;
+		//if (!sensor->IsEnable())
+		//	continue;
 
 		// Check all slaves for deviations from master clock.
 		if (false == sensor->m_isMaster)
@@ -349,8 +425,8 @@ void cBaslerCameraSync::setTriggerDelays()
 	//for (size_t camIdx = 0; camIdx < m_Cameras.size(); camIdx++)
 	for (cSensor *sensor : m_sensors)
 	{
-		if (!sensor->IsEnable())
-			continue;
+		//if (!sensor->IsEnable())
+		//	continue;
 
 		common::dbg::Logp("Camera %d : \n", sensor->m_id);
 		//
@@ -458,17 +534,29 @@ void cBaslerCameraSync::ProcessCmd()
 		if (m_oldCameraEnable[i] == m_sensors[i]->IsEnable())
 			continue;
 
-		if (m_sensors[i]->IsEnable())
+		try
 		{
-			// Start DepthImage Receive
-			m_sensors[i]->m_camera->StartAcquisition();
-			m_sensors[i]->m_camera->IssueAcquisitionStartCommand();
+			if (m_sensors[i]->IsEnable())
+			{
+				// Start DepthImage Receive
+				m_sensors[i]->m_camera->StartAcquisition();
+				m_sensors[i]->m_camera->IssueAcquisitionStartCommand();
+			}
+			else
+			{
+				// Stop DepthImage Receive
+				m_sensors[i]->m_camera->StopAcquisition();
+				m_sensors[i]->m_camera->IssueAcquisitionStopCommand();
+			}
 		}
-		else
+		catch (GenICam::GenericException& e)
 		{
-			// Stop DepthImage Receive
-			m_sensors[i]->m_camera->StopAcquisition();
-			m_sensors[i]->m_camera->IssueAcquisitionStopCommand();
+			common::Str128 msg = "Exception occurred: ";
+			msg += e.GetDescription();
+			::MessageBoxA(g_root.m_hwnd, msg.c_str(), "Error", MB_OK);
+			common::dbg::Logp(msg.c_str());
+
+			//m_state = cBaslerCameraSync::eThreadState::CONNECT_FAIL;
 		}
 
 		m_oldCameraEnable[i] = m_sensors[i]->IsEnable();
@@ -479,16 +567,56 @@ void cBaslerCameraSync::ProcessCmd()
 // Grab
 bool cBaslerCameraSync::Grab()
 {
+	// Frame Control
+	static common::cTimer s_timer;
+	static bool onlyOne = true;
+	if (onlyOne)
+	{
+		onlyOne = false;
+		s_timer.Create();
+	}
+
 	static int grabcnt = 0;
+	static double oldT = s_timer.GetSeconds();
+	const double curT = s_timer.GetSeconds();
+	if (curT - oldT < 0.03f)
+		return true;
+	oldT = curT;
+	//
 
 	for (cSensor *sensor : m_sensors)
 	{
 		if (!sensor->IsEnable())
 			continue;
 
-		if (sensor->Grab())
-			if (g_root.m_isGrabLog)
-				common::dbg::Logp("camIdx = %d, grab = %d\n", sensor->m_id, grabcnt++);
+		bool continueGrab = true;
+		int cnt = 0;
+		while (continueGrab && (cnt++ < 1))
+		{
+			const int result = sensor->Grab();
+			switch (result)
+			{
+			case 1: // success
+				if (g_root.m_isGrabLog)
+					common::dbg::Logp("camIdx = %d, grab = %d\n", sensor->m_id, grabcnt++);
+				continueGrab = false;
+				break;
+
+			case 2: // not ready
+				continueGrab = false;
+				break;
+
+			case 3: // time out
+			case 4: // grabbed fail
+				if (g_root.m_isGrabErrLog)
+				{
+					common::dbg::Logp("Error Grabbed [ %s ], cnt = %d, code = %s \n"
+						, sensor->m_info.strDisplayName.c_str(), cnt, (result==3)? "time out" : "grab fail");
+				}
+				continueGrab = true;
+				break;
+			}
+		}
 	}
 
 	return true;
@@ -625,7 +753,8 @@ void BaslerCameraThread(cBaslerCameraSync *basler)
 	{
 		common::Str128 msg = "Exception occurred: ";
 		msg += e.GetDescription();
-		::MessageBoxA(NULL, msg.c_str(), "Error", MB_OK);
+		::MessageBoxA(g_root.m_hwnd, msg.c_str(), "Error", MB_OK);
+		common::dbg::Logp(msg.c_str());
 
 		basler->m_state = cBaslerCameraSync::eThreadState::CONNECT_FAIL;
 	}

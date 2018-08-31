@@ -125,6 +125,7 @@ bool cViewer::OnInit()
 	m_calibView = new cCalibrationView("Calibration");
 	m_calibView->Create(eDockState::DOCKWINDOW, eDockSlot::TAB, this, m_analysisView);
 
+	g_root.m_hwnd = getSystemHandle();
 	g_root.m_3dView = m_3dView;
 	g_root.m_colorView = m_colorView;
 	g_root.m_depthView = m_depthView;

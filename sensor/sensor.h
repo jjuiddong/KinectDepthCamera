@@ -17,7 +17,7 @@ public:
 	virtual ~cSensor();
 
 	bool InitCamera(const int id, const CameraInfo &cinfo);
-	bool Grab();
+	int Grab();
 	bool CopyCaptureBuffer(graphic::cRenderer &renderer, const char *saveFileName);
 	void PrepareAcquisition();
 	void BeginAcquisition();
@@ -37,6 +37,10 @@ public:
 	bool m_isMaster;
 	bool m_isShow;
 	double m_writeTime;
+	int m_totalGrabCount;
+	int m_grabSeconds;
+	float m_grabFPS;
+	double m_grabTime;
 	int m_outlierTolerance;
 	int m_confidenceThreshold;
 	int m_oldOutlierTolerance;

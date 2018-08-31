@@ -79,6 +79,8 @@ public:
 	common::Plane m_planeSub;
 	graphic::cVertexBuffer m_vtxBuff;
 	common::Transform m_offset;
+	common::sRectf m_cullRect; // 영역 안에 들어올 때만 PointCloud에 적용된다.
+	common::sRectf m_cullExtraRect; // 영역에 포함되지 않을 때, PointCloud에 적용된다.
 	graphic::cShader11 m_shader;
 
 	// Analysis

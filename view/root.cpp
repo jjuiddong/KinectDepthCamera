@@ -21,6 +21,7 @@ cRoot::cRoot()
 	, m_isConnectKinect(false)
 	, m_baslerCam(true)
 	, m_isGrabLog(false)
+	, m_isGrabErrLog(false)
 	, m_isRangeCulling(false)
 	, m_cullRangeMin(-200, -20, -200)
 	, m_cullRangeMax(200, 200, 200)
@@ -54,6 +55,21 @@ cRoot::cRoot()
 	//m_planeSub[0] = Plane(Vector3(-0.006403f, 0.999976f, 0.002532f), -0.598581f);
 	//m_planeSub[1] = Plane(Vector3(0, 1, 0), 0);
 	//m_planeSub[2] = Plane(Vector3(0, 1, 0), 0);
+
+	for (int i = 0; i < MAX_CAMERA; ++i)
+		m_devChannel[i] = -1;
+
+	m_cullRect[0] = common::sRectf::Rect(0, -200, 200, 200); // Camera3
+	m_cullRect[1] = common::sRectf::Rect(0, 0, 200, 200); // Camera2
+	m_cullRect[2] = common::sRectf::Rect(-50, -50, 100, 100); // Camera5
+	m_cullRect[3] = common::sRectf::Rect(-200, -200, 200, 200); // Camera4
+	m_cullRect[4] = common::sRectf::Rect(-200, 0, 200, 200); // Camera1
+
+	m_extraCullRect[0] = m_cullRect[2]; // Camera3
+	m_extraCullRect[1] = m_cullRect[2]; // Camera2
+	m_extraCullRect[2] = common::sRectf::Rect(0,0,0,0); // Camera5
+	m_extraCullRect[3] = m_cullRect[2]; // Camera4
+	m_extraCullRect[4] = m_cullRect[2]; // Camera1
 }
 
 cRoot::~cRoot()
@@ -75,6 +91,14 @@ bool cRoot::Create()
 		m_regionCenter.z = m_config.GetFloat("calib-center-z");
 		m_regionSize.x = m_config.GetFloat("calib-minmax-x", 50);
 		m_regionSize.y = m_config.GetFloat("calib-minmax-y", 50);
+
+		// Parse Device Channel 
+		StrId id;
+		for (int i = 0; i < MAX_CAMERA; ++i)
+		{
+			id.Format("camera-option-channel%d-x", i);
+			m_devChannel[i] = m_config.GetInt(id.c_str(), -1);
+		}
 	}
 	else
 	{
@@ -194,11 +218,115 @@ bool cRoot::LoadPlane()
 		m_planeSub[i].D = m_config.GetFloat(id.c_str(), 0);
 	}
 
+	const bool isCullingRect = g_root.m_config.GetInt("culling-rect-enable", 0) > 0;
+
+	// Parsing Culling Rect
+	for (int i = 0; i < MAX_CAMERA; ++i)
+	{
+		StrId id;
+		id.Format("culling-rect%d", i);
+		{
+			string tok = g_root.m_config.GetString(id.c_str());
+			vector<string> out;
+			common::tokenizer(tok, ",", "", out);
+			if (!isCullingRect || (out.size() < 4))
+			{
+				m_cullRect[i] = common::sRectf::Rect(0, 0, 0, 0);
+			}
+			else
+			{
+				const common::sRectf rect = common::sRectf::Rect(
+					atof(out[0].c_str())
+					, atof(out[1].c_str())
+					, atof(out[2].c_str())
+					, atof(out[3].c_str()));
+				m_cullRect[i] = rect;
+			}
+		}
+
+		// Parsing extra-culling-rect
+		id.Format("extra-culling-rect%d", i);
+		{
+			string tok = g_root.m_config.GetString(id.c_str());
+			vector<string> out;
+			common::tokenizer(tok, ",", "", out);
+			if (!isCullingRect || (out.size() < 4))
+			{
+				m_extraCullRect[i] = common::sRectf::Rect(0, 0, 0, 0);
+			}
+			else
+			{
+				const common::sRectf rect = common::sRectf::Rect(
+					atof(out[0].c_str())
+					, atof(out[1].c_str())
+					, atof(out[2].c_str())
+					, atof(out[3].c_str()));
+				m_extraCullRect[i] = rect;
+			}
+		}
+	}
+
+
+	// Parsing camera-mapping
+	// ex) Camera1:0,Camera2:1
+	string cfgCameraOffsetmap = g_root.m_config.GetString("camera-mapping");
+	vector<string> tokCameraOffsetmap;
+	common::tokenizer(cfgCameraOffsetmap, ",", "", tokCameraOffsetmap);
+
+	vector<std::pair<string, int>> cameraOffsetmap;
+	if (!tokCameraOffsetmap.empty())
+	{
+		for (const auto &tok : tokCameraOffsetmap)
+		{
+			if (tok.empty())
+				continue;
+
+			vector<string> out;
+			common::tokenizer(tok, ":", "", out);
+			if (out.size() < 2)
+			{
+				assert(0); // error occur
+				continue;
+			}
+
+			cameraOffsetmap.push_back(std::make_pair<string, int>(out[0].c_str(), atoi(out[1].c_str())));
+		}
+	}
+
 	for (u_int i = 0; i < m_baslerCam.m_sensors.size(); ++i)
 	{
 		auto &sensor = m_baslerCam.m_sensors[i];
-		sensor->m_buffer.m_offset = m_cameraOffset[i];
-		sensor->m_buffer.m_planeSub = m_planeSub[i];
+
+		// Setting Offset Parameter
+		if (cameraOffsetmap.empty())
+		{
+			sensor->m_buffer.m_offset = m_cameraOffset[i];
+			sensor->m_buffer.m_planeSub = m_planeSub[i];
+		}
+		else
+		{
+			int parameterIdx = -1;
+			for (u_int i = 0; i < cameraOffsetmap.size(); ++i)
+			{
+				const auto &val = cameraOffsetmap[i];
+				if (val.first == sensor->m_info.strDisplayName)
+				{
+					common::dbg::Logp("%s Camera Parameter Idx = %d\n", sensor->m_info.strDisplayName.c_str(), val.second);
+					parameterIdx = val.second;
+					break;
+				}
+			}
+			if ((parameterIdx < 0) || (parameterIdx >= MAX_CAMERA))
+			{
+				//assert(0);
+				parameterIdx = (int)i;
+			}
+
+			sensor->m_buffer.m_offset = m_cameraOffset[parameterIdx];
+			sensor->m_buffer.m_planeSub = m_planeSub[parameterIdx];
+			sensor->m_buffer.m_cullRect = m_cullRect[parameterIdx];
+			sensor->m_buffer.m_cullExtraRect = m_extraCullRect[parameterIdx];
+		}
 	}
 
 	return true;

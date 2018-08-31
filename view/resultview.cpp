@@ -40,7 +40,7 @@ void cResultView::OnRender(const float deltaSeconds)
 	ImGui::BeginChild("Sub2", ImVec2(w, m_rect.Height() - 45), true);
 
 	static bool isMeasureVolume = false;
-	if (ImGui::Button(u8"측정(100)"))
+	if (ImGui::Button(u8"측정(200)"))
 	{
 		++g_root.m_measure.m_measureId;
 		isMeasureVolume = true;

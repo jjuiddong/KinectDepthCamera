@@ -49,7 +49,9 @@ bool cBaslerCamera::Init()
 	{
 		common::Str128 msg = "Exception occurred: ";
 		msg += e.GetDescription();
-		::MessageBoxA(NULL, msg.c_str(), "Error", MB_OK);
+		::MessageBoxA(g_root.m_hwnd, msg.c_str(), "Error", MB_OK);
+		common::dbg::Logp(msg.c_str());
+		
 		//cerr << "Exception occurred: " << endl << e.GetDescription() << endl;
 		//exitCode = EXIT_FAILURE;
 		return false;
@@ -113,7 +115,9 @@ int cBaslerCamera::BaslerCameraSetup()
 			msg += "Camera has been removed.";
 		}
 
-		::MessageBoxA(NULL, msg.c_str(), "Error", MB_OK);
+		::MessageBoxA(g_root.m_hwnd, msg.c_str(), "Error", MB_OK);
+
+		common::dbg::Logp(msg.c_str());
 
 		return EXIT_FAILURE;
 	}
@@ -205,7 +209,10 @@ bool cBaslerCamera::Capture(graphic::cRenderer &renderer)
 			msg += "Camera has been removed.";
 		}
 
-		::MessageBoxA(NULL, msg.c_str(), "Error", MB_OK);
+		::MessageBoxA(g_root.m_hwnd, msg.c_str(), "Error", MB_OK);
+
+		common::dbg::Logp(msg.c_str());
+
 		return false;
 	}
 
