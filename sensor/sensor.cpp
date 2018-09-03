@@ -212,9 +212,12 @@ int cSensor::Grab()
 	RETV(!m_isEnable, 2);
 	RETV(!m_isShow, 2);
 
+	int retVal = 1;
 
 	try
 	{
+		const double curT = g_root.m_timer.GetMilliSeconds();
+
 		CheckAndUpdateParameters();
 
 		GrabResult grabResult;
@@ -224,17 +227,15 @@ int cSensor::Grab()
 		{
 			if (g_root.m_isGrabLog)
 				common::dbg::ErrLogp("Err Timeout occurred. camIdx = %d\n", m_id);
-			return 3;
+			retVal = 3;
 		}
-
-		if (grabResult.status != GrabResult::Ok)
+		else if (grabResult.status != GrabResult::Ok)
 		{
 			if (g_root.m_isGrabLog)
 				common::dbg::ErrLog("Err Got a buffer, but it hasn't been successfully grabbed. camIdx = %d\n", m_id);
-			return 4;
+			retVal = 4;
 		}
-
-		if (grabResult.status == GrabResult::Ok)
+		else if (grabResult.status == GrabResult::Ok)
 		{
 			BufferParts parts;
 			m_camera->GetBufferParts(grabResult, parts);
@@ -253,26 +254,24 @@ int cSensor::Grab()
 					memcpy(&m_tempBuffer.m_intensity[0], pIntensity, sizeof(unsigned short) * 640 * 480);
 				}
 
-				const double curT = g_root.m_timer.GetMilliSeconds();
 				m_tempBuffer.m_time = curT; // Update Time
 
 				m_totalGrabCount++;
 				m_grabSeconds++;
-				
-				if (curT - m_grabTime > 1000.f)
-				{
-					m_grabFPS = (float)m_grabSeconds;
-					m_grabSeconds = 0.f;
-					m_grabTime = curT;
-				}
 			}
 		}
 
-		if (grabResult.status != GrabResult::Timeout)
+		if (grabResult.status == GrabResult::Ok)
 		{
 			m_camera->QueueBuffer(grabResult.hBuffer);
 		}
 
+		if (curT - m_grabTime > 1000.f)
+		{
+			m_grabFPS = (float)m_grabSeconds;
+			m_grabSeconds = 0.f;
+			m_grabTime = curT;
+		}
 	}
 	catch (...)
 	{
@@ -280,7 +279,7 @@ int cSensor::Grab()
 		return 4;
 	}
 
-	return 1;
+	return retVal;
 }
 
 

@@ -13,7 +13,6 @@ cInputView::cInputView(const string &name)
 	: framework::cDockWindow(name)
 	, m_isCaptureContinuos(false)
 	, m_captureTime(0)
-	, m_triggerDelayTime(0)
 	, m_isFileAnimation(false)
 	, m_aniIndex1(-1)
 	, m_aniIndex2(-1)
@@ -129,8 +128,7 @@ void cInputView::OnRender(const float deltaSeconds)
 	if (m_isCaptureContinuos && g_root.m_baslerCam.IsReadyCapture())
 	{
 		m_captureTime += deltaSeconds;
-		m_triggerDelayTime += deltaSeconds;
-		if (m_captureTime > 0.1f)
+		if (m_captureTime > 0.25f)
 		{
 			if (g_root.m_baslerCam.CopyCaptureBuffer(g_root.m_3dView->GetRenderer()))
 				UpdateDelayMeasure(m_captureTime);
@@ -139,12 +137,6 @@ void cInputView::OnRender(const float deltaSeconds)
 
 			m_captureTime = 0;
 		}
-		if (m_triggerDelayTime > 1.f)
-		{
-			//g_root.m_balserCam.setTriggerDelays();
-			m_triggerDelayTime = 0;
-		}
-
 	}
 	else if (m_isFileAnimation)
 	{
@@ -419,6 +411,7 @@ void cInputView::UpdateDelayMeasure(const float deltaSeconds)
 				const float l3 = box.volume.y;
 
 				sMeasureVolume info;
+				info.integral = box.integral;
 				info.id = id++;
 				info.horz = l1;
 				info.vert = l2;
@@ -497,7 +490,10 @@ void cInputView::CalcDelayMeasure()
 
 	m_state = eState::NORMAL;
 
-	g_root.m_dbClient.WriteExcel();
+	if (cMeasure::INTEGRAL == g_root.m_measureType)
+	{
+		g_root.m_dbClient.WriteExcel(true);
+	}
 }
 
 

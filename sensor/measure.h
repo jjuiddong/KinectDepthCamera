@@ -37,7 +37,7 @@ protected:
 	sBoxInfo CalcBoxInfo(const sContourInfo &info);
 	void RenderContourRect(cv::Mat &dst, const vector<sContourInfo> &contours
 		, const int offsetId=0);
-	cv::Rect FindBiggestBlob(cv::Mat &src);
+	std::pair<cv::Rect, cv::RotatedRect> FindBiggestBlob(cv::Mat &src);
 
 
 public:

@@ -37,8 +37,8 @@ cRoot::cRoot()
 	, m_isShowBoxVertex(true)
 	, m_isSave2DMat(false)
 	, m_isShowBeforeContours(false)
-	, m_masterSensor(0)
-	, m_measureType(cMeasure::OBJECT)
+	, m_masterSensor(2)
+	, m_measureType(cMeasure::INTEGRAL)
 	, m_hdistribSize(0,0)
 {
 	// Camera Offset Setting, Korean Air Cargo

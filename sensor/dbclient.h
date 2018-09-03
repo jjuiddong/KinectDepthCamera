@@ -15,7 +15,7 @@ public:
 	bool Insert(const sMeasureResult &result);
 	void Clear();
 	static string GetResult2JSon(const sMeasureResult &result);
-	bool WriteExcel();
+	bool WriteExcel(const bool isIntegral);
 
 
 public:

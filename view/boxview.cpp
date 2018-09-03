@@ -287,7 +287,7 @@ void cBoxView::OnRender(const float deltaSeconds)
 			auto &box = g_root.m_measure.m_boxes[i];
 			 
 			if (box.integral)
-				ImGui::Text("Integral Box");
+				ImGui::Text("Integral Calc");
 			else
 				ImGui::Text("Box%d", i + 1);
 
@@ -306,7 +306,8 @@ void cBoxView::OnRender(const float deltaSeconds)
 		{
 			float totalVW = 0;
 			for (u_int i = 0; i < g_root.m_measure.m_boxes.size(); ++i)
-				totalVW += g_root.m_measure.m_boxes[i].minVolume / 6000.f;
+				if (!g_root.m_measure.m_boxes[i].integral)
+					totalVW += g_root.m_measure.m_boxes[i].minVolume / 6000.f;
 
 			ImGui::Text("Total V/W = %f", totalVW);
 		}

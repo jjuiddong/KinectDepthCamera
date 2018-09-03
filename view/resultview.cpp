@@ -50,7 +50,7 @@ void cResultView::OnRender(const float deltaSeconds)
 	}
 
 	ImGui::SameLine();
-	if (ImGui::Button(u8"측정(10)"))
+	if (ImGui::Button(u8"측정(20)"))
 	{
 		++g_root.m_measure.m_measureId;
 		isMeasureVolume = true;
@@ -127,6 +127,7 @@ void cResultView::OnRender(const float deltaSeconds)
 				const float l3 = box.volume.y;
 
 				sMeasureVolume info;
+				info.integral = box.integral;
 				info.id = id++;
 				info.horz = l1;
 				info.vert = l2;

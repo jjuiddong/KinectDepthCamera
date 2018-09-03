@@ -308,39 +308,42 @@ void cMeasure::CalcHeightDistribute()
 	if (g_root.m_baslerCam.m_sensors.size() <= (u_int)g_root.m_masterSensor)
 		return;
 
-	cSensor *sensor = g_root.m_baslerCam.m_sensors[g_root.m_masterSensor];
-	if (!sensor->IsEnable()
-		|| !sensor->m_isShow
-		|| !sensor->m_buffer.m_isLoaded)
-		return;
-
 	graphic::cRenderer &renderer = g_root.m_3dView->GetRenderer();
-	cSensorBuffer &sbuff = sensor->m_buffer;
+	m_distribCount = 0;
+	ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
+	ZeroMemory(m_hAverage, sizeof(m_hAverage));
 
-	// Calculate Height Distribution
+	for (auto &sensor : g_root.m_baslerCam.m_sensors)
 	{
-		m_distribCount = 0;
-		ZeroMemory(m_hDistrib, sizeof(m_hDistrib));
-		ZeroMemory(m_hAverage, sizeof(m_hAverage));
+		//cSensor *sensor = g_root.m_baslerCam.m_sensors[g_root.m_masterSensor];
+		if (!sensor->IsEnable()
+			|| !sensor->m_isShow
+			|| !sensor->m_buffer.m_isLoaded)
+			continue;
 
-		Vector3 *src = &sbuff.m_vertices[0];
-		const u_int vertexSize = sbuff.m_vertices.size();
-		for (u_int i=0; i < vertexSize; ++i)
+		cSensorBuffer &sbuff = sensor->m_buffer;
+
+		// Calculate Height Distribution
 		{
-			const Vector3 &vtx = *src++;
-			if (vtx.IsEmpty())
-				continue;
-			if (abs(vtx.x) > 200.f)
-				continue;
-			if (abs(vtx.z) > 200.f)
-				continue;
-
-			const int h = (int)(vtx.y * 10.f);
-			if ((h >= 0) && (h < ARRAYSIZE(m_hDistrib)))
+			Vector3 *src = &sbuff.m_vertices[0];
+			const u_int vertexSize = sbuff.m_vertices.size();
+			for (u_int i=0; i < vertexSize; ++i)
 			{
-				m_distribCount++;
-				m_hDistrib[h] += 1.f;
-				m_hAverage[h] += vtx.y;
+				const Vector3 &vtx = *src++;
+				if (vtx.IsEmpty())
+					continue;
+				if (abs(vtx.x) > 200.f)
+					continue;
+				if (abs(vtx.z) > 200.f)
+					continue;
+
+				const int h = (int)(vtx.y * 10.f);
+				if ((h >= 0) && (h < ARRAYSIZE(m_hDistrib)))
+				{
+					m_distribCount++;
+					m_hDistrib[h] += 1.f;
+					m_hAverage[h] += vtx.y;
+				}
 			}
 		}
 	}
@@ -429,6 +432,13 @@ void cMeasure::CalcHeightDistribute()
 	}
 
 	// Generate Area Floor
+	cSensor *sensor = g_root.m_baslerCam.m_sensors[g_root.m_masterSensor];
+	if (!sensor->IsEnable()
+		|| !sensor->m_isShow
+		|| !sensor->m_buffer.m_isLoaded)
+		return;
+	cSensorBuffer &sbuff = sensor->m_buffer;
+
 	const cColor colors[] = { cColor::YELLOW, cColor::RED, cColor::GREEN, cColor::BLUE };
 
 	u_int floor = 0;
@@ -586,14 +596,16 @@ void cMeasure::MeasureIntegral()
 	cv::Mat &srcImg = g_root.m_measure.m_projMap;
 	Mat grayscaleMat;
 	srcImg.convertTo(grayscaleMat, CV_16UC1, 500.f);
-	cv::threshold(grayscaleMat, grayscaleMat, 10, 500.f, THRESH_TOZERO);
+	cv::threshold(grayscaleMat, grayscaleMat, 15, 500.f, THRESH_TOZERO);
 
 	// Calc Maximum Boundary
 	const float scale = 1.f / 1.5f;
 
 	const int space = 20;
-	const cv::Rect tmp = FindBiggestBlob(grayscaleMat);
-	const cv::Rect2f roi((float)tmp.x- space, (float)tmp.y- space, (float)tmp.width+ space*2, (float)tmp.height+ space*2);
+	const std::pair<cv::Rect, cv::RotatedRect> blobResult = FindBiggestBlob(grayscaleMat);
+	const cv::Rect br = blobResult.first;
+	const cv::RotatedRect rr = blobResult.second;
+	const cv::Rect2f roi((float)br.x- space, (float)br.y- space, (float)br.width+ space*2, (float)br.height+ space*2);
 	const float hw = srcImg.cols / 2.f;
 	const float hh = srcImg.rows / 2.f;
 	g_root.m_projRoi[0] = Vector3(roi.x - hw, 0, hh - roi.y) * scale;
@@ -616,26 +628,38 @@ void cMeasure::MeasureIntegral()
 	m_projImageRoi = newRoi;
 	m_integralVW = (float)(volume / 6000.f);
 
-	sBoxInfo box;
-	box.integral = true;
-	box.minVolume = volume;
-	box.maxVolume = volume;
-	box.loopCnt = 1;
-	box.pointCnt = 0;
-	box.volume = common::Vector3(tmp.width * scale, (float)(maxVal / scale / scale), tmp.height * scale);
-	ZeroMemory(box.box3d, sizeof(box.box3d));
-	m_boxes.push_back(box);
+	if (volume > 0)
+	{
+		sBoxInfo box;
+		box.integral = true;
+		box.minVolume = volume;
+		box.maxVolume = volume;
+		box.loopCnt = 1;
+		box.pointCnt = 0;
+		box.volume = common::Vector3(rr.size.width * scale, (float)(maxVal / scale / scale), rr.size.height * scale);
+		ZeroMemory(box.box3d, sizeof(box.box3d));
+		m_boxes.push_back(box);
+	}
 }
 
 
-cv::Rect cMeasure::FindBiggestBlob(cv::Mat &src)
+std::pair<cv::Rect, cv::RotatedRect> cMeasure::FindBiggestBlob(cv::Mat &src)
 {
 	Mat temp = src.clone();
 	temp.convertTo(temp, CV_8UC1);
 
+	const Mat element = cv::getStructuringElement(MORPH_RECT, Size(3, 3));
+	Mat binImg;
+	cv::threshold(temp, binImg, 15, 255, cv::THRESH_BINARY);
+
+	for (int i=0; i < 14; ++i)
+		cv::dilate(binImg, binImg, element);
+	for (int i = 0; i < 14; ++i)
+		cv::erode(binImg, binImg, element);
+
 	vector<vector<Point>> contours; // storing contour
 	vector<Vec4i> hierarchy;
-	findContours(temp, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+	findContours(binImg, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 	//findContours(temp, contours, CV_RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 	if (contours.empty())
 		return {};
@@ -658,7 +682,9 @@ cv::Rect cMeasure::FindBiggestBlob(cv::Mat &src)
 	//cv::Rect bounding_rect = boundingRect(contours[largest_contour_index]);
 	//rectangle(dst, bounding_rect, Scalar(0, 255, 0), 1, 8, 0);
 
-	return boundingRect(contours[largest_contour_index]);
+	cv::RotatedRect rr = cv::minAreaRect(contours[largest_contour_index]);
+	cv::Rect br = boundingRect(contours[largest_contour_index]);
+	return { br, rr };
 }
 
 

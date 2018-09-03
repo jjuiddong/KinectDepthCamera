@@ -68,6 +68,7 @@ struct sAvrContour
 
 struct sMeasureVolume
 {
+	bool integral;
 	int id;
 	float horz;
 	float vert;

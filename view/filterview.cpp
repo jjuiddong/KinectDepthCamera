@@ -169,6 +169,9 @@ void cFilterView::UpdateTexture()
 	const int nHeight = m_depthTexture.Height();
 
 	Mat &dstImg = g_root.m_measure.m_dstImg;
+	if (dstImg.empty())
+		return;
+
 	BYTE *src = (BYTE*)dstImg.data;
 	cRenderer &renderer = GetRenderer();
 	D3D11_MAPPED_SUBRESOURCE map;

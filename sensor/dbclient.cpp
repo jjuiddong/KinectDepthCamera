@@ -88,9 +88,14 @@ bool cDBClient::Insert(const sMeasureResult &result)
 
 		// test debugging code
 		if (result.type == 1)
-			WriteExcel();
+		{
+			WriteExcel(true);
+			WriteExcel(false);
+		}
 		else if (result.type == 2)
+		{
 			m_results.push_back(result);
+		}
 		//
 	}
 
@@ -186,10 +191,16 @@ string cDBClient::GetResult2JSon(const sMeasureResult &result)
 }
 
 
-bool cDBClient::WriteExcel()
+bool cDBClient::WriteExcel(const bool isIntegral)
 {
 	using namespace std;
-	string fileName = "measure/exceloutput_" + common::GetCurrentDateTime() + ".volume";
+
+	string fileName;
+	if (isIntegral)
+		fileName = "measure/exceloutput_integral_" + common::GetCurrentDateTime() + ".volume";
+	else
+		fileName = "measure/exceloutput_" + common::GetCurrentDateTime() + ".volume";
+
 	ofstream ofs(fileName);
 	if (!ofs.is_open())
 		return false;	
@@ -201,12 +212,15 @@ bool cDBClient::WriteExcel()
 		float totalVW = 0;
 		for (auto &vol : result.volumes)
 		{
-			ofs << vol.horz << "\t";
-			ofs << vol.vert << "\t";
-			ofs << vol.height << "\t";
-			ofs << vol.vw << "\t";
+			if (vol.integral == isIntegral)
+			{
+				ofs << vol.horz << "\t";
+				ofs << vol.vert << "\t";
+				ofs << vol.height << "\t";
+				ofs << vol.vw << "\t";
 
-			totalVW += vol.vw;
+				totalVW += vol.vw;
+			}
 		}
 		ofs << totalVW << "\t";
 		ofs << endl;

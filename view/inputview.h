@@ -48,7 +48,6 @@ public:
 	eState::Enum m_state;
 	bool m_isCaptureContinuos;
 	float m_captureTime;
-	float m_triggerDelayTime;
 
 	// Animation
 	bool m_isFileAnimation;
