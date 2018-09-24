@@ -616,7 +616,7 @@ void cMeasure::MeasureIntegral()
 	const float w = (srcImg.cols < (int)(roi.x + roi.width)) ? (srcImg.cols - roi.x) : roi.width;
 	const float h = (srcImg.rows < (int)(roi.y + roi.height)) ? (srcImg.rows - roi.y) : roi.height;
 	const cv::Rect newRoi(std::max(0, (int)roi.x), std::max(0, (int)roi.y)
-		, w, h);
+		, (int)w, (int)h);
 
 	Mat m(grayscaleMat, newRoi);
 	m = m * scale * scale;
@@ -632,8 +632,8 @@ void cMeasure::MeasureIntegral()
 	{
 		sBoxInfo box;
 		box.integral = true;
-		box.minVolume = volume;
-		box.maxVolume = volume;
+		box.minVolume = (float)volume;
+		box.maxVolume = (float)volume;
 		box.loopCnt = 1;
 		box.pointCnt = 0;
 		box.volume = common::Vector3(rr.size.width * scale, (float)(maxVal / scale / scale), rr.size.height * scale);

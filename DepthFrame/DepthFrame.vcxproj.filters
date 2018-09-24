@@ -21,9 +21,6 @@
     <ClCompile Include="..\sensor\datreader.cpp">
       <Filter>sensor</Filter>
     </ClCompile>
-    <ClCompile Include="..\sensor\dbclient.cpp">
-      <Filter>sensor</Filter>
-    </ClCompile>
     <ClCompile Include="..\sensor\kinectv2.cpp">
       <Filter>sensor</Filter>
     </ClCompile>
@@ -87,6 +84,9 @@
     <ClCompile Include="..\sensor\measure.cpp">
       <Filter>sensor</Filter>
     </ClCompile>
+    <ClCompile Include="..\sensor\dbclient.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="depthframe.h" />
@@ -107,9 +107,6 @@
       <Filter>sensor</Filter>
     </ClInclude>
     <ClInclude Include="..\sensor\datreader.h">
-      <Filter>sensor</Filter>
-    </ClInclude>
-    <ClInclude Include="..\sensor\dbclient.h">
       <Filter>sensor</Filter>
     </ClInclude>
     <ClInclude Include="..\sensor\graphbuff.h">
@@ -182,6 +179,9 @@
       <Filter>view</Filter>
     </ClInclude>
     <ClInclude Include="..\sensor\measure.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\dbclient.h">
       <Filter>sensor</Filter>
     </ClInclude>
   </ItemGroup>

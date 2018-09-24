@@ -25,14 +25,14 @@ public:
 
 		string jsonStr = cDBClient::GetResult2JSon(m_result);
 
-		if (m_dbClient.m_sql.IsConnected())
-		{
-			string str = "INSERT INTO  tb_cargo_mear(MEASURE_DATA) VALUES ('";
-			str += jsonStr;
-			str += "');";
-			MySQLQuery query(&m_dbClient.m_sql, str);
-			const int result = query.ExecuteInsert();
-		}
+		//if (m_dbClient.m_sql.IsConnected())
+		//{
+		//	string str = "INSERT INTO  tb_cargo_mear(MEASURE_DATA) VALUES ('";
+		//	str += jsonStr;
+		//	str += "');";
+		//	MySQLQuery query(&m_dbClient.m_sql, str);
+		//	const int result = query.ExecuteInsert();
+		//}
 
 		return eRunResult::END; 
 	}
@@ -60,13 +60,13 @@ cDBClient::~cDBClient()
 
 bool cDBClient::Create()
 {
-	if (m_sql.IsConnected())
-		return true;
+	//if (m_sql.IsConnected())
+	//	return true;
 
-	if (!m_sql.Connect("127.0.0.1", 3306, "root", "1111", "volume"))
-	{
-		return false;
-	}
+	//if (!m_sql.Connect("127.0.0.1", 3306, "root", "1111", "volume"))
+	//{
+	//	return false;
+	//}
 
 	return true;
 }
@@ -99,8 +99,8 @@ bool cDBClient::Insert(const sMeasureResult &result)
 		//
 	}
 
-	if (!m_sql.IsConnected())
-		return true;
+	//if (!m_sql.IsConnected())
+	//	return true;
 
 	static int id = 0;
 	m_thread.AddTask(new cTaskQuery(id++, *this, result));

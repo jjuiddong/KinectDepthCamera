@@ -269,7 +269,7 @@ int cSensor::Grab()
 		if (curT - m_grabTime > 1000.f)
 		{
 			m_grabFPS = (float)m_grabSeconds;
-			m_grabSeconds = 0.f;
+			m_grabSeconds = 0;
 			m_grabTime = curT;
 		}
 	}

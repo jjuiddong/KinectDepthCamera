@@ -20,7 +20,7 @@ public:
 
 public:
 	bool m_isRun; // for terminate thread
-	MySQLConnection m_sql;
+	//MySQLConnection m_sql;
 	vector<sMeasureResult> m_results;
 	common::cThread m_thread;
 };

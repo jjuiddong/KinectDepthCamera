@@ -236,10 +236,10 @@ bool cRoot::LoadPlane()
 			else
 			{
 				const common::sRectf rect = common::sRectf::Rect(
-					atof(out[0].c_str())
-					, atof(out[1].c_str())
-					, atof(out[2].c_str())
-					, atof(out[3].c_str()));
+					(float)atof(out[0].c_str())
+					, (float)atof(out[1].c_str())
+					, (float)atof(out[2].c_str())
+					, (float)atof(out[3].c_str()));
 				m_cullRect[i] = rect;
 			}
 		}
@@ -257,10 +257,10 @@ bool cRoot::LoadPlane()
 			else
 			{
 				const common::sRectf rect = common::sRectf::Rect(
-					atof(out[0].c_str())
-					, atof(out[1].c_str())
-					, atof(out[2].c_str())
-					, atof(out[3].c_str()));
+					(float)atof(out[0].c_str())
+					, (float)atof(out[1].c_str())
+					, (float)atof(out[2].c_str())
+					, (float)atof(out[3].c_str()));
 				m_extraCullRect[i] = rect;
 			}
 		}

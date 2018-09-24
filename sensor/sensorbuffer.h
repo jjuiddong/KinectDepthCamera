@@ -40,7 +40,7 @@ public:
 	inline common::Vector3 Get3DPos(const int x, const int y, USHORT nMinDepth, USHORT nMaxDepth);
 	inline common::Vector3 GetVertex(const int x, const int y);
 	common::Vector3 PickVertex(const common::Ray &ray);
-	void GeneratePlane(common::Vector3 pos[3]);
+	//void GeneratePlane(common::Vector3 pos[3]);
 	void ChangeSpace(graphic::cRenderer &renderer);
 	bool UpdatePointCloudBySelf(graphic::cRenderer &renderer);
 	bool UpdatePointCloudAllConfig(graphic::cRenderer &renderer);
