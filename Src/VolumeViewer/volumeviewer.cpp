@@ -44,10 +44,6 @@ cViewer::~cViewer()
 
 bool cViewer::OnInit()
 {
-	cPtxReader ptxReader;
-
-
-
 	dbg::RemoveLog();
 	dbg::RemoveErrLog();
 

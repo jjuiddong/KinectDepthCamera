@@ -6,6 +6,8 @@
 #include "../../../Common/Framework11/framework11.h"
 #include "../../../Common/Network/network.h"
 
+using common::Vector3;
+
 
 #include <Shlobj.h>
 

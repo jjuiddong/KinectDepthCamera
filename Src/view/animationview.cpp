@@ -388,45 +388,46 @@ void cAnimationView::UpdateFileList()
 	exts.reserve(16);
 	exts.push_back(L"ply"); exts.push_back(L"PLY");
 	exts.push_back(L"pcd"); exts.push_back(L"PCD");
+	exts.push_back(L"ptx"); exts.push_back(L"PTX");
 
-	if (g_root.m_baslerCam.IsReadyCapture())
+	//if (!g_root.m_baslerCam.IsReadyCapture())
+	//	return;
+
+	g_root.m_baslerCam.CreateSensor(m_aniCameraCount + 1);
+
+	m_files.clear();
+	m_files.reserve(std::max(g_root.m_baslerCam.m_sensors.size(), (size_t)3));
+
+	for (auto *sensor : g_root.m_baslerCam.m_sensors)
 	{
-		g_root.m_baslerCam.CreateSensor(m_aniCameraCount + 1);
+		vector<WStrPath> out;
+		out.reserve(512);
 
-		m_files.clear();
-		m_files.reserve(std::max(g_root.m_baslerCam.m_sensors.size(), (size_t)3));
+		StrPath path;
+		path.Format("%s/%d", g_root.m_inputFilePath.c_str(), sensor->m_id);
+		common::CollectFiles(exts, path.wstr().c_str(), out);
 
-		for (auto *sensor : g_root.m_baslerCam.m_sensors)
+		// 데이타 중복 복사를 피하기위한 꽁수
+		m_files.push_back({});
+		m_selFileIdx.push_back(0);
+		m_selectPath.push_back("");
+		sFileInfo &finfos = m_files.back();
+
+		finfos.fullFileNames.reserve(out.size());
+		for (auto &str : out)
+			finfos.fullFileNames.push_back(str.utf8());
+
+		for (auto &str : out)
+			finfos.fileNames.push_back(str.utf8().GetFileName());
+
+		// 각 0/1/2/... 폴더의 파일을 __int64 값으로 수치화해서 저장한다.
+		// 애니메이션시 값을 비교해 가장 가까운 파일을 서로 연결해 애니메이션 한다.
+		finfos.ids.reserve(out.size());
+		for (auto &fileName : finfos.fileNames)
 		{
-			vector<WStrPath> out;
-			out.reserve(512);
-
-			StrPath path;
-			path.Format("%s/%d", g_root.m_inputFilePath.c_str(), sensor->m_id);
-			common::CollectFiles(exts, path.wstr().c_str(), out);
-
-			// 데이타 중복 복사를 피하기위한 꽁수
-			m_files.push_back({});
-			m_selFileIdx.push_back(0);
-			m_selectPath.push_back("");
-			sFileInfo &finfos = m_files.back();
-
-			finfos.fullFileNames.reserve(out.size());
-			for (auto &str : out)
-				finfos.fullFileNames.push_back(str.utf8());
-
-			for (auto &str : out)
-				finfos.fileNames.push_back(str.utf8().GetFileName());
-
-			// 각 0/1/2/... 폴더의 파일을 __int64 값으로 수치화해서 저장한다.
-			// 애니메이션시 값을 비교해 가장 가까운 파일을 서로 연결해 애니메이션 한다.
-			finfos.ids.reserve(out.size());
-			for (auto &fileName : finfos.fileNames)
-			{
-				const __int64 num = ConvertFileNameToInt64(fileName);
-				if (num > 0)
-					finfos.ids.push_back(num);
-			}
+			const __int64 num = ConvertFileNameToInt64(fileName);
+			if (num > 0)
+				finfos.ids.push_back(num);
 		}
 	}
 }
@@ -608,6 +609,17 @@ bool cAnimationView::OpenFile(const StrPath &ansifileName
 	{
 		sensor1->m_buffer.ReadDatFile(
 			g_root.m_3dView->GetRenderer(), ansifileName.c_str());
+		g_root.MeasureVolume();
+	}
+	else if (string(".ptx") == ansifileName.GetFileExt())
+	{
+		cPtxReader ptxReader;
+		ptxReader.Read(ansifileName.c_str());
+
+		cDatReader datReader;
+		datReader.m_vertices = ptxReader.m_vertices;
+		sensor1->m_buffer.ReadDatFile(
+			g_root.m_3dView->GetRenderer(), datReader);
 		g_root.MeasureVolume();
 	}
 

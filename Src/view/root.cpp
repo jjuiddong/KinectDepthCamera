@@ -59,17 +59,17 @@ cRoot::cRoot()
 	for (int i = 0; i < MAX_CAMERA; ++i)
 		m_devChannel[i] = -1;
 
-	m_cullRect[0] = common::sRectf::Rect(0, -200, 200, 200); // Camera3
-	m_cullRect[1] = common::sRectf::Rect(0, 0, 200, 200); // Camera2
-	m_cullRect[2] = common::sRectf::Rect(-50, -50, 100, 100); // Camera5
-	m_cullRect[3] = common::sRectf::Rect(-200, -200, 200, 200); // Camera4
-	m_cullRect[4] = common::sRectf::Rect(-200, 0, 200, 200); // Camera1
+	//m_cullRect[0] = common::sRectf::Rect(0, -200, 200, 200); // Camera3
+	//m_cullRect[1] = common::sRectf::Rect(0, 0, 200, 200); // Camera2
+	//m_cullRect[2] = common::sRectf::Rect(-50, -50, 100, 100); // Camera5
+	//m_cullRect[3] = common::sRectf::Rect(-200, -200, 200, 200); // Camera4
+	//m_cullRect[4] = common::sRectf::Rect(-200, 0, 200, 200); // Camera1
 
-	m_extraCullRect[0] = m_cullRect[2]; // Camera3
-	m_extraCullRect[1] = m_cullRect[2]; // Camera2
-	m_extraCullRect[2] = common::sRectf::Rect(0,0,0,0); // Camera5
-	m_extraCullRect[3] = m_cullRect[2]; // Camera4
-	m_extraCullRect[4] = m_cullRect[2]; // Camera1
+	//m_extraCullRect[0] = m_cullRect[2]; // Camera3
+	//m_extraCullRect[1] = m_cullRect[2]; // Camera2
+	//m_extraCullRect[2] = common::sRectf::Rect(0,0,0,0); // Camera5
+	//m_extraCullRect[3] = m_cullRect[2]; // Camera4
+	//m_extraCullRect[4] = m_cullRect[2]; // Camera1
 }
 
 cRoot::~cRoot()

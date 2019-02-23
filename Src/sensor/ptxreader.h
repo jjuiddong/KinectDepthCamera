@@ -18,7 +18,16 @@ public:
 	bool Read(const char *fileName);
 
 
-public:
+protected:
+	bool ReadPTX(const char *fileName);
+	bool ReadBTX(const char *fileName);
 	string GetFileFormat(const char *fileName);
 
+
+public:
+	int m_width;
+	int m_height;
+	vector<common::Vector3> m_vertices;
+	vector<common::Vector3> m_colors;
+	vector<float> m_intensity;
 };
