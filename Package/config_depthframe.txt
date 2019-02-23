@@ -1,0 +1,3 @@
+basler_connect = 1
+inputfilepath = ../Media/Depth
+kinect_connect = 0

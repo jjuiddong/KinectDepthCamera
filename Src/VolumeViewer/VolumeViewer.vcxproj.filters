@@ -1,0 +1,202 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="volumeviewer.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="..\sensor\basler.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sensor\baslersync.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sensor\calibration.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sensor\clipper.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sensor\contour.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sensor\cvutil.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sensor\datreader.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sensor\dbclient.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sensor\plyreader.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sensor\rectcontour.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sensor\sensor.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sensor\sensorbuffer.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\view\3dview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="..\view\analysisview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="..\view\boxview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="..\view\calibrationview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="..\view\cameraview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="..\view\colorview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="..\view\depthview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="..\view\depthview2.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="..\view\filterview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="..\view\infraredview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="..\view\inputview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="..\view\logview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="..\view\resultview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="..\view\root.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="..\view\animationview.cpp">
+      <Filter>view</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sensor\measure.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\sensor\ptxreader.cpp">
+      <Filter>sensor</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="volumeviewer.h" />
+    <ClInclude Include="..\sensor\basler.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\baslersync.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\calibration.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\clipper.hpp">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\contour.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\cvutil.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\datreader.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\dbclient.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\graphbuff.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\plyreader.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\rectcontour.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\sensor.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\sensorbuffer.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\StopWatch.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\volume.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\view\3dview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\view\analysisview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\view\boxview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\view\calibrationview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\view\cameraview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\view\colorview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\view\depthview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\view\depthview2.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\view\filterview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\view\infraredview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\view\inputview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\view\logview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\view\resultview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\view\root.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\view\animationview.h">
+      <Filter>view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\measure.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sensor\ptxreader.h">
+      <Filter>sensor</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="sensor">
+      <UniqueIdentifier>{46f1fe48-a474-4d10-ac5b-2f3044daa5da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="view">
+      <UniqueIdentifier>{86914a60-f946-46dd-bcd4-4146e70b2065}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
